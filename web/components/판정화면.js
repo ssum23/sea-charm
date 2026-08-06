@@ -328,7 +328,6 @@ function 바깥링크({ 주소, 이름 }) {
  *    제철·금어기 표시는 **글자로 남긴다.** 색만으로 알리면 색약인 사람에게 안 보인다(#77·#78).
  */
 function 어종칸({ 이름, 제철, 금어기중, 즐겨짐, 고름, 즐겨토글 }) {
-  const 그림 = 어종그림(이름);
   return (
     <div style={{ position: 'relative' }}>
       <Button
@@ -354,11 +353,9 @@ function 어종칸({ 이름, 제철, 금어기중, 즐겨짐, 고름, 즐겨토�
             minWidth: 0,
           }}
         >
-          {그림 && (
-            <span aria-hidden="true" style={{ fontSize: 17, lineHeight: 1.1 }}>
-              {그림}
-            </span>
-          )}
+          {/* 어종 그림 — 이모지가 있으면 이모지, 없으면 직접 그린 그림.
+              그림 정의는 `화면틀.js` 가 화면마다 한 번만 깔아둔다 */}
+          <어종그림 이름={이름} 크기={20} />
           <span
             style={{
               fontSize: 16,

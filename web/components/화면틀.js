@@ -21,6 +21,7 @@
 import Link from 'next/link';
 import { FlexBox, Typography } from '@montage-ui/core';
 import { 크기, 색 } from './크기';
+import { 어종그림정의 } from '@/lib/어종그림';
 import { 날짜말 } from '@/lib/저장소';
 
 export default function 화면틀({
@@ -38,6 +39,10 @@ export default function 화면틀({
 }) {
   return (
     <FlexBox flexDirection="column" sx={{ minHeight: '100dvh' }}>
+      {/* 어종 그림의 색·모양 정의를 화면마다 **한 번만** 깔아둔다.
+          여기 있으면 이 틀을 쓰는 네 화면 어디서든 <어종그림 /> 을 그냥 쓸 수 있다.
+          눈에 보이지 않는다 — 크기 0 이다 */}
+      <어종그림정의 />
       {/* 머리 */}
       <FlexBox
         flexDirection="column"
