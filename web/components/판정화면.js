@@ -315,70 +315,131 @@ function 바깥링크({ 주소, 이름 }) {
   );
 }
 
-/* 별표 — 즐겨찾기 켜고 끄기.
-   버튼 안에 겹쳐 두므로 `stopPropagation` 으로 **바깥 버튼이 같이 눌리는 것**을 막는다.
-   손가락에 잡히도록 눈에 보이는 별보다 누르는 자리를 넉넉히 잡는다 */
-function 별표({ 켜짐, 누름, 자리 = 'corner' }) {
+/* 어종 한 칸 — 즐겨찾기·최근·제철이 **모두 이 한 칸을 쓴다**.
+ *
+ * 🔴 2026-08-06 (2) 폰 점검 — 별표가 안 눌리고 길이 재기로 들어가던 결함
+ *    전에는 별표를 **버튼 안에** 넣었다. `<button>` 안에 누를 수 있는 것을 또 넣는 것은
+ *    **HTML 규칙 위반**이라, 폰 브라우저가 안쪽 것을 무시하고 **바깥 버튼을 눌러버린다.**
+ *    그래서 별표를 눌러도 즐겨찾기가 아니라 길이 재기로 들어갔다.
+ *    이제 별표를 **버튼 바깥의 형제**로 두고, 버튼 위에 겹쳐 올린다. 서로 남남이 된다.
+ *
+ * 🔴 한 줄에 3개 — 스크롤을 덜 내리게 (사장님 지시)
+ *    전에는 2열 × 78px 이라 여덟 칸이 화면을 다 먹었다.
+ *    제철·금어기 표시는 **글자로 남긴다.** 색만으로 알리면 색약인 사람에게 안 보인다(#77·#78).
+ */
+function 어종칸({ 이름, 제철, 금어기중, 즐겨짐, 고름, 즐겨토글 }) {
+  const 그림 = 어종그림(이름);
   return (
-    <span
-      role="button"
-      aria-label={켜짐 ? '즐겨찾기에서 빼기' : '즐겨찾기에 넣기'}
-      onClick={(e) => {
-        e.stopPropagation();
-        e.preventDefault();
-        누름();
-      }}
-      style={{
-        ...(자리 === 'corner'
-          ? { position: 'absolute', top: 0, right: 0 }
-          : { position: 'relative' }),
-        display: 'inline-flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        width: 40,
-        height: 40,
-        fontSize: 18,
-        lineHeight: 1,
-        color: 켜짐 ? 'var(--semantic-status-cautionary)' : 색.아주흐린글,
-      }}
-    >
-      {켜짐 ? '★' : '☆'}
-    </span>
+    <div style={{ position: 'relative' }}>
+      <Button
+        variant="outlined"
+        color="assistive"
+        size="large"
+        fullWidth
+        onClick={() => 고름(이름)}
+        sx={{
+          height: 'auto',
+          minHeight: 72,
+          padding: '10px 4px',
+          borderRadius: 크기.버튼둥글기,
+        }}
+      >
+        <span
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 2,
+            width: '100%',
+            minWidth: 0,
+          }}
+        >
+          {그림 && (
+            <span aria-hidden="true" style={{ fontSize: 17, lineHeight: 1.1 }}>
+              {그림}
+            </span>
+          )}
+          <span
+            style={{
+              fontSize: 16,
+              fontWeight: 700,
+              color: 색.글,
+              lineHeight: 1.2,
+              /* 이름이 잘리느니 줄바꿈한다 — 「조피볼락」이 「조피볼…」이 되면 못 읽는다 */
+              wordBreak: 'keep-all',
+              textAlign: 'center',
+            }}
+          >
+            {이름}
+          </span>
+          {금어기중 ? (
+            <span style={{ fontSize: 11, fontWeight: 700, color: 색.안됨, lineHeight: 1.2 }}>
+              금어기?
+            </span>
+          ) : 제철 ? (
+            <span style={{ fontSize: 11, fontWeight: 700, color: 색.됨, lineHeight: 1.2 }}>
+              제철
+            </span>
+          ) : null}
+        </span>
+      </Button>
+
+      {/* 별표는 버튼 **바깥**이다. 버튼 위에 겹쳐만 놓는다 */}
+      <span
+        role="button"
+        aria-label={즐겨짐 ? '자주 잡는 것에서 빼기' : '자주 잡는 것에 넣기'}
+        onClick={(e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          즐겨토글(이름);
+        }}
+        style={{
+          position: 'absolute',
+          top: 0,
+          right: 0,
+          display: 'inline-flex',
+          alignItems: 'flex-start',
+          justifyContent: 'flex-end',
+          padding: '5px 6px 0 0',
+          width: 34,
+          height: 30,
+          fontSize: 16,
+          lineHeight: 1,
+          cursor: 'pointer',
+          color: 즐겨짐 ? 'var(--semantic-status-cautionary)' : 색.아주흐린글,
+        }}
+      >
+        {즐겨짐 ? '★' : '☆'}
+      </span>
+    </div>
   );
 }
 
-/* 즐겨찾기·최근에 쓰는 한 칸. 이름을 누르면 고르고, 별을 누르면 즐겨찾기가 바뀐다 */
-function 지름길칸({ 이름, 즐겨짐, 고름, 즐겨토글 }) {
-  const 그림 = 어종그림(이름);
+/* 세 줄이 다 같은 모양이 되도록 한 겹 더 싼다 */
+function 어종줄({ 제목, 목록, 즐겨, 고름, 즐겨토글 }) {
+  if (!목록 || 목록.length === 0) return null;
   return (
-    <span
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        border: `1px solid ${색.선}`,
-        borderRadius: 12,
-        paddingLeft: 12,
-        height: 48,
-      }}
-    >
-      <span
-        role="button"
-        onClick={() => 고름(이름)}
-        style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: 6,
-          fontSize: 크기.본문,
-          fontWeight: 600,
-          color: 색.글,
-          paddingRight: 4,
-        }}
-      >
-        {그림 && <span aria-hidden="true">{그림}</span>}
-        {이름}
-      </span>
-      <별표 켜짐={즐겨짐} 누름={() => 즐겨토글(이름)} 자리="inline" />
-    </span>
+    <FlexBox flexDirection="column" gap={8}>
+      <Typography weight="bold" sx={{ fontSize: 크기.보조, color: 색.흐린글 }}>
+        {제목}
+      </Typography>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+        {목록.map((s) => {
+          const 이름 = typeof s === 'string' ? s : s.이름;
+          return (
+            <어종칸
+              key={이름}
+              이름={이름}
+              제철={typeof s === 'string' ? false : s.제철}
+              금어기중={typeof s === 'string' ? false : s.금어기중}
+              즐겨짐={(즐겨 || []).indexOf(이름) !== -1}
+              고름={고름}
+              즐겨토글={즐겨토글}
+            />
+          );
+        })}
+      </div>
+    </FlexBox>
   );
 }
 
@@ -397,9 +458,10 @@ function 어종고르기({ 상단목록, 검색, 검색바꾸기, 검색결과, 
     <Card sx={{ backgroundColor: 색.바탕, borderRadius: 18, padding: 크기.여백, gap: 크기.사이, boxShadow: 'var(--semantic-elevation-shadow-normal-xsmall)' }}>
       {/* 🔴 2026-08-06 폰 점검 — 검색을 맨 위로 올렸다.
           전에는 여덟 칸 아래에 있어서, 목록에 없는 어종을 잡은 사람은
-          **화면을 내려야 검색이 있다는 걸 알았다.** 돋보기도 거기 있어서 안 보였다.
+          **화면을 내려야 검색이 있다는 걸 알았다.**
 
-          돋보기는 그림 파일이 아니라 코드로 그린다(외부 요청 0건) */}
+          🔴 (2) 돋보기가 안 보이던 이유 — 글자 칸이 제 배경을 깔면서 돋보기를 덮었다.
+             `zIndex` 로 글자 칸 **위에** 올린다. 손가락은 통과시킨다(`pointerEvents:none`) */}
       <div style={{ position: 'relative' }}>
         <span
           style={{
@@ -410,6 +472,7 @@ function 어종고르기({ 상단목록, 검색, 검색바꾸기, 검색결과, 
             color: 색.아주흐린글,
             lineHeight: 0,
             pointerEvents: 'none',
+            zIndex: 2,
           }}
         >
           <svg width="19" height="19" viewBox="0 0 20 20" fill="none" aria-hidden="true">
@@ -422,7 +485,11 @@ function 어종고르기({ 상단목록, 검색, 검색바꾸기, 검색결과, 
           onChange={(e) => 검색바꾸기(e.target.value)}
           placeholder="어종 찾기"
           height={54}
-          sx={{ fontSize: 크기.본문, '& input': { paddingLeft: '40px' } }}
+          sx={{
+            fontSize: 크기.본문,
+            '& input': { paddingLeft: '40px' },
+            '& .MuiInputBase-input': { paddingLeft: '40px' },
+          }}
         />
       </div>
 
@@ -444,56 +511,33 @@ function 어종고르기({ 상단목록, 검색, 검색바꾸기, 검색결과, 
         </FlexBox>
       )}
 
-      {검색결과.length > 0 && (
-        <FlexBox flexWrap="wrap" gap={9}>
-          {검색결과.map((s) => (
-            <지름길칸
-              key={s.이름}
-              이름={s.이름}
-              즐겨짐={(즐겨 || []).indexOf(s.이름) !== -1}
-              고름={어종고름}
-              즐겨토글={즐겨토글}
-            />
-          ))}
-        </FlexBox>
-      )}
+      <어종줄
+        제목="찾은 것"
+        목록={검색결과}
+        즐겨={즐겨}
+        고름={어종고름}
+        즐겨토글={즐겨토글}
+      />
 
-      {/* 🔴 2026-08-06 폰 점검 — 「그날 잡는 물고기 종류는 비슷한데 매번 검색해야 한다」
-          그래서 지름길 두 줄을 제철 목록 **위에** 둔다.
-            ① 즐겨찾기 — 사람이 별표로 직접 고른 것. 안 바뀐다
-            ② 최근에 잡은 것 — 기록에서 저절로 채워진다. 손댈 필요가 없다
-          둘 다 **개수에 상한이 있다.** 길어지면 훑는 것보다 검색이 빨라져 지름길이 아니게 된다 */}
-      {(즐겨 || []).length > 0 && (
-        <FlexBox flexDirection="column" gap={8}>
-          <Typography weight="bold" sx={{ fontSize: 크기.보조, color: 색.흐린글 }}>
-            자주 잡는 것
-          </Typography>
-          <FlexBox flexWrap="wrap" gap={9}>
-            {즐겨.map((n) => (
-              <지름길칸 key={n} 이름={n} 즐겨짐 고름={어종고름} 즐겨토글={즐겨토글} />
-            ))}
-          </FlexBox>
-        </FlexBox>
-      )}
-
-      {최근만.length > 0 && (
-        <FlexBox flexDirection="column" gap={8}>
-          <Typography weight="bold" sx={{ fontSize: 크기.보조, color: 색.흐린글 }}>
-            최근에 잡은 것
-          </Typography>
-          <FlexBox flexWrap="wrap" gap={9}>
-            {최근만.map((n) => (
-              <지름길칸
-                key={n}
-                이름={n}
-                즐겨짐={false}
-                고름={어종고름}
-                즐겨토글={즐겨토글}
-              />
-            ))}
-          </FlexBox>
-        </FlexBox>
-      )}
+      {/* 🔴 「그날 잡는 물고기 종류는 비슷한데 매번 검색해야 한다」(폰 점검)
+          지름길 두 줄을 제철 목록 **위에** 둔다.
+            ① 자주 잡는 것 — 별표(☆)로 사람이 직접 고른 것
+            ② 최근에 잡은 것 — 기록에서 저절로
+          둘 다 개수 상한이 있다. 길어지면 훑는 것보다 검색이 빨라져 지름길이 아니게 된다 */}
+      <어종줄
+        제목="자주 잡는 것"
+        목록={즐겨}
+        즐겨={즐겨}
+        고름={어종고름}
+        즐겨토글={즐겨토글}
+      />
+      <어종줄
+        제목="최근에 잡은 것"
+        목록={최근만}
+        즐겨={즐겨}
+        고름={어종고름}
+        즐겨토글={즐겨토글}
+      />
 
       {즐겨알림 && (
         <Typography sx={{ fontSize: 크기.보조, color: 색.주의, lineHeight: 1.6 }}>
@@ -521,57 +565,26 @@ function 어종고르기({ 상단목록, 검색, 검색바꾸기, 검색결과, 
         </Typography>
       </FlexBox>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 11 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
         {상단목록.map((s) => (
-          <Button
+          <어종칸
             key={s.이름}
-            variant="outlined"
-            color="assistive"
-            size="large"
-            fullWidth
-            onClick={() => 어종고름(s.이름)}
-            sx={{
-              height: 'auto',
-              minHeight: 78,
-              padding: '14px 8px',
-              borderRadius: 크기.버튼둥글기,
-              position: 'relative',
-            }}
-          >
-            {/* 이름과 꼬리표를 세로로 쌓는다 — 버튼이 안쪽 내용을 가로로 붙이기 때문에
-                한 겹 싸서 방향을 바꾼다 */}
-            <span
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: 5,
-                width: '100%',
-              }}
-            >
-              <span style={{ fontSize: 22, fontWeight: 700, color: 색.글 }}>
-                {어종그림(s.이름) ? `${어종그림(s.이름)} ` : ''}
-                {s.이름}
-              </span>
-              {s.금어기중 ? (
-                <span style={{ fontSize: 12, fontWeight: 600, color: 색.안됨 }}>
-                  지금 금어기일 수 있어요
-                </span>
-              ) : s.제철 ? (
-                <span style={{ fontSize: 12, fontWeight: 600, color: 색.됨 }}>제철</span>
-              ) : null}
-            </span>
-            <별표
-              켜짐={(즐겨 || []).indexOf(s.이름) !== -1}
-              누름={() => 즐겨토글(s.이름)}
-            />
-          </Button>
+            이름={s.이름}
+            제철={s.제철}
+            금어기중={s.금어기중}
+            즐겨짐={(즐겨 || []).indexOf(s.이름) !== -1}
+            고름={어종고름}
+            즐겨토글={즐겨토글}
+          />
         ))}
       </div>
+
+      <Typography sx={{ fontSize: 크기.작게, color: 색.아주흐린글, lineHeight: 1.6 }}>
+        오른쪽 위 ☆를 누르면 「자주 잡는 것」에 올라가요
+      </Typography>
     </Card>
   );
 }
-
 
 /* ---------- 2. 길이 재기 ---------- */
 function 길이재기({ 결과, 길이, 길이바꾸기, 판정하기, 처음부터 }) {
