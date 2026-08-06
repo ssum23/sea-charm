@@ -7,12 +7,13 @@
  * 여기서 판정 규칙을 흉내 내거나 결과를 고쳐 쓰지 않는다.
  */
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Button, Card, Chip, FlexBox, TextField, Typography } from '@montage-ui/core';
 import { 크기, 색 } from './크기';
 import { judge, 메타 } from '@/lib/판정엔진';
-import { 키, 읽기, 쓰기, 날짜말 } from '@/lib/저장소';
+import { 키, 읽기, 쓰기, 날짜말, 즐겨찾기최대, 최근최대 } from '@/lib/저장소';
+import 어종그림 from '@/lib/어종그림';
 import 재는법그림, { 재는법말 } from './재는법그림';
 import 화면틀 from './화면틀';
 import { 넘김키, 제안길이키 } from './도장찍기';
@@ -41,11 +42,50 @@ export default function 판정화면() {
   const [검색, 검색바꾸기] = useState('');
   const [결과, 결과바꾸기] = useState(null);
   const [기록수, 기록수바꾸기] = useState(null);
+  /* 자주 잡는 어종(사용자가 별표로 고름) · 최근에 잡은 어종(기록에서 저절로) */
+  const [즐겨, 즐겨바꾸기] = useState([]);
+  const [최근, 최근바꾸기] = useState([]);
+
+  /* 기록에서 최근에 잡은 어종 이름만 뽑는다. 같은 어종은 한 번만.
+     기록은 새것이 앞에 쌓이므로(unshift) 앞에서부터 훑으면 그게 최근순이다. */
+  function 최근계산(list) {
+    const 본것 = [];
+    (list || []).forEach((c) => {
+      if (!c.어종) return;
+      if (본것.indexOf(c.어종) === -1) 본것.push(c.어종);
+    });
+    return 본것.slice(0, 최근최대);
+  }
 
   useEffect(() => {
     지금바꾸기(new Date());
-    기록수바꾸기(읽기(키.잡은것, []).length);
+    const list = 읽기(키.잡은것, []);
+    기록수바꾸기(list.length);
+    최근바꾸기(최근계산(list));
+    즐겨바꾸기(읽기(키.즐겨찾기, []));
   }, []);
+
+  /* 별표 켜기·끄기. 상한을 넘으면 **조용히 버리지 않고 알려준다** —
+     말없이 사라지면 「눌렀는데 왜 안 되지」가 된다 */
+  const [즐겨알림, 즐겨알림바꾸기] = useState('');
+  function 즐겨토글(이름) {
+    const 있음 = 즐겨.indexOf(이름) !== -1;
+    if (있음) {
+      const 다음 = 즐겨.filter((n) => n !== 이름);
+      즐겨바꾸기(다음);
+      쓰기(키.즐겨찾기, 다음);
+      즐겨알림바꾸기('');
+      return;
+    }
+    if (즐겨.length >= 즐겨찾기최대) {
+      즐겨알림바꾸기(`즐겨찾기는 ${즐겨찾기최대}개까지예요. 하나를 빼고 다시 눌러주세요`);
+      return;
+    }
+    const 다음 = 즐겨.concat([이름]);
+    즐겨바꾸기(다음);
+    쓰기(키.즐겨찾기, 다음);
+    즐겨알림바꾸기('');
+  }
 
   const 상단목록 = useMemo(() => (지금 ? judge.상단목록(지금, 8) : []), [지금]);
 
@@ -114,6 +154,7 @@ export default function 판정화면() {
       });
       쓰기(키.잡은것, list.slice(0, 500));
       기록수바꾸기(list.length);
+      최근바꾸기(최근계산(list));
     }
   }
 
@@ -143,6 +184,30 @@ export default function 판정화면() {
   }
 
   const 화면 = 결과?.화면 ?? '어종';
+
+  /* 🔴 2026-08-06 폰 점검 — 「홈에 갔다 돌아왔더니 아까 누르던 숫자 6이 남아 있다」
+   *
+   * 폰 브라우저(특히 사파리)는 다른 화면에 갔다 돌아올 때 앞 화면을 새로 그리지 않고
+   * **통째로 되살립니다.** 그래서 React 가 기억하던 숫자가 그대로 살아 있습니다.
+   *
+   * 이게 위험한 이유 — 다음 물고기를 재려던 사람이 **앞 물고기의 숫자로 판정**하게 된다.
+   * 판정 규칙은 멀쩡한데 들어가는 값이 남의 것이면 답도 남의 것이다.
+   *
+   * 길이를 누르던 중이었을 때만 지운다. 결과를 보다가 잠깐 홈에 다녀온 사람의
+   * 결과 화면까지 지워버리면 그건 그것대로 뺏는 것이다. */
+  const 화면지금 = useRef(화면);
+  useEffect(() => {
+    화면지금.current = 화면;
+  }, [화면]);
+  useEffect(() => {
+    function 되살아남(e) {
+      if (!e.persisted) return;
+      if (화면지금.current === '길이') 길이바꾸기('');
+    }
+    window.addEventListener('pageshow', 되살아남);
+    return () => window.removeEventListener('pageshow', 되살아남);
+  }, []);
+
   /* 「N짜」 — 낚시하는 사람이 크기를 부르는 말. 칭찬이 아니라 사실이다.
      안 쓰는 자리는 엔진이 정한다(30cm 미만·갈치·어류 아님·cm 아님 → null) */
   const 짜 = 화면 === '결과' && 길이 ? judge.짜(어종, Number(길이)) : null;
@@ -183,6 +248,10 @@ export default function 판정화면() {
             검색바꾸기={검색바꾸기}
             검색결과={검색결과}
             어종고름={어종고름}
+            즐겨={즐겨}
+            즐겨토글={즐겨토글}
+            즐겨알림={즐겨알림}
+            최근={최근}
           />
         )}
         {화면 === '길이' && (
@@ -246,16 +315,192 @@ function 바깥링크({ 주소, 이름 }) {
   );
 }
 
+/* 별표 — 즐겨찾기 켜고 끄기.
+   버튼 안에 겹쳐 두므로 `stopPropagation` 으로 **바깥 버튼이 같이 눌리는 것**을 막는다.
+   손가락에 잡히도록 눈에 보이는 별보다 누르는 자리를 넉넉히 잡는다 */
+function 별표({ 켜짐, 누름, 자리 = 'corner' }) {
+  return (
+    <span
+      role="button"
+      aria-label={켜짐 ? '즐겨찾기에서 빼기' : '즐겨찾기에 넣기'}
+      onClick={(e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        누름();
+      }}
+      style={{
+        ...(자리 === 'corner'
+          ? { position: 'absolute', top: 0, right: 0 }
+          : { position: 'relative' }),
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: 40,
+        height: 40,
+        fontSize: 18,
+        lineHeight: 1,
+        color: 켜짐 ? 'var(--semantic-status-cautionary)' : 색.아주흐린글,
+      }}
+    >
+      {켜짐 ? '★' : '☆'}
+    </span>
+  );
+}
+
+/* 즐겨찾기·최근에 쓰는 한 칸. 이름을 누르면 고르고, 별을 누르면 즐겨찾기가 바뀐다 */
+function 지름길칸({ 이름, 즐겨짐, 고름, 즐겨토글 }) {
+  const 그림 = 어종그림(이름);
+  return (
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        border: `1px solid ${색.선}`,
+        borderRadius: 12,
+        paddingLeft: 12,
+        height: 48,
+      }}
+    >
+      <span
+        role="button"
+        onClick={() => 고름(이름)}
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 6,
+          fontSize: 크기.본문,
+          fontWeight: 600,
+          color: 색.글,
+          paddingRight: 4,
+        }}
+      >
+        {그림 && <span aria-hidden="true">{그림}</span>}
+        {이름}
+      </span>
+      <별표 켜짐={즐겨짐} 누름={() => 즐겨토글(이름)} 자리="inline" />
+    </span>
+  );
+}
+
 /* ---------- 1. 어종 고르기 ---------- */
-function 어종고르기({ 상단목록, 검색, 검색바꾸기, 검색결과, 어종고름, 지금 }) {
+function 어종고르기({ 상단목록, 검색, 검색바꾸기, 검색결과, 어종고름, 지금, 즐겨, 즐겨토글, 즐겨알림, 최근 }) {
   const 달 = (지금 || new Date()).getMonth() + 1;
   /* 지금 목록에 올라온 것 중 제철인 것만 이름을 뽑아 한 줄로 알려준다.
      「왜 이 여덟 개가 여기 있나」에 답이 된다 */
   const 제철들 = 상단목록.filter((s) => s.제철 && !s.금어기중).map((s) => s.이름);
   const 금어기들 = 상단목록.filter((s) => s.금어기중).map((s) => s.이름);
 
+  /* 즐겨찾기에 이미 있는 것은 최근에서 뺀다 — 같은 이름이 두 줄에 나오면 자리만 먹는다 */
+  const 최근만 = (최근 || []).filter((n) => (즐겨 || []).indexOf(n) === -1);
+
   return (
     <Card sx={{ backgroundColor: 색.바탕, borderRadius: 18, padding: 크기.여백, gap: 크기.사이, boxShadow: 'var(--semantic-elevation-shadow-normal-xsmall)' }}>
+      {/* 🔴 2026-08-06 폰 점검 — 검색을 맨 위로 올렸다.
+          전에는 여덟 칸 아래에 있어서, 목록에 없는 어종을 잡은 사람은
+          **화면을 내려야 검색이 있다는 걸 알았다.** 돋보기도 거기 있어서 안 보였다.
+
+          돋보기는 그림 파일이 아니라 코드로 그린다(외부 요청 0건) */}
+      <div style={{ position: 'relative' }}>
+        <span
+          style={{
+            position: 'absolute',
+            left: 15,
+            top: '50%',
+            transform: 'translateY(-50%)',
+            color: 색.아주흐린글,
+            lineHeight: 0,
+            pointerEvents: 'none',
+          }}
+        >
+          <svg width="19" height="19" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <circle cx="8.6" cy="8.6" r="5.6" stroke="currentColor" strokeWidth="1.8" />
+            <line x1="12.9" y1="12.9" x2="17.4" y2="17.4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+          </svg>
+        </span>
+        <TextField
+          value={검색}
+          onChange={(e) => 검색바꾸기(e.target.value)}
+          placeholder="어종 찾기"
+          height={54}
+          sx={{ fontSize: 크기.본문, '& input': { paddingLeft: '40px' } }}
+        />
+      </div>
+
+      {검색.trim() && 검색결과.length === 0 && (
+        <FlexBox flexDirection="column" gap={10}>
+          <Typography sx={{ fontSize: 크기.보조, color: 색.흐린글, lineHeight: 1.6 }}>
+            그런 이름은 기준표에 없어요. 그대로 두고 아래에서 그냥 물어보셔도 됩니다.
+          </Typography>
+          <Button
+            variant="outlined"
+            color="assistive"
+            size="large"
+            fullWidth
+            onClick={() => 어종고름(검색.trim())}
+            sx={버튼모양}
+          >
+            그래도 물어보기
+          </Button>
+        </FlexBox>
+      )}
+
+      {검색결과.length > 0 && (
+        <FlexBox flexWrap="wrap" gap={9}>
+          {검색결과.map((s) => (
+            <지름길칸
+              key={s.이름}
+              이름={s.이름}
+              즐겨짐={(즐겨 || []).indexOf(s.이름) !== -1}
+              고름={어종고름}
+              즐겨토글={즐겨토글}
+            />
+          ))}
+        </FlexBox>
+      )}
+
+      {/* 🔴 2026-08-06 폰 점검 — 「그날 잡는 물고기 종류는 비슷한데 매번 검색해야 한다」
+          그래서 지름길 두 줄을 제철 목록 **위에** 둔다.
+            ① 즐겨찾기 — 사람이 별표로 직접 고른 것. 안 바뀐다
+            ② 최근에 잡은 것 — 기록에서 저절로 채워진다. 손댈 필요가 없다
+          둘 다 **개수에 상한이 있다.** 길어지면 훑는 것보다 검색이 빨라져 지름길이 아니게 된다 */}
+      {(즐겨 || []).length > 0 && (
+        <FlexBox flexDirection="column" gap={8}>
+          <Typography weight="bold" sx={{ fontSize: 크기.보조, color: 색.흐린글 }}>
+            자주 잡는 것
+          </Typography>
+          <FlexBox flexWrap="wrap" gap={9}>
+            {즐겨.map((n) => (
+              <지름길칸 key={n} 이름={n} 즐겨짐 고름={어종고름} 즐겨토글={즐겨토글} />
+            ))}
+          </FlexBox>
+        </FlexBox>
+      )}
+
+      {최근만.length > 0 && (
+        <FlexBox flexDirection="column" gap={8}>
+          <Typography weight="bold" sx={{ fontSize: 크기.보조, color: 색.흐린글 }}>
+            최근에 잡은 것
+          </Typography>
+          <FlexBox flexWrap="wrap" gap={9}>
+            {최근만.map((n) => (
+              <지름길칸
+                key={n}
+                이름={n}
+                즐겨짐={false}
+                고름={어종고름}
+                즐겨토글={즐겨토글}
+              />
+            ))}
+          </FlexBox>
+        </FlexBox>
+      )}
+
+      {즐겨알림 && (
+        <Typography sx={{ fontSize: 크기.보조, color: 색.주의, lineHeight: 1.6 }}>
+          {즐겨알림}
+        </Typography>
+      )}
+
       <FlexBox flexDirection="column" gap={4}>
         <Typography weight="bold" sx={{ fontSize: 크기.보조, color: 색.흐린글 }}>
           {달}월에 많이 잡히는 것
@@ -290,6 +535,7 @@ function 어종고르기({ 상단목록, 검색, 검색바꾸기, 검색결과, 
               minHeight: 78,
               padding: '14px 8px',
               borderRadius: 크기.버튼둥글기,
+              position: 'relative',
             }}
           >
             {/* 이름과 꼬리표를 세로로 쌓는다 — 버튼이 안쪽 내용을 가로로 붙이기 때문에
@@ -303,7 +549,10 @@ function 어종고르기({ 상단목록, 검색, 검색바꾸기, 검색결과, 
                 width: '100%',
               }}
             >
-              <span style={{ fontSize: 22, fontWeight: 700, color: 색.글 }}>{s.이름}</span>
+              <span style={{ fontSize: 22, fontWeight: 700, color: 색.글 }}>
+                {어종그림(s.이름) ? `${어종그림(s.이름)} ` : ''}
+                {s.이름}
+              </span>
               {s.금어기중 ? (
                 <span style={{ fontSize: 12, fontWeight: 600, color: 색.안됨 }}>
                   지금 금어기일 수 있어요
@@ -312,75 +561,17 @@ function 어종고르기({ 상단목록, 검색, 검색바꾸기, 검색결과, 
                 <span style={{ fontSize: 12, fontWeight: 600, color: 색.됨 }}>제철</span>
               ) : null}
             </span>
+            <별표
+              켜짐={(즐겨 || []).indexOf(s.이름) !== -1}
+              누름={() => 즐겨토글(s.이름)}
+            />
           </Button>
         ))}
       </div>
-
-      {/* 돋보기 — 그림 파일이 아니라 코드로 그린다(외부 요청 0건).
-          글자 크기를 키워도 같이 커지도록 currentColor·em 을 쓴다 */}
-      <div style={{ position: 'relative' }}>
-        <span
-          style={{
-            position: 'absolute',
-            left: 15,
-            top: '50%',
-            transform: 'translateY(-50%)',
-            color: 색.아주흐린글,
-            lineHeight: 0,
-            pointerEvents: 'none',
-          }}
-        >
-          <svg width="19" height="19" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-            <circle cx="8.6" cy="8.6" r="5.6" stroke="currentColor" strokeWidth="1.8" />
-            <line x1="12.9" y1="12.9" x2="17.4" y2="17.4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-          </svg>
-        </span>
-        <TextField
-          value={검색}
-          onChange={(e) => 검색바꾸기(e.target.value)}
-          placeholder="다른 어종 찾기"
-          height={54}
-          sx={{ fontSize: 크기.본문, '& input': { paddingLeft: '40px' } }}
-        />
-      </div>
-
-      {검색.trim() && 검색결과.length === 0 && (
-        <FlexBox flexDirection="column" gap={10}>
-          <Typography sx={{ fontSize: 크기.보조, color: 색.흐린글, lineHeight: 1.6 }}>
-            그런 이름은 기준표에 없어요. 그대로 두고 아래에서 그냥 물어보셔도 됩니다.
-          </Typography>
-          <Button
-            variant="outlined"
-            color="assistive"
-            size="large"
-            fullWidth
-            onClick={() => 어종고름(검색.trim())}
-            sx={버튼모양}
-          >
-            그래도 물어보기
-          </Button>
-        </FlexBox>
-      )}
-
-      {검색결과.length > 0 && (
-        <FlexBox flexWrap="wrap" gap={9}>
-          {검색결과.map((s) => (
-            <Chip
-              key={s.이름}
-              size="large"
-              variant="outlined"
-              onClick={() => 어종고름(s.이름)}
-              sx={{ fontSize: 크기.본문, height: 48, borderRadius: 12 }}
-            >
-              {s.이름}
-              {s.별칭.length ? ` (${s.별칭.join(', ')})` : ''}
-            </Chip>
-          ))}
-        </FlexBox>
-      )}
     </Card>
   );
 }
+
 
 /* ---------- 2. 길이 재기 ---------- */
 function 길이재기({ 결과, 길이, 길이바꾸기, 판정하기, 처음부터 }) {
@@ -686,32 +877,10 @@ function 결과보기({ 결과, 어종, 길이, 짜, 처음부터, 다시재기,
       >
         사진 찍어 도장 남기기
       </Button>
-      <Button
-        variant="outlined"
-        color="assistive"
-        size="large"
-        fullWidth
-        onClick={처음부터}
-        sx={{ ...버튼모양, fontSize: 크기.본문, fontWeight: 500 }}
-      >
-        다른 물고기 보기
-      </Button>
-
-      {/* 크기 제한이 없는 어종은 길이를 묻지 않는다 — 물어볼 이유가 없다.
-          그래도 기록에 남기고 싶을 수 있으니 「원하면 넣기」로 열어둔다.
-          판정 결과는 길이를 넣어도 바뀌지 않는다(기준이 없으니까). */}
-      {r.단계 === 1 && !r.기준 && (길이 === '' || 길이 == null) && (
-        <Button
-          variant="outlined"
-          color="assistive"
-          size="large"
-          fullWidth
-          onClick={길이넣기}
-          sx={{ ...버튼모양, fontSize: 크기.본문, fontWeight: 500 }}
-        >
-          길이도 기록해둘까요
-        </Button>
-      )}
+      {/* 🔴 2026-08-06 폰 점검 — 버튼 순서를 바꿨다.
+          「다른 물고기 보기」가 가운데 있어서 **이 물고기에서 더 할 일**과
+          **다음 물고기로 넘어가기**가 섞여 있었다.
+          이제 이 물고기에서 할 일을 먼저 다 두고, 넘어가기를 맨 끝에 둔다. */}
 
       {r.단계 === 2 && r.기준 && (
         <Button
@@ -725,6 +894,34 @@ function 결과보기({ 결과, 어종, 길이, 짜, 처음부터, 다시재기,
           길이 다시 재기
         </Button>
       )}
+
+      {/* 크기 제한이 없는 어종은 길이를 묻지 않는다 — 물어볼 이유가 없다.
+          그래도 기록에 남기고 싶을 수 있으니 「원하면 넣기」로 열어둔다.
+          판정 결과는 길이를 넣어도 바뀌지 않는다(기준이 없으니까).
+          물음표를 붙였다 — 묻는 말인데 마침표도 물음표도 없어 명령처럼 읽혔다 */}
+      {r.단계 === 1 && !r.기준 && (길이 === '' || 길이 == null) && (
+        <Button
+          variant="outlined"
+          color="assistive"
+          size="large"
+          fullWidth
+          onClick={길이넣기}
+          sx={{ ...버튼모양, fontSize: 크기.본문, fontWeight: 500 }}
+        >
+          길이도 기록해둘까요?
+        </Button>
+      )}
+
+      <Button
+        variant="outlined"
+        color="assistive"
+        size="large"
+        fullWidth
+        onClick={처음부터}
+        sx={{ ...버튼모양, fontSize: 크기.본문, fontWeight: 500 }}
+      >
+        다른 물고기 보기
+      </Button>
     </>
   );
 }

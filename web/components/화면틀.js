@@ -47,13 +47,32 @@ export default function 화면틀({
           padding: `calc(env(safe-area-inset-top) + ${크기.여백}px) ${크기.여백}px ${크기.여백}px`,
         }}
       >
-        {홈으로 ? (
-          <Link href="/" style={{ textDecoration: 'none', alignSelf: 'flex-start' }}>
-            <Typography sx={{ fontSize: 크기.홈, color: 색.흐린글, padding: '2px 0' }}>
-              ‹ 홈
-            </Typography>
-          </Link>
-        ) : null}
+        {/* 머리 한 줄 — 왼쪽 「‹ 홈」, 오른쪽 「다음 한 걸음」.
+            2026-08-06 폰 점검: 왼쪽 위가 비어 보이고, 다음으로 가려면 화면을 끝까지
+            내려야 했다. 발에 있는 것과 **같은 곳으로 가는 같은 링크**를 하나 더 둔 것이라
+            「어디로 갈지 고르게 되는」 문제(위 주석)는 생기지 않는다. */}
+        {(홈으로 || 다음) && (
+          <FlexBox justifyContent="space-between" alignItems="center" sx={{ width: '100%' }}>
+            {홈으로 ? (
+              <Link href="/" style={{ textDecoration: 'none' }}>
+                <Typography sx={{ fontSize: 크기.홈, color: 색.흐린글, padding: '2px 0' }}>
+                  ‹ 홈
+                </Typography>
+              </Link>
+            ) : (
+              <span />
+            )}
+            {다음 ? (
+              <Link href={다음.주소} style={{ textDecoration: 'none' }}>
+                <Typography sx={{ fontSize: 크기.홈, color: 색.흐린글, padding: '2px 0' }}>
+                  {다음.이름} ›
+                </Typography>
+              </Link>
+            ) : (
+              <span />
+            )}
+          </FlexBox>
+        )}
         <Typography sx={{ fontSize: 크기.보조, color: 색.흐린글 }}>
           {날짜 ? 날짜말(날짜) : ' '}
         </Typography>
