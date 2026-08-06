@@ -19,8 +19,8 @@ import 화면틀 from './화면틀';
 import { 넘김키, 제안길이키 } from './도장찍기';
 
 const 버튼모양 = {
-  height: 크기.버튼높이,
-  fontSize: 크기.버튼글씨,
+  height: 크기.판정버튼높이,
+  fontSize: 크기.판정버튼글씨,
   fontWeight: 700,
   borderRadius: 크기.버튼둥글기,
 };
@@ -304,7 +304,7 @@ function 바깥링크({ 주소, 이름 }) {
       style={{
         textDecoration: 'underline',
         textUnderlineOffset: 3,
-        fontSize: 13.5,
+        fontSize: 크기.판정바깥링크,
         color: 색.흐린글,
         display: 'inline-block',
         padding: '4px 0',
@@ -358,7 +358,7 @@ function 어종칸({ 이름, 제철, 금어기중, 즐겨짐, 고름, 즐겨토�
           <어종그림 이름={이름} 크기={20} />
           <span
             style={{
-              fontSize: 16,
+              fontSize: 크기.판정어종이름,
               fontWeight: 700,
               color: 색.글,
               lineHeight: 1.2,
@@ -370,11 +370,11 @@ function 어종칸({ 이름, 제철, 금어기중, 즐겨짐, 고름, 즐겨토�
             {이름}
           </span>
           {금어기중 ? (
-            <span style={{ fontSize: 11, fontWeight: 700, color: 색.안됨, lineHeight: 1.2 }}>
+            <span style={{ fontSize: 크기.판정꼬리표, fontWeight: 700, color: 색.안됨, lineHeight: 1.2 }}>
               금어기?
             </span>
           ) : 제철 ? (
-            <span style={{ fontSize: 11, fontWeight: 700, color: 색.됨, lineHeight: 1.2 }}>
+            <span style={{ fontSize: 크기.판정꼬리표, fontWeight: 700, color: 색.됨, lineHeight: 1.2 }}>
               제철
             </span>
           ) : null}
@@ -400,7 +400,7 @@ function 어종칸({ 이름, 제철, 금어기중, 즐겨짐, 고름, 즐겨토�
           padding: '5px 6px 0 0',
           width: 34,
           height: 30,
-          fontSize: 16,
+          fontSize: 크기.판정별표,
           lineHeight: 1,
           cursor: 'pointer',
           color: 즐겨짐 ? 'var(--semantic-status-cautionary)' : 색.아주흐린글,
@@ -417,7 +417,7 @@ function 어종줄({ 제목, 목록, 즐겨, 고름, 즐겨토글 }) {
   if (!목록 || 목록.length === 0) return null;
   return (
     <FlexBox flexDirection="column" gap={8}>
-      <Typography weight="bold" sx={{ fontSize: 크기.보조, color: 색.흐린글 }}>
+      <Typography weight="bold" sx={{ fontSize: 크기.판정보조, color: 색.흐린글 }}>
         {제목}
       </Typography>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
@@ -483,7 +483,7 @@ function 어종고르기({ 상단목록, 검색, 검색바꾸기, 검색결과, 
           placeholder="어종 찾기"
           height={54}
           sx={{
-            fontSize: 크기.본문,
+            fontSize: 크기.판정본문,
             '& input': { paddingLeft: '40px' },
             '& .MuiInputBase-input': { paddingLeft: '40px' },
           }}
@@ -492,7 +492,7 @@ function 어종고르기({ 상단목록, 검색, 검색바꾸기, 검색결과, 
 
       {검색.trim() && 검색결과.length === 0 && (
         <FlexBox flexDirection="column" gap={10}>
-          <Typography sx={{ fontSize: 크기.보조, color: 색.흐린글, lineHeight: 1.6 }}>
+          <Typography sx={{ fontSize: 크기.판정보조, color: 색.흐린글, lineHeight: 1.6 }}>
             그런 이름은 기준표에 없어요. 그대로 두고 아래에서 그냥 물어보셔도 됩니다.
           </Typography>
           <Button
@@ -537,16 +537,16 @@ function 어종고르기({ 상단목록, 검색, 검색바꾸기, 검색결과, 
       />
 
       {즐겨알림 && (
-        <Typography sx={{ fontSize: 크기.보조, color: 색.주의, lineHeight: 1.6 }}>
+        <Typography sx={{ fontSize: 크기.판정보조, color: 색.주의, lineHeight: 1.6 }}>
           {즐겨알림}
         </Typography>
       )}
 
       <FlexBox flexDirection="column" gap={4}>
-        <Typography weight="bold" sx={{ fontSize: 크기.보조, color: 색.흐린글 }}>
+        <Typography weight="bold" sx={{ fontSize: 크기.판정보조, color: 색.흐린글 }}>
           {달}월에 많이 잡히는 것
         </Typography>
-        <Typography sx={{ fontSize: 크기.작게, color: 색.아주흐린글, lineHeight: 1.65 }}>
+        <Typography sx={{ fontSize: 크기.판정작게, color: 색.아주흐린글, lineHeight: 1.65 }}>
           {제철들.length > 0 && (
             <>
               지금 제철은 <b style={{ color: 색.됨 }}>{제철들.join(' · ')}</b>
@@ -576,7 +576,7 @@ function 어종고르기({ 상단목록, 검색, 검색바꾸기, 검색결과, 
         ))}
       </div>
 
-      <Typography sx={{ fontSize: 크기.작게, color: 색.아주흐린글, lineHeight: 1.6 }}>
+      <Typography sx={{ fontSize: 크기.판정작게, color: 색.아주흐린글, lineHeight: 1.6 }}>
         오른쪽 위 ☆를 누르면 「자주 잡는 것」에 올라가요
       </Typography>
     </Card>
@@ -608,7 +608,7 @@ function 길이재기({ 결과, 길이, 길이바꾸기, 판정하기, 처음부
           padding: '14px 16px',
         }}
       >
-        <Typography sx={{ fontSize: 크기.보조, color: 색.흐린글, lineHeight: 1.6 }}>
+        <Typography sx={{ fontSize: 크기.판정보조, color: 색.흐린글, lineHeight: 1.6 }}>
           <b style={{ color: 색.글 }}>{기준.기준 || '길이'}</b> — {안내}
           {그림?.주의 && (
             <>
@@ -630,7 +630,7 @@ function 길이재기({ 결과, 길이, 길이바꾸기, 판정하기, 처음부
         <Typography
           weight="bold"
           sx={{
-            fontSize: 58,
+            fontSize: 크기.판정길이숫자,
             lineHeight: 1.1,
             letterSpacing: '-0.03em',
             color: 길이 ? 색.글 : 색.아주흐린글,
@@ -638,7 +638,7 @@ function 길이재기({ 결과, 길이, 길이바꾸기, 판정하기, 처음부
         >
           {길이 || '0'}
         </Typography>
-        <Typography weight="bold" sx={{ fontSize: 22, color: 색.흐린글 }}>
+        <Typography weight="bold" sx={{ fontSize: 크기.판정길이단위, color: 색.흐린글 }}>
           {단위}
         </Typography>
       </FlexBox>
@@ -655,7 +655,7 @@ function 길이재기({ 결과, 길이, 길이바꾸기, 판정하기, 처음부
             sx={{
               height: 64,
               borderRadius: 13,
-              fontSize: k === 'del' ? 16 : 크기.숫자판,
+              fontSize: k === 'del' ? 16 : 크기.판정숫자판,
               fontWeight: 700,
               color: k === 'del' || k === '.' ? 색.흐린글 : 색.글,
             }}
@@ -682,7 +682,7 @@ function 길이재기({ 결과, 길이, 길이바꾸기, 판정하기, 처음부
         size="large"
         fullWidth
         onClick={처음부터}
-        sx={{ ...버튼모양, fontSize: 크기.본문, fontWeight: 500, color: 색.흐린글 }}
+        sx={{ ...버튼모양, fontSize: 크기.판정본문, fontWeight: 500, color: 색.흐린글 }}
       >
         어종 다시 고르기
       </Button>
@@ -701,7 +701,7 @@ function 지역고르기({ 결과, 목록, 고름, 처음부터 }) {
           padding: '14px 16px',
         }}
       >
-        <Typography sx={{ fontSize: 크기.보조, color: 색.흐린글, lineHeight: 1.6 }}>
+        <Typography sx={{ fontSize: 크기.판정보조, color: 색.흐린글, lineHeight: 1.6 }}>
           {결과?.이유}. 잡은 곳을 골라주시면 그 지역 기준으로 봅니다
         </Typography>
       </FlexBox>
@@ -715,7 +715,7 @@ function 지역고르기({ 결과, 목록, 고름, 처음부터 }) {
             size="large"
             fullWidth
             onClick={() => 고름(L)}
-            sx={{ height: 58, borderRadius: 12, fontSize: 크기.본문, fontWeight: 600 }}
+            sx={{ height: 58, borderRadius: 12, fontSize: 크기.판정본문, fontWeight: 600 }}
           >
             {L}
           </Button>
@@ -728,7 +728,7 @@ function 지역고르기({ 결과, 목록, 고름, 처음부터 }) {
         size="large"
         fullWidth
         onClick={처음부터}
-        sx={{ ...버튼모양, fontSize: 크기.본문, fontWeight: 500, color: 색.흐린글 }}
+        sx={{ ...버튼모양, fontSize: 크기.판정본문, fontWeight: 500, color: 색.흐린글 }}
       >
         처음부터
       </Button>
@@ -753,26 +753,26 @@ function 결과보기({ 결과, 어종, 길이, 짜, 처음부터, 다시재기,
               padding: '6px 14px',
             }}
           >
-            <Typography weight="bold" sx={{ fontSize: 13, color: 색.흰 }}>
+            <Typography weight="bold" sx={{ fontSize: 크기.판정금어기배지, color: 색.흰 }}>
               지금은 금어기
             </Typography>
           </FlexBox>
         )}
 
         {r.칭찬 && (
-          <Typography weight="bold" sx={{ fontSize: 20, color: 색.됨 }}>
+          <Typography weight="bold" sx={{ fontSize: 크기.판정칭찬, color: 색.됨 }}>
             {r.칭찬}
           </Typography>
         )}
 
         <Typography
           weight="bold"
-          sx={{ fontSize: 크기.결과글씨, lineHeight: 1.25, letterSpacing: '-0.025em', color: 색깔 }}
+          sx={{ fontSize: 크기.판정결과, lineHeight: 1.25, letterSpacing: '-0.025em', color: 색깔 }}
         >
           {r.결과}
         </Typography>
 
-        <Typography sx={{ fontSize: 크기.본문, color: 색.흐린글, lineHeight: 1.65 }}>
+        <Typography sx={{ fontSize: 크기.판정본문, color: 색.흐린글, lineHeight: 1.65 }}>
           {r.이유}
         </Typography>
 
@@ -784,7 +784,7 @@ function 결과보기({ 결과, 어종, 길이, 짜, 처음부터, 다시재기,
               padding: '13px 15px',
             }}
           >
-            <Typography sx={{ fontSize: 크기.보조, color: 색.흐린글 }}>
+            <Typography sx={{ fontSize: 크기.판정보조, color: 색.흐린글 }}>
               “{물고기말[r.단계]}”
             </Typography>
           </FlexBox>
@@ -793,7 +793,7 @@ function 결과보기({ 결과, 어종, 길이, 짜, 처음부터, 다시재기,
         {r.주의?.length > 0 && (
           <FlexBox flexDirection="column" gap={5}>
             {r.주의.map((m, i) => (
-              <Typography key={i} sx={{ fontSize: 크기.보조, color: 색.주의, lineHeight: 1.6 }}>
+              <Typography key={i} sx={{ fontSize: 크기.판정보조, color: 색.주의, lineHeight: 1.6 }}>
                 · {m}
               </Typography>
             ))}
@@ -811,7 +811,7 @@ function 결과보기({ 결과, 어종, 길이, 짜, 처음부터, 다시재기,
               padding: '13px 15px',
             }}
           >
-            <Typography weight="bold" sx={{ fontSize: 크기.보조, color: 색.안됨, lineHeight: 1.6 }}>
+            <Typography weight="bold" sx={{ fontSize: 크기.판정보조, color: 색.안됨, lineHeight: 1.6 }}>
               어기면 {r.근거.위반시} (과태료 아님)
               <br />
               수산자원관리법 제65조제2호
@@ -820,7 +820,7 @@ function 결과보기({ 결과, 어종, 길이, 짜, 처음부터, 다시재기,
         )}
 
         <div style={{ borderTop: `1px solid ${색.선}`, paddingTop: 13, marginTop: 4 }}>
-          <Typography sx={{ fontSize: 크기.작게, color: 색.아주흐린글, lineHeight: 1.7 }}>
+          <Typography sx={{ fontSize: 크기.판정작게, color: 색.아주흐린글, lineHeight: 1.7 }}>
             {r.근거?.법령} · {r.근거?.기준일} 기준
             <br />이 판정은 참고 정보예요. 최종 책임은 잡은 사람에게 있어요.
           </Typography>
@@ -836,7 +836,7 @@ function 결과보기({ 결과, 어종, 길이, 짜, 처음부터, 다시재기,
             {/* 「인터넷이 있을 때만 열립니다」를 뺐다 — 밑줄 친 글은 누르면 링크로 간다는 걸
                 누구나 안다. 링크면 인터넷이 필요한 것도 안다. 과한 친절은 글만 늘린다
                 (2026-08-06 지적 반영) */}
-            <Typography sx={{ fontSize: 크기.작게, color: 색.흐린글, lineHeight: 1.7 }}>
+            <Typography sx={{ fontSize: 크기.판정작게, color: 색.흐린글, lineHeight: 1.7 }}>
               생김새가 헷갈리면 공식 자료와 견줘보세요.
             </Typography>
             <FlexBox flexWrap="wrap" gap={14}>
@@ -916,7 +916,7 @@ function 결과보기({ 결과, 어종, 길이, 짜, 처음부터, 다시재기,
           size="large"
           fullWidth
           onClick={길이넣기}
-          sx={{ ...버튼모양, fontSize: 크기.본문, fontWeight: 500 }}
+          sx={{ ...버튼모양, fontSize: 크기.판정본문, fontWeight: 500 }}
         >
           길이도 기록해둘까요?
         </Button>
@@ -928,7 +928,7 @@ function 결과보기({ 결과, 어종, 길이, 짜, 처음부터, 다시재기,
         size="large"
         fullWidth
         onClick={처음부터}
-        sx={{ ...버튼모양, fontSize: 크기.본문, fontWeight: 500 }}
+        sx={{ ...버튼모양, fontSize: 크기.판정본문, fontWeight: 500 }}
       >
         다른 물고기 보기
       </Button>

@@ -60,7 +60,7 @@ export default function 화면틀({
           <FlexBox justifyContent="space-between" alignItems="center" sx={{ width: '100%' }}>
             {홈으로 ? (
               <Link href="/" style={{ textDecoration: 'none' }}>
-                <Typography sx={{ fontSize: 크기.홈, color: 색.흐린글, padding: '2px 0' }}>
+                <Typography sx={{ fontSize: 크기.머리홈, color: 색.흐린글, padding: '2px 0' }}>
                   ‹ 홈
                 </Typography>
               </Link>
@@ -69,7 +69,7 @@ export default function 화면틀({
             )}
             {다음 ? (
               <Link href={다음.주소} style={{ textDecoration: 'none' }}>
-                <Typography sx={{ fontSize: 크기.홈, color: 색.흐린글, padding: '2px 0' }}>
+                <Typography sx={{ fontSize: 크기.머리다음, color: 색.흐린글, padding: '2px 0' }}>
                   {다음.이름} ›
                 </Typography>
               </Link>
@@ -78,22 +78,22 @@ export default function 화면틀({
             )}
           </FlexBox>
         )}
-        <Typography sx={{ fontSize: 크기.보조, color: 색.흐린글 }}>
+        <Typography sx={{ fontSize: 크기.머리날짜, color: 색.흐린글 }}>
           {날짜 ? 날짜말(날짜) : ' '}
         </Typography>
-        <Typography weight="bold" sx={{ fontSize: 크기.큰제목, letterSpacing: '-0.01em' }}>
+        <Typography weight="bold" sx={{ fontSize: 크기.머리제목, letterSpacing: '-0.01em' }}>
           {제목}
         </Typography>
 
         {큰숫자 != null ? (
           <FlexBox alignItems="baseline" gap={8} sx={{ marginTop: 8 }}>
-            <Typography weight="bold" sx={{ fontSize: 46, lineHeight: 1, color: 색.주 }}>
+            <Typography weight="bold" sx={{ fontSize: 크기.머리큰숫자, lineHeight: 1, color: 색.주 }}>
               {큰숫자}
             </Typography>
-            <Typography sx={{ fontSize: 크기.본문, color: 색.흐린글 }}>{큰숫자말}</Typography>
+            <Typography sx={{ fontSize: 크기.머리큰숫자말, color: 색.흐린글 }}>{큰숫자말}</Typography>
           </FlexBox>
         ) : 안내 ? (
-          <Typography sx={{ fontSize: 크기.보조, color: 색.흐린글, marginTop: 6 }}>{안내}</Typography>
+          <Typography sx={{ fontSize: 크기.머리안내, color: 색.흐린글, marginTop: 6 }}>{안내}</Typography>
         ) : null}
       </FlexBox>
 
@@ -114,14 +114,14 @@ export default function 화면틀({
         sx={{ padding: `16px 20px calc(env(safe-area-inset-bottom) + 16px)` }}
       >
         {바닥글 && (
-          <Typography align="center" sx={{ fontSize: 크기.작게, color: 색.아주흐린글 }}>
+          <Typography align="center" sx={{ fontSize: 크기.바닥글, color: 색.아주흐린글 }}>
             {바닥글}
           </Typography>
         )}
         {/* 다음 한 걸음 하나만. 여러 개를 늘어놓지 않는다 */}
         {다음 && (
           <Link href={다음.주소} style={{ textDecoration: 'none' }}>
-            <Typography sx={{ fontSize: 크기.보조, color: 색.흐린글 }}>{다음.이름} ›</Typography>
+            <Typography sx={{ fontSize: 크기.바닥다음, color: 색.흐린글 }}>{다음.이름} ›</Typography>
           </Link>
         )}
       </FlexBox>

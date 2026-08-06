@@ -25,8 +25,8 @@ import 화면틀 from './화면틀';
 const 데이터색 = { 가져감: '#2a78d6', 놓아줌: '#1baf7a' };
 
 const 버튼모양 = {
-  height: 크기.버튼높이,
-  fontSize: 크기.버튼글씨,
+  height: 크기.기록버튼높이,
+  fontSize: 크기.기록버튼글씨,
   fontWeight: 700,
   borderRadius: 크기.버튼둥글기,
 };
@@ -38,7 +38,7 @@ function 작은버튼(바탕, 글자, 굵게, 테없이) {
     height: 44,
     borderRadius: 11,
     fontFamily: 'inherit',
-    fontSize: 15,
+    fontSize: 크기.기록칸제목,
     fontWeight: 굵게 ? 700 : 500,
     cursor: 'pointer',
     background: 바탕,
@@ -58,7 +58,7 @@ function 칩({ 켜짐, 누름, children }) {
         padding: '9px 4px',
         borderRadius: 10,
         fontFamily: 'inherit',
-        fontSize: 13,
+        fontSize: 크기.기록칸보조,
         fontWeight: 켜짐 ? 700 : 500,
         cursor: 'pointer',
         border: `1px solid ${켜짐 ? 'transparent' : 색.선}`,
@@ -328,7 +328,7 @@ export default function 기록화면() {
               textAlign: 'center',
             }}
           >
-            <Typography sx={{ fontSize: 크기.본문, color: 색.아주흐린글, lineHeight: 1.75 }}>
+            <Typography sx={{ fontSize: 크기.기록본문, color: 색.아주흐린글, lineHeight: 1.75 }}>
               아직 판정한 물고기가 없습니다.
               <br />
               「이거 가져가도 되나요」에서 한 마리 확인하면 여기 쌓입니다.
@@ -368,7 +368,7 @@ export default function 기록화면() {
 
           {/* 목록 */}
           <Card sx={카드모양}>
-            <Typography weight="bold" sx={{ fontSize: 크기.보조, color: 색.흐린글 }}>
+            <Typography weight="bold" sx={{ fontSize: 크기.기록보조, color: 색.흐린글 }}>
               기록
             </Typography>
 
@@ -405,7 +405,7 @@ export default function 기록화면() {
                     sx={{ padding: '13px 0', borderBottom: `1px solid ${색.선}` }}
                   >
                     <FlexBox flexDirection="column" gap={3} sx={{ flex: 1, minWidth: 0 }}>
-                      <Typography sx={{ fontSize: 크기.본문 }}>
+                      <Typography sx={{ fontSize: 크기.기록본문 }}>
                         <b>{c.어종}</b>
                         {typeof c.길이 === 'number' && c.길이 > 0
                           ? ` ${c.길이}${c.단위 || 'cm'}`
@@ -422,7 +422,7 @@ export default function 기록화면() {
                           <span
                             style={{
                               marginLeft: 7,
-                              fontSize: 11,
+                              fontSize: 크기.기록꼬리표,
                               fontWeight: 700,
                               color: 색.주,
                               border: `1px solid ${색.주}`,
@@ -438,12 +438,12 @@ export default function 기록화면() {
 
                       {/* 기준과 얼마나 떨어졌나 — 이게 이 앱만 아는 정보다 */}
                       {곁정보(c).기준말 && (
-                        <Typography sx={{ fontSize: 12.5, color: 색.흐린글 }}>
+                        <Typography sx={{ fontSize: 크기.기록잔글씨, color: 색.흐린글 }}>
                           {곁정보(c).기준말}
                         </Typography>
                       )}
 
-                      <Typography sx={{ fontSize: 12.5, color: 색.아주흐린글 }}>
+                      <Typography sx={{ fontSize: 크기.기록잔글씨, color: 색.아주흐린글 }}>
                         {시각말(c.시각)}
                         {곁정보(c).물때 ? ` · ${곁정보(c).물때}` : ''}
                         {c.지역 ? ` · ${c.지역}` : ''}
@@ -454,7 +454,7 @@ export default function 기록화면() {
                     <span
                       style={{
                         flexShrink: 0,
-                        fontSize: 12,
+                        fontSize: 크기.기록아주잔글씨,
                         fontWeight: 700,
                         padding: '4px 10px',
                         borderRadius: 999,
@@ -473,7 +473,7 @@ export default function 기록화면() {
                         border: 0,
                         background: 'transparent',
                         color: 색.아주흐린글,
-                        fontSize: 13,
+                        fontSize: 크기.기록칸값,
                         padding: '4px 2px',
                         cursor: 'pointer',
                         fontFamily: 'inherit',
@@ -487,12 +487,12 @@ export default function 기록화면() {
             </div>
             )}
             {순서 !== '많이' && 본것.length > 60 && (
-              <Typography sx={{ fontSize: 크기.작게, color: 색.아주흐린글, lineHeight: 1.7 }}>
+              <Typography sx={{ fontSize: 크기.기록작게, color: 색.아주흐린글, lineHeight: 1.7 }}>
                 아래 {본것.length - 60}건은 화면에만 안 보이고 그대로 남아 있습니다
               </Typography>
             )}
             {본것.length === 0 && (
-              <Typography sx={{ fontSize: 크기.보조, color: 색.아주흐린글, lineHeight: 1.7 }}>
+              <Typography sx={{ fontSize: 크기.기록보조, color: 색.아주흐린글, lineHeight: 1.7 }}>
                 이 기간에는 기록이 없어요. 위에서 기간을 넓혀보세요.
               </Typography>
             )}
@@ -500,10 +500,10 @@ export default function 기록화면() {
 
           {/* 내보내기 */}
           <Card sx={카드모양}>
-            <Typography weight="bold" sx={{ fontSize: 크기.보조, color: 색.흐린글 }}>
+            <Typography weight="bold" sx={{ fontSize: 크기.기록보조, color: 색.흐린글 }}>
               내보내기
             </Typography>
-            <Typography sx={{ fontSize: 크기.작게, color: 색.아주흐린글, lineHeight: 1.7 }}>
+            <Typography sx={{ fontSize: 크기.기록작게, color: 색.아주흐린글, lineHeight: 1.7 }}>
               표 계산 프로그램에서 열 수 있는 형태로 저장합니다.{' '}
               <b style={{ color: 색.흐린글 }}>
                 이 앱은 아무것도 서버로 보내지 않으니, 옮기려면 직접 내보내야 합니다.
@@ -547,7 +547,7 @@ export default function 기록화면() {
             )}
           </Card>
 
-          <Typography sx={{ fontSize: 크기.작게, color: 색.아주흐린글, lineHeight: 1.75, padding: '0 4px' }}>
+          <Typography sx={{ fontSize: 크기.기록작게, color: 색.아주흐린글, lineHeight: 1.75, padding: '0 4px' }}>
             여기 쌓이는 <b style={{ color: 색.흐린글 }}>길이</b>와{' '}
             <b style={{ color: 색.흐린글 }}>놓아준 기록</b>은 국가 통계에 없는 것입니다. 나라는
             낚시어선이 가져온 마릿수와 무게만 셉니다.
@@ -572,7 +572,7 @@ export default function 기록화면() {
             zIndex: 10,
           }}
         >
-          <Typography sx={{ fontSize: 14.5, color: 색.반전글 }}>한 건 지웠습니다</Typography>
+          <Typography sx={{ fontSize: 크기.기록알림, color: 색.반전글 }}>한 건 지웠습니다</Typography>
           <button
             onClick={되돌리기}
             style={{
@@ -580,7 +580,7 @@ export default function 기록화면() {
               background: 'transparent',
               color: 색.반전주,
               fontWeight: 700,
-              fontSize: 14.5,
+              fontSize: 크기.기록알림,
               cursor: 'pointer',
               fontFamily: 'inherit',
             }}
@@ -596,7 +596,7 @@ export default function 기록화면() {
 function 숫자칸({ 값, 이름, 점 }) {
   return (
     <div style={{ textAlign: 'center' }}>
-      <div style={{ fontSize: 28, fontWeight: 800, letterSpacing: '-.02em', color: 색.글 }}>
+      <div style={{ fontSize: 크기.기록큰숫자, fontWeight: 800, letterSpacing: '-.02em', color: 색.글 }}>
         {점 && (
           <i
             style={{
@@ -612,14 +612,14 @@ function 숫자칸({ 값, 이름, 점 }) {
         )}
         {값}
       </div>
-      <div style={{ fontSize: 12.5, color: 색.아주흐린글, marginTop: 4 }}>{이름}</div>
+      <div style={{ fontSize: 크기.기록잔글씨, color: 색.아주흐린글, marginTop: 4 }}>{이름}</div>
     </div>
   );
 }
 
 function 범례({ 색깔, 이름 }) {
   return (
-    <span style={{ fontSize: 13, color: 색.흐린글 }}>
+    <span style={{ fontSize: 크기.기록칸값, color: 색.흐린글 }}>
       <i
         style={{
           display: 'inline-block',
@@ -657,10 +657,10 @@ function 어종별막대({ 목록 }) {
       {종목록.map((s) => (
         <div key={s.이름} style={{ marginBottom: 15 }}>
           <FlexBox justifyContent="space-between" alignItems="baseline" sx={{ marginBottom: 6 }}>
-            <Typography weight="bold" sx={{ fontSize: 15 }}>
+            <Typography weight="bold" sx={{ fontSize: 크기.기록종제목 }}>
               {s.이름} {s.합}마리
             </Typography>
-            <Typography sx={{ fontSize: 12.5, color: 색.아주흐린글 }}>
+            <Typography sx={{ fontSize: 크기.기록잔글씨, color: 색.아주흐린글 }}>
               {s.길이.length ? `최고 ${Math.max(...s.길이)}${s.단위 || 'cm'}` : '길이 기록 없음'}
             </Typography>
           </FlexBox>
@@ -683,7 +683,7 @@ function 막대({ 몫, 색깔, 처음, 끝 }) {
         height: '100%',
         background: 색깔,
         color: '#fff',
-        fontSize: 11,
+        fontSize: 크기.기록내보내기,
         fontWeight: 700,
         textAlign: 'center',
         lineHeight: '20px',

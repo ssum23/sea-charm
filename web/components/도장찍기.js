@@ -439,10 +439,10 @@ export default function 도장찍기({ 닫기, 판정 }) {
       {/* ── 1. 사진 넣기 ── */}
       {!사진 ? (
         <Card sx={카드}>
-          <Typography weight="bold" sx={{ fontSize: 19 }}>
+          <Typography weight="bold" sx={{ fontSize: 크기.도장제목 }}>
             바다 도장
           </Typography>
-          <Typography sx={{ fontSize: 크기.보조, color: 색.흐린글, lineHeight: 1.7 }}>
+          <Typography sx={{ fontSize: 크기.도장보조, color: 색.흐린글, lineHeight: 1.7 }}>
             물고기를 찍으면 날짜와 장소등 정보를 얹어 한 장으로 만들어 드려요.
             <br />
             <b style={{ color: 색.글 }}>사진은 이 앱에 저장되지 않습니다.</b> 
@@ -471,7 +471,7 @@ export default function 도장찍기({ 닫기, 판정 }) {
             size="large"
             fullWidth
             onClick={닫기}
-            sx={{ ...버튼, fontSize: 크기.본문, fontWeight: 500, color: 색.흐린글 }}
+            sx={{ ...버튼, fontSize: 크기.도장본문, fontWeight: 500, color: 색.흐린글 }}
           >
             그만두기
           </Button>
@@ -507,7 +507,7 @@ export default function 도장찍기({ 닫기, 판정 }) {
                       padding: '10px 4px',
                       borderRadius: 10,
                       fontFamily: 'inherit',
-                      fontSize: 13.5,
+                      fontSize: 크기.도장설명,
                       fontWeight: 켜짐 ? 700 : 500,
                       cursor: 'pointer',
                       border: `1px solid ${켜짐 ? 'transparent' : 색.선}`,
@@ -520,7 +520,7 @@ export default function 도장찍기({ 닫기, 판정 }) {
                 );
               })}
             </div>
-            <Typography sx={{ fontSize: 크기.작게, color: 색.아주흐린글, lineHeight: 1.6 }}>
+            <Typography sx={{ fontSize: 크기.도장작게, color: 색.아주흐린글, lineHeight: 1.6 }}>
               {종류.find((t) => t.값 === 고른종류)?.설명}
             </Typography>
           </Card>
@@ -528,10 +528,10 @@ export default function 도장찍기({ 닫기, 판정 }) {
           {/* ── 3. 종류별 조작 ── */}
           {고른종류 === 'C' && (
             <Card sx={카드}>
-              <Typography weight="bold" sx={{ fontSize: 크기.보조, color: 색.흐린글 }}>
+              <Typography weight="bold" sx={{ fontSize: 크기.도장보조, color: 색.흐린글 }}>
                 두 점 재기
               </Typography>
-              <Typography sx={{ fontSize: 크기.작게, color: 색.주의, lineHeight: 1.7 }}>
+              <Typography sx={{ fontSize: 크기.도장작게, color: 색.주의, lineHeight: 1.7 }}>
                 기준물과 물고기가 같은 바닥에 놓여 있어야 맞아요.
               </Typography>
 
@@ -550,7 +550,7 @@ export default function 도장찍기({ 닫기, 판정 }) {
                         padding: '10px 6px',
                         borderRadius: 10,
                         fontFamily: 'inherit',
-                        fontSize: 13.5,
+                        fontSize: 크기.도장설명,
                         fontWeight: 켜짐 ? 700 : 500,
                         cursor: 'pointer',
                         border: `1px solid ${켜짐 ? 'transparent' : 색.선}`,
@@ -565,7 +565,7 @@ export default function 도장찍기({ 닫기, 판정 }) {
               </div>
 
               <FlexBox alignItems="center" gap={9}>
-                <Typography sx={{ fontSize: 크기.작게, color: 색.흐린글 }}>직접 넣기</Typography>
+                <Typography sx={{ fontSize: 크기.도장작게, color: 색.흐린글 }}>직접 넣기</Typography>
                 <TextField
                   value={String(기준cm)}
                   inputMode="decimal"
@@ -576,17 +576,17 @@ export default function 도장찍기({ 닫기, 판정 }) {
                   }}
                   sx={{ flex: 1 }}
                 />
-                <Typography sx={{ fontSize: 크기.작게, color: 색.흐린글 }}>cm</Typography>
+                <Typography sx={{ fontSize: 크기.도장작게, color: 색.흐린글 }}>cm</Typography>
               </FlexBox>
 
               <FlexBox flexDirection="column" gap={4}>
-                <Typography sx={{ fontSize: 크기.보조, color: 색.글, lineHeight: 1.7 }}>
+                <Typography sx={{ fontSize: 크기.도장보조, color: 색.글, lineHeight: 1.7 }}>
                   {무엇을찍나 === '기준'
                     ? `① 사진에서 ${기준이름}의 양 끝을 눌러주세요 (${기준점.length}/2)`
                     : `② 물고기의 머리와 꼬리를 눌러주세요 (${물고기점.length}/2)`}
                 </Typography>
                 {어림 != null && (
-                  <Typography weight="bold" sx={{ fontSize: 20 }}>
+                  <Typography weight="bold" sx={{ fontSize: 크기.도장묶음 }}>
                     약 {어림}cm
                   </Typography>
                 )}
@@ -603,7 +603,7 @@ export default function 도장찍기({ 닫기, 판정 }) {
                     물고기점바꾸기([]);
                     무엇을찍나바꾸기('기준');
                   }}
-                  sx={{ ...버튼, height: 46, fontSize: 크기.보조, fontWeight: 500 }}
+                  sx={{ ...버튼, height: 46, fontSize: 크기.도장보조, fontWeight: 500 }}
                 >
                   다시 찍기
                 </Button>
@@ -618,7 +618,7 @@ export default function 도장찍기({ 닫기, 판정 }) {
                       쓰기(제안길이키, 어림);
                       길잡이.push('/catch');
                     }}
-                    sx={{ ...버튼, height: 46, fontSize: 크기.보조, fontWeight: 700 }}
+                    sx={{ ...버튼, height: 46, fontSize: 크기.도장보조, fontWeight: 700 }}
                   >
                     이 길이로 판정해볼까요
                   </Button>
@@ -629,10 +629,10 @@ export default function 도장찍기({ 닫기, 판정 }) {
 
           {고른종류 === 'B' && (
             <Card sx={카드}>
-              <Typography weight="bold" sx={{ fontSize: 크기.보조, color: 색.흐린글 }}>
+              <Typography weight="bold" sx={{ fontSize: 크기.도장보조, color: 색.흐린글 }}>
                 눈금 자국
               </Typography>
-              <Typography sx={{ fontSize: 크기.작게, color: 색.아주흐린글, lineHeight: 1.7 }}>
+              <Typography sx={{ fontSize: 크기.도장작게, color: 색.아주흐린글, lineHeight: 1.7 }}>
                 눈금을 물고기 머리~꼬리에 맞춰주세요. 이 눈금은{' '}
                 <b style={{ color: 색.흐린글 }}>사진에 남기는 표시일 뿐이고 판정에는 쓰지 않습니다.</b>
               </Typography>
@@ -649,10 +649,10 @@ export default function 도장찍기({ 닫기, 판정 }) {
 
           {/* ── 4. 정보 ── */}
           <Card sx={카드}>
-            <Typography weight="bold" sx={{ fontSize: 크기.보조, color: 색.흐린글 }}>
+            <Typography weight="bold" sx={{ fontSize: 크기.도장보조, color: 색.흐린글 }}>
               도장에 넣을 것
             </Typography>
-            <Typography sx={{ fontSize: 크기.작게, color: 색.아주흐린글, lineHeight: 1.7 }}>
+            <Typography sx={{ fontSize: 크기.도장작게, color: 색.아주흐린글, lineHeight: 1.7 }}>
               비워도 도장은 찍힙니다.{' '}
               <b style={{ color: 색.흐린글 }}>상세 주소는 넣지 않습니다 — 포인트는 그 사람 것입니다.</b>
             </Typography>
@@ -669,7 +669,7 @@ export default function 도장찍기({ 닫기, 판정 }) {
                       padding: '8px 12px',
                       borderRadius: 999,
                       fontFamily: 'inherit',
-                      fontSize: 13.5,
+                      fontSize: 크기.도장설명,
                       fontWeight: 켜짐 ? 700 : 500,
                       cursor: 'pointer',
                       border: `1px solid ${켜짐 ? 'transparent' : 색.선}`,
@@ -695,13 +695,13 @@ export default function 도장찍기({ 닫기, 판정 }) {
                 gap={2}
                 sx={{ background: 'var(--semantic-fill-alternative)', borderRadius: 11, padding: '12px 14px' }}
               >
-                <Typography sx={{ fontSize: 크기.작게, color: 색.아주흐린글 }}>판정 결과</Typography>
-                <Typography weight="bold" sx={{ fontSize: 크기.본문 }}>
+                <Typography sx={{ fontSize: 크기.도장작게, color: 색.아주흐린글 }}>판정 결과</Typography>
+                <Typography weight="bold" sx={{ fontSize: 크기.도장본문 }}>
                   {[정보.판정.제목, 정보.판정.짜, 정보.판정.결과].filter(Boolean).join(' · ')}
                 </Typography>
               </FlexBox>
             ) : (
-              <Typography sx={{ fontSize: 크기.작게, color: 색.아주흐린글, lineHeight: 1.7 }}>
+              <Typography sx={{ fontSize: 크기.도장작게, color: 색.아주흐린글, lineHeight: 1.7 }}>
                 판정을 거치지 않고 찍었으니 <b style={{ color: 색.흐린글 }}>판정 칸은 넣지 않습니다.</b>{' '}
                 빈칸을 남기면 「가져가도 됨」으로 읽힐 수 있어서예요.
               </Typography>
@@ -716,7 +716,7 @@ export default function 도장찍기({ 닫기, 판정 }) {
             </Button>
             <Button variant="outlined" color="assistive" size="large" fullWidth
               onClick={() => 파일칸.current?.click()}
-              sx={{ ...버튼, fontSize: 크기.본문, fontWeight: 500 }}>
+              sx={{ ...버튼, fontSize: 크기.도장본문, fontWeight: 500 }}>
               다시 찍기
             </Button>
             <input
@@ -728,7 +728,7 @@ export default function 도장찍기({ 닫기, 판정 }) {
               style={{ display: 'none' }}
             />
             <Button variant="outlined" color="assistive" size="large" fullWidth onClick={닫기}
-              sx={{ ...버튼, fontSize: 크기.본문, fontWeight: 500, color: 색.흐린글, border: 'none' }}>
+              sx={{ ...버튼, fontSize: 크기.도장본문, fontWeight: 500, color: 색.흐린글, border: 'none' }}>
               닫기
             </Button>
           </Card>
@@ -741,7 +741,7 @@ export default function 도장찍기({ 닫기, 판정 }) {
 function 손잡이({ 이름, 값, 최소, 최대, 걸음, 바꾸기 }) {
   return (
     <FlexBox alignItems="center" gap={10}>
-      <Typography sx={{ fontSize: 크기.작게, color: 색.흐린글, width: 44, flex: '0 0 auto' }}>
+      <Typography sx={{ fontSize: 크기.도장작게, color: 색.흐린글, width: 44, flex: '0 0 auto' }}>
         {이름}
       </Typography>
       <input
@@ -766,8 +766,8 @@ const 카드 = {
 };
 
 const 버튼 = {
-  height: 크기.버튼높이,
-  fontSize: 크기.버튼글씨,
+  height: 크기.도장버튼높이,
+  fontSize: 크기.도장버튼글씨,
   fontWeight: 700,
   borderRadius: 크기.버튼둥글기,
 };

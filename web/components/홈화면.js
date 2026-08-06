@@ -20,8 +20,8 @@ import 도장찍기, { 넘김키 } from './도장찍기';
    홈에 네모난 버튼이 줄줄이 쌓이면 무엇이 중요한지 안 보인다.
    높이는 같게 둬서 눌렀을 때 아래 버튼이 밀려 내려가지 않는다 */
 const 테없는버튼 = {
-  height: 크기.버튼높이,
-  fontSize: 크기.본문,
+  height: 크기.홈버튼높이,
+  fontSize: 크기.홈본문,
   fontWeight: 500,
   borderRadius: 크기.버튼둥글기,
   border: 'none',
@@ -29,8 +29,8 @@ const 테없는버튼 = {
 };
 
 const 버튼모양 = {
-  height: 크기.버튼높이,
-  fontSize: 크기.버튼글씨,
+  height: 크기.홈버튼높이,
+  fontSize: 크기.홈버튼글씨,
   fontWeight: 700,
   borderRadius: 크기.버튼둥글기,
 };
@@ -140,11 +140,11 @@ export default function 홈화면() {
           }}
         >
           <FlexBox flexDirection="column" alignItems="center" gap={6} sx={{ paddingTop: 4 }}>
-            <Typography sx={{ fontSize: 크기.보조, color: 색.흐린글 }}>지금</Typography>
-            <Typography weight="bold" sx={{ fontSize: 24 }}>
+            <Typography sx={{ fontSize: 크기.홈보조, color: 색.흐린글 }}>지금</Typography>
+            <Typography weight="bold" sx={{ fontSize: 크기.홈도장수 }}>
               {바다에 ? '바다에 있습니다' : '뭍에 있습니다'}
             </Typography>
-            <Typography align="center" sx={{ fontSize: 크기.보조, color: 색.흐린글, minHeight: 22 }}>
+            <Typography align="center" sx={{ fontSize: 크기.홈보조, color: 색.흐린글, minHeight: 22 }}>
               {!준비
                 ? ' '
                 : 바다에 && 지금
@@ -190,7 +190,7 @@ export default function 홈화면() {
           <FlexBox
             justifyContent="center"
             alignItems="center"
-            sx={{ height: 크기.버튼높이, flex: '0 0 auto' }}
+            sx={{ height: 크기.홈버튼높이, flex: '0 0 auto' }}
           >
             {바다에 ? (
             <Button
@@ -250,7 +250,7 @@ export default function 홈화면() {
             도장판정바꾸기(null);
             도장열림바꾸기(true);
           }}
-          sx={{ ...버튼모양, fontSize: 크기.본문, marginTop: -4 }}
+          sx={{ ...버튼모양, fontSize: 크기.홈본문, marginTop: -4 }}
         >
           사진 찍기
         </Button>
@@ -259,11 +259,11 @@ export default function 홈화면() {
         <Divider sx={{ marginTop: 6 }} />
 
         <FlexBox justifyContent="space-between" alignItems="baseline">
-          <Typography weight="bold" sx={{ fontSize: 크기.보조, color: 색.흐린글 }}>
+          <Typography weight="bold" sx={{ fontSize: 크기.홈보조, color: 색.흐린글 }}>
             모은 도장
           </Typography>
           <Link href="/log" style={{ textDecoration: 'none' }}>
-            <Typography weight="bold" sx={{ fontSize: 크기.본문, color: 색.주 }}>
+            <Typography weight="bold" sx={{ fontSize: 크기.홈본문, color: 색.주 }}>
               조과 기록 ›
             </Typography>
           </Link>
@@ -289,7 +289,7 @@ function 도장들({ 목록, 준비 }) {
           textAlign: 'center',
         }}
       >
-        <Typography sx={{ fontSize: 크기.보조, color: 색.아주흐린글, lineHeight: 1.7 }}>
+        <Typography sx={{ fontSize: 크기.홈보조, color: 색.아주흐린글, lineHeight: 1.7 }}>
           아직 도장이 없습니다.
           <br />
           돌아오면 하나 찍힙니다.
@@ -323,12 +323,12 @@ function 도장들({ 목록, 준비 }) {
             }}
           >
             <도장그림 날짜={d} 크기={52} />
-            <Typography sx={{ fontSize: 12, color: 색.흐린글, textAlign: 'center', lineHeight: 1.3 }}>
+            <Typography sx={{ fontSize: 크기.홈도장이름, color: 색.흐린글, textAlign: 'center', lineHeight: 1.3 }}>
               {String(d.getFullYear()).slice(2)}.{d.getMonth() + 1}.{d.getDate()}
             </Typography>
             {/* 그날 바다가 어땠는지 — 도장은 같아도 날은 다르다 */}
             <Typography
-              sx={{ fontSize: 10.5, color: 색.아주흐린글, marginTop: -3, textAlign: 'center', lineHeight: 1.35 }}
+              sx={{ fontSize: 크기.홈도장날짜, color: 색.아주흐린글, marginTop: -3, textAlign: 'center', lineHeight: 1.35 }}
             >
               {이름과짧게(부적.물때(d).단계)}
             </Typography>

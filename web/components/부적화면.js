@@ -122,7 +122,7 @@ const 종이 = {
 };
 
 const 버튼모양 = {
-  height: 크기.버튼높이,
+  height: 크기.부적버튼높이,
   fontSize: 크기.버튼글씨,
   fontWeight: 700,
   borderRadius: 크기.버튼둥글기,
@@ -196,7 +196,7 @@ export default function 부적화면() {
           <>
             <부적종이 r={결과} 지금={지금} />
 
-            <Typography sx={{ fontSize: 크기.작게, color: 색.아주흐린글, lineHeight: 1.75, padding: '0 4px' }}>
+            <Typography sx={{ fontSize: 크기.부적작게, color: 색.아주흐린글, lineHeight: 1.75, padding: '0 4px' }}>
               <b style={{ color: 색.흐린글 }}>부적은 물때마다 한 장이에요.</b> 
               
               <b style={{ color: 색.흐린글 }}>  어획도 안전도 점치지 않습니다.</b>
@@ -223,7 +223,7 @@ export default function 부적화면() {
               size="large"
               fullWidth
               onClick={생년지우기}
-              sx={{ ...버튼모양, fontSize: 크기.홈, fontWeight: 500, color: 색.흐린글 }}
+              sx={{ ...버튼모양, fontSize: 크기.부적홈, fontWeight: 500, color: 색.흐린글 }}
             >
               {결과.띠 ? '생년 다시 넣기' : '띠를 넣어 부적 받기'}
             </Button>
@@ -273,10 +273,10 @@ function 지난부적({ 목록, 펼침, 펼치기 }) {
           fontFamily: 'inherit',
         }}
       >
-        <span style={{ fontSize: 크기.보조, fontWeight: 700, color: 색.글 }}>
+        <span style={{ fontSize: 크기.부적보조, fontWeight: 700, color: 색.글 }}>
           지난 부적 {목록.length}장
         </span>
-        <span style={{ fontSize: 크기.보조, color: 색.흐린글 }}>
+        <span style={{ fontSize: 크기.부적보조, color: 색.흐린글 }}>
           {펼침 ? '접기' : '펼치기'}
         </span>
       </button>
@@ -308,11 +308,11 @@ function 지난부적({ 목록, 펼침, 펼치기 }) {
                   color: 종이.도장,
                 }}
               >
-                <span style={{ fontSize: 19, fontWeight: 700 }}>{x.도장}</span>
+                <span style={{ fontSize: 크기.부적도장, fontWeight: 700 }}>{x.도장}</span>
               </FlexBox>
 
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: 종이.진한글 }}>
+                <div style={{ fontSize: 크기.부적띠이름, fontWeight: 700, color: 종이.진한글 }}>
                   {x.물때}
                   {물때짧게[x.물때] && (
                     <span style={{ fontWeight: 500, color: 종이.갈색, marginLeft: 6 }}>
@@ -320,13 +320,13 @@ function 지난부적({ 목록, 펼침, 펼치기 }) {
                     </span>
                   )}
                 </div>
-                <div style={{ fontSize: 12.5, color: '#8a7660', marginTop: 1 }}>
+                <div style={{ fontSize: 크기.부적잔글씨, color: '#8a7660', marginTop: 1 }}>
                   {지난기간말(x)}
                 </div>
                 {x.띠말 && (
                   <div
                     style={{
-                      fontSize: 13.5,
+                      fontSize: 크기.부적문구,
                       color: 종이.글,
                       lineHeight: 1.6,
                       marginTop: 3,
@@ -348,7 +348,7 @@ function 지난부적({ 목록, 펼침, 펼치기 }) {
                         display: 'inline-block',
                       }}
                     />
-                    <span style={{ fontSize: 12.5, color: '#8a7660' }}>
+                    <span style={{ fontSize: 크기.부적잔글씨, color: '#8a7660' }}>
                       {x.행운색.이름} · {x.행운숫자}
                     </span>
                   </FlexBox>
@@ -392,8 +392,8 @@ function 부적종이({ r, 지금 }) {
           marginBottom: 18,
         }}
       >
-        <span style={{ fontSize: 12, letterSpacing: '.22em', color: 종이.갈색 }}>오 늘 의 바 다</span>
-        <span style={{ fontSize: 12, color: 종이.갈색, textAlign: 'right', lineHeight: 1.6 }}>
+        <span style={{ fontSize: 크기.부적종이머리, letterSpacing: '.22em', color: 종이.갈색 }}>오 늘 의 바 다</span>
+        <span style={{ fontSize: 크기.부적종이머리, color: 종이.갈색, textAlign: 'right', lineHeight: 1.6 }}>
           {기간말(r.구간)}
           {r.띠 && (
             <>
@@ -418,7 +418,7 @@ function 부적종이({ r, 지금 }) {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          fontSize: 31,
+          fontSize: 크기.부적제목,
           fontWeight: 800,
           transform: 'rotate(-9deg)',
           opacity: 0.85,
@@ -429,7 +429,7 @@ function 부적종이({ r, 지금 }) {
 
       <div
         style={{
-          fontSize: 30,
+          fontSize: 크기.부적제목작게,
           fontWeight: 800,
           letterSpacing: '-.02em',
           lineHeight: 1.38,
@@ -447,7 +447,7 @@ function 부적종이({ r, 지금 }) {
         style={{
           marginTop: 9,
           paddingRight: 74,
-          fontSize: 14.5,
+          fontSize: 크기.부적띠말,
           lineHeight: 1.6,
           color: 종이.갈색,
           wordBreak: 'keep-all',
@@ -466,7 +466,7 @@ function 부적종이({ r, 지금 }) {
             background: 'rgba(139,90,43,.10)',
             borderLeft: `3px solid ${종이.갈색}`,
             borderRadius: '0 9px 9px 0',
-            fontSize: 21,
+            fontSize: 크기.부적행운,
             fontWeight: 700,
             color: '#4a3a28',
             lineHeight: 1.5,
@@ -475,7 +475,7 @@ function 부적종이({ r, 지금 }) {
           <span
             style={{
               display: 'block',
-              fontSize: 12,
+              fontSize: 크기.부적행운말,
               fontWeight: 600,
               letterSpacing: '.06em',
               color: 종이.갈색,
@@ -515,7 +515,7 @@ function 부적종이({ r, 지금 }) {
           marginTop: 20,
           paddingTop: 14,
           borderTop: '1px solid rgba(139,90,43,.25)',
-          fontSize: 13.5,
+          fontSize: 크기.부적근거,
           color: '#7a6650',
           lineHeight: 1.7,
         }}
@@ -543,7 +543,7 @@ function 행운칸({ 이름, children }) {
       <span
         style={{
           display: 'block',
-          fontSize: 11.5,
+          fontSize: 크기.부적유효,
           fontWeight: 600,
           letterSpacing: '.05em',
           color: 종이.갈색,
@@ -552,7 +552,7 @@ function 행운칸({ 이름, children }) {
       >
         {이름}
       </span>
-      <span style={{ fontSize: 20, fontWeight: 800, color: '#4a3a28' }}>{children}</span>
+      <span style={{ fontSize: 크기.부적숫자, fontWeight: 800, color: '#4a3a28' }}>{children}</span>
     </div>
   );
 }
@@ -580,10 +580,10 @@ function 생년묻기({ 입력, 입력바꾸기, 확정, 건너뛰기 }) {
         boxShadow: 'var(--semantic-elevation-shadow-normal-xsmall)',
       }}
     >
-      <Typography weight="bold" sx={{ fontSize: 21 }}>
+      <Typography weight="bold" sx={{ fontSize: 크기.부적물음 }}>
         몇 년생이신가요
       </Typography>
-      <Typography sx={{ fontSize: 크기.보조, color: 색.흐린글, lineHeight: 1.7, marginTop: -6 }}>
+      <Typography sx={{ fontSize: 크기.부적보조, color: 색.흐린글, lineHeight: 1.7, marginTop: -6 }}>
         띠를 알면 부적의 말이 그 띠에 맞게 바뀌어요. 행운의 색과 숫자도 같이 나옵니다.
         <br />이 숫자는 이 기기 안에만 두고, 어디로도 보내지 않습니다.
       </Typography>
@@ -599,7 +599,7 @@ function 생년묻기({ 입력, 입력바꾸기, 확정, 건너뛰기 }) {
             <div key={칸} style={{ width: 36 }}>
               <div
                 style={{
-                  fontSize: 46,
+                  fontSize: 크기.부적띠고르기,
                   fontWeight: 700,
                   lineHeight: 1.2,
                   letterSpacing: '-.02em',
@@ -621,7 +621,7 @@ function 생년묻기({ 입력, 입력바꾸기, 확정, 건너뛰기 }) {
             </div>
           ))}
         </FlexBox>
-        <Typography weight="bold" sx={{ fontSize: 20, color: 색.흐린글, paddingBottom: 6 }}>
+        <Typography weight="bold" sx={{ fontSize: 크기.부적묶음제목, color: 색.흐린글, paddingBottom: 6 }}>
           년
         </Typography>
       </FlexBox>
@@ -639,7 +639,7 @@ function 생년묻기({ 입력, 입력바꾸기, 확정, 건너뛰기 }) {
             sx={{
               height: 64,
               borderRadius: 13,
-              fontSize: k === 'del' || k === 'ok' ? 16 : 크기.숫자판,
+              fontSize: k === 'del' || k === 'ok' ? 16 : 크기.부적숫자판,
               fontWeight: 700,
               color: k === 'del' || k === 'ok' ? 색.흐린글 : 색.글,
             }}
@@ -666,7 +666,7 @@ function 생년묻기({ 입력, 입력바꾸기, 확정, 건너뛰기 }) {
         size="large"
         fullWidth
         onClick={건너뛰기}
-        sx={{ ...버튼모양, fontSize: 크기.본문, fontWeight: 500, color: 색.흐린글 }}
+        sx={{ ...버튼모양, fontSize: 크기.부적본문, fontWeight: 500, color: 색.흐린글 }}
       >
         띠 없이 그냥 볼게요
       </Button>
