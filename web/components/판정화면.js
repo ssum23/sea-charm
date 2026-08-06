@@ -14,6 +14,7 @@ import { 크기, 색 } from './크기';
 import { judge, 메타 } from '@/lib/판정엔진';
 import { 키, 읽기, 쓰기, 날짜말 } from '@/lib/저장소';
 import 재는법그림, { 재는법말 } from './재는법그림';
+import 화면틀 from './화면틀';
 
 const 버튼모양 = {
   height: 크기.버튼높이,
@@ -131,10 +132,15 @@ export default function 판정화면() {
   }
 
   const 화면 = 결과?.화면 ?? '어종';
+  /* 「N짜」 — 낚시하는 사람이 크기를 부르는 말. 칭찬이 아니라 사실이다.
+     안 쓰는 자리는 엔진이 정한다(30cm 미만·갈치·어류 아님·cm 아님 → null) */
+  const 짜 = 화면 === '결과' && 길이 ? judge.짜(어종, Number(길이)) : null;
   const 제목 =
     화면 === '어종'
       ? '이거 가져가도 되나요'
-      : 어종 + (화면 === '결과' && 길이 ? ` ${길이}${결과?.기준?.단위 || 'cm'}` : '');
+      : 어종 +
+        (화면 === '결과' && 길이 ? ` ${길이}${결과?.기준?.단위 || 'cm'}` : '') +
+        (짜 ? ` · ${짜}` : '');
   const 안내 =
     화면 === '어종'
       ? '먼저 무엇을 잡으셨는지 골라주세요'
@@ -147,29 +153,17 @@ export default function 판정화면() {
             : '전국 기준';
 
   return (
-    <FlexBox flexDirection="column" sx={{ minHeight: '100dvh' }}>
-      <FlexBox
-        flexDirection="column"
-        gap={2}
-        sx={{
-          backgroundColor: 색.바탕,
-          padding: `calc(env(safe-area-inset-top) + ${크기.여백}px) ${크기.여백}px ${크기.여백}px`,
-        }}
-      >
-        <Typography sx={{ fontSize: 크기.보조, color: 색.흐린글 }}>
-          {지금 ? 날짜말(지금) : ' '}
-        </Typography>
-        <Typography weight="bold" sx={{ fontSize: 크기.큰제목, letterSpacing: '-0.01em' }}>
-          {제목}
-        </Typography>
-        <Typography sx={{ fontSize: 크기.보조, color: 색.흐린글, marginTop: 6 }}>{안내}</Typography>
-      </FlexBox>
-
-      <FlexBox
-        flexDirection="column"
-        gap={크기.사이}
-        sx={{ flex: 1, width: '100%', maxWidth: 560, margin: '0 auto', padding: 크기.여백 }}
-      >
+    <화면틀
+      제목={제목}
+      날짜={지금}
+      안내={안내}
+      바닥글={
+        기록수 ? `지금까지 ${기록수}마리 확인했어요 · 기록은 이 기기 안에만` : '기록은 이 기기 안에만 저장됩니다'
+      }
+      /* 하루 순서 — 판정이 쌓이면 기록이 된다 */
+      다음={{ 이름: '확인한 물고기', 주소: '/log' }}
+    >
+      <>
         {화면 === '어종' && (
           <어종고르기
             상단목록={상단목록}
@@ -209,30 +203,8 @@ export default function 판정화면() {
             }}
           />
         )}
-      </FlexBox>
-
-      <FlexBox
-        flexDirection="column"
-        alignItems="center"
-        gap={10}
-        sx={{ padding: `16px 20px calc(env(safe-area-inset-bottom) + 16px)` }}
-      >
-        <Typography sx={{ fontSize: 크기.작게, color: 색.아주흐린글 }}>
-          {기록수 ? `지금까지 ${기록수}마리 확인했어요 · 기록은 이 기기 안에만` : '기록은 이 기기 안에만 저장됩니다'}
-        </Typography>
-        <FlexBox flexWrap="wrap" justifyContent="center" gap={16}>
-          <Link href="/charm" style={{ textDecoration: 'none' }}>
-            <Typography sx={{ fontSize: 크기.보조, color: 색.흐린글 }}>오늘의 바다 부적 ›</Typography>
-          </Link>
-          <Link href="/log" style={{ textDecoration: 'none' }}>
-            <Typography sx={{ fontSize: 크기.보조, color: 색.흐린글 }}>확인한 물고기 ›</Typography>
-          </Link>
-          <Link href="/" style={{ textDecoration: 'none' }}>
-            <Typography sx={{ fontSize: 크기.보조, color: 색.흐린글 }}>귀항 도장 ›</Typography>
-          </Link>
-        </FlexBox>
-      </FlexBox>
-    </FlexBox>
+      </>
+    </화면틀>
   );
 }
 

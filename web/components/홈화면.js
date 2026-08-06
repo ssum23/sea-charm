@@ -12,6 +12,8 @@ import { 크기, 색 } from './크기';
 import { 키, 읽기, 쓰기, 날짜말, 시각말, 걸린시간 } from '@/lib/저장소';
 import 도장그림 from './도장그림';
 import 부적 from '@/lib/부적엔진';
+import { 이름과짧게 } from '@/lib/물때말';
+import 화면틀 from './화면틀';
 
 const 버튼모양 = {
   height: 크기.버튼높이,
@@ -76,37 +78,16 @@ export default function 홈화면() {
     !바다에 && 마지막 && 지금 && 지금 - new Date(마지막.back) < 알림창;
 
   return (
-    <FlexBox flexDirection="column" sx={{ minHeight: '100dvh' }}>
-      {/* 머리 */}
-      <FlexBox
-        flexDirection="column"
-        gap={2}
-        sx={{
-          backgroundColor: 색.바탕,
-          padding: `calc(env(safe-area-inset-top) + ${크기.여백}px) ${크기.여백}px ${크기.여백}px`,
-        }}
-      >
-        <Typography sx={{ fontSize: 크기.보조, color: 색.흐린글 }}>
-          {준비 && 지금 ? 날짜말(지금) : ' '}
-        </Typography>
-        <Typography weight="bold" sx={{ fontSize: 크기.큰제목, letterSpacing: '-0.01em' }}>
-          귀항 도장
-        </Typography>
-        <FlexBox alignItems="baseline" gap={8} sx={{ marginTop: 8 }}>
-          <Typography weight="bold" sx={{ fontSize: 46, lineHeight: 1, color: 색.주 }}>
-            {준비 ? 출항기록.length : 0}
-          </Typography>
-          <Typography sx={{ fontSize: 크기.본문, color: 색.흐린글 }}>
-            번 돌아왔습니다
-          </Typography>
-        </FlexBox>
-      </FlexBox>
-
-      <FlexBox
-        flexDirection="column"
-        gap={크기.사이}
-        sx={{ flex: 1, width: '100%', maxWidth: 560, margin: '0 auto', padding: 크기.여백 }}
-      >
+    <화면틀
+      제목="홈"
+      날짜={준비 && 지금 ? 지금 : null}
+      큰숫자={준비 ? 출항기록.length : 0}
+      큰숫자말="번 돌아왔습니다"
+      바닥글="기록은 이 기기 안에만 저장됩니다"
+      /* 여기가 홈이다 — 되돌아갈 곳이 없다 */
+      홈으로={false}
+    >
+      <>
         {/* 지금 어디에 있는가 */}
         <Card
           sx={{
@@ -229,17 +210,8 @@ export default function 홈화면() {
           </Link>
         </FlexBox>
         <도장들 목록={출항기록} 준비={준비} />
-      </FlexBox>
-
-      <FlexBox
-        justifyContent="center"
-        sx={{ padding: `16px 20px calc(env(safe-area-inset-bottom) + 16px)` }}
-      >
-        <Typography sx={{ fontSize: 크기.작게, color: 색.아주흐린글 }}>
-          기록은 이 기기 안에만 저장됩니다
-        </Typography>
-      </FlexBox>
-    </FlexBox>
+      </>
+    </화면틀>
   );
 }
 
@@ -294,8 +266,10 @@ function 도장들({ 목록, 준비 }) {
               {d.getMonth() + 1}.{d.getDate()}
             </Typography>
             {/* 그날 바다가 어땠는지 — 도장은 같아도 날은 다르다 */}
-            <Typography sx={{ fontSize: 11, color: 색.아주흐린글, marginTop: -3 }}>
-              {부적.물때(d).단계}
+            <Typography
+              sx={{ fontSize: 10.5, color: 색.아주흐린글, marginTop: -3, textAlign: 'center', lineHeight: 1.35 }}
+            >
+              {이름과짧게(부적.물때(d).단계)}
             </Typography>
           </FlexBox>
         );

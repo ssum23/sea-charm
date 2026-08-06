@@ -2,6 +2,20 @@
 
 /* 모든 화면이 같은 머리·발을 쓰도록 한 겹 싸 둔다.
  * 화면이 넷이 되면서, 머리 모양을 고칠 때 네 군데를 고치는 일이 생겼다.
+ *
+ * 화면 이동 규칙 — 홈을 가운데 둔다 (2026-08-06 제품 결정)
+ *
+ *        ┌──────── 홈 ────────┐        홈이 갈림길이다.
+ *        │  부적 · 판정 · 촬영 │        다른 화면끼리는 서로 안 가리킨다.
+ *        │  기록 · 출항/귀항   │
+ *        └────────────────────┘
+ *
+ *  - 홈이 아닌 모든 화면은 **왼쪽 위 같은 자리**에 「‹ 홈」이 있다.
+ *    자리가 항상 같아야 눈으로 찾지 않고 손이 먼저 간다.
+ *  - 발에는 「다음 한 걸음」 **하나만** 둔다. 하루 순서대로 이어진다 —
+ *    부적 → 판정 → 기록. 셋 다 나열하면 어디로 가야 할지 고르게 되고,
+ *    그게 「엉켜 있다」는 느낌의 정체였다.
+ *  - 그래서 다른 화면으로 갈 때는 항상 홈을 한 번 거친다. 길을 잃을 자리가 없다.
  */
 
 import Link from 'next/link';
@@ -9,7 +23,19 @@ import { FlexBox, Typography } from '@montage-ui/core';
 import { 크기, 색 } from './크기';
 import { 날짜말 } from '@/lib/저장소';
 
-export default function 화면틀({ 제목, 날짜, 안내, 큰숫자, 큰숫자말, 바닥글, 이동 = [], children }) {
+export default function 화면틀({
+  제목,
+  날짜,
+  안내,
+  큰숫자,
+  큰숫자말,
+  바닥글,
+  /* 홈이면 false. 그 밖에는 왼쪽 위에 「‹ 홈」이 붙는다 */
+  홈으로 = true,
+  /* 하루 순서상 다음 한 걸음. { 이름, 주소 } 하나만 받는다 */
+  다음,
+  children,
+}) {
   return (
     <FlexBox flexDirection="column" sx={{ minHeight: '100dvh' }}>
       {/* 머리 */}
@@ -21,6 +47,13 @@ export default function 화면틀({ 제목, 날짜, 안내, 큰숫자, 큰숫자
           padding: `calc(env(safe-area-inset-top) + ${크기.여백}px) ${크기.여백}px ${크기.여백}px`,
         }}
       >
+        {홈으로 ? (
+          <Link href="/" style={{ textDecoration: 'none', alignSelf: 'flex-start' }}>
+            <Typography sx={{ fontSize: 크기.보조, color: 색.흐린글, padding: '2px 0' }}>
+              ‹ 홈
+            </Typography>
+          </Link>
+        ) : null}
         <Typography sx={{ fontSize: 크기.보조, color: 색.흐린글 }}>
           {날짜 ? 날짜말(날짜) : ' '}
         </Typography>
@@ -61,14 +94,11 @@ export default function 화면틀({ 제목, 날짜, 안내, 큰숫자, 큰숫자
             {바닥글}
           </Typography>
         )}
-        {이동.length > 0 && (
-          <FlexBox flexWrap="wrap" justifyContent="center" gap={16}>
-            {이동.map((m) => (
-              <Link key={m.주소} href={m.주소} style={{ textDecoration: 'none' }}>
-                <Typography sx={{ fontSize: 크기.보조, color: 색.흐린글 }}>{m.이름} ›</Typography>
-              </Link>
-            ))}
-          </FlexBox>
+        {/* 다음 한 걸음 하나만. 여러 개를 늘어놓지 않는다 */}
+        {다음 && (
+          <Link href={다음.주소} style={{ textDecoration: 'none' }}>
+            <Typography sx={{ fontSize: 크기.보조, color: 색.흐린글 }}>{다음.이름} ›</Typography>
+          </Link>
         )}
       </FlexBox>
     </FlexBox>

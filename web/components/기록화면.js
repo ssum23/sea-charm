@@ -28,6 +28,23 @@ const 버튼모양 = {
   borderRadius: 크기.버튼둥글기,
 };
 
+/* 내보내기 안에서 쓰는 작은 버튼.
+   큰 버튼(60px)은 여기 세 개를 세우면 화면을 다 먹는다 */
+function 작은버튼(바탕, 글자, 굵게, 테없이) {
+  return {
+    height: 44,
+    borderRadius: 11,
+    fontFamily: 'inherit',
+    fontSize: 15,
+    fontWeight: 굵게 ? 700 : 500,
+    cursor: 'pointer',
+    background: 바탕,
+    color: 글자,
+    border: 테없이 ? 'none' : `1px solid ${바탕 === 'transparent' ? 색.선 : 'transparent'}`,
+    width: '100%',
+  };
+}
+
 const 카드모양 = {
   backgroundColor: 색.바탕,
   borderRadius: 18,
@@ -37,6 +54,49 @@ const 카드모양 = {
 };
 
 const 가져감 = (c) => c.단계 === 1;
+
+/* 목록 순서 세 가지.
+ *  최근 — 방금 잡은 것이 위. 기본값
+ *  많이 — 같은 어종을 많이 잡은 순서. 그 안에서는 최근 것이 위
+ *  크기 — 큰 것이 위. 길이가 없는 기록(그램·미입력)은 맨 아래로 보낸다
+ *
+ * 크기는 단위가 섞이면 비교가 틀린다 — 대문어 700g 이 700cm 로 읽히면 안 된다.
+ * 그래서 cm 인 것만 서로 견주고, 나머지는 순서를 매기지 않고 뒤에 둔다.
+ */
+const 순서목록 = [
+  { 값: '최근', 이름: '최근 것부터' },
+  { 값: '많이', 이름: '많이 잡은 순서' },
+  { 값: '크기', 이름: '큰 순서' },
+];
+
+function 정렬하기(목록, 순서) {
+  const 원래자리 = new Map(목록.map((c, i) => [c, i]));
+  const 최근순 = (a, b) => 원래자리.get(a) - 원래자리.get(b);
+
+  if (순서 === '많이') {
+    const 셈 = new Map();
+    목록.forEach((c) => 셈.set(c.어종, (셈.get(c.어종) || 0) + 1));
+    return [...목록].sort((a, b) => {
+      const 차 = (셈.get(b.어종) || 0) - (셈.get(a.어종) || 0);
+      if (차) return 차;
+      if (a.어종 !== b.어종) return String(a.어종).localeCompare(String(b.어종), 'ko');
+      return 최근순(a, b);
+    });
+  }
+
+  if (순서 === '크기') {
+    const 잴수있나 = (c) => typeof c.길이 === 'number' && c.길이 > 0 && (c.단위 || 'cm') === 'cm';
+    return [...목록].sort((a, b) => {
+      const A = 잴수있나(a);
+      const B = 잴수있나(b);
+      if (A !== B) return A ? -1 : 1;      // 잴 수 있는 것이 먼저
+      if (A && b.길이 !== a.길이) return b.길이 - a.길이;
+      return 최근순(a, b);
+    });
+  }
+
+  return [...목록].sort(최근순);
+}
 
 function 시각말(iso) {
   const d = new Date(iso);
@@ -53,6 +113,10 @@ export default function 기록화면() {
   const [지금, 지금바꾸기] = useState(null);
   const [되돌릴것, 되돌릴것바꾸기] = useState(null);
   const [복사됨, 복사됨바꾸기] = useState(false);
+  /* 목록을 어떤 순서로 볼지. 기본은 최근 것부터 — 방금 잡은 것이 궁금하다 */
+  const [순서, 순서바꾸기] = useState('최근');
+  /* 내보내기는 버튼 두 개를 늘어놓지 않고, 눌렀을 때만 고르게 한다 */
+  const [내보내기펼침, 내보내기펼침바꾸기] = useState(false);
 
   useEffect(() => {
     목록바꾸기(읽기(키.잡은것, []));
@@ -138,11 +202,7 @@ export default function 기록화면() {
       큰숫자={준비 ? 목록.length : 0}
       큰숫자말="마리를 판정했습니다"
       바닥글="이 기록은 이 기기 안에만 있습니다. 서버로 보내지 않습니다"
-      이동={[
-        { 이름: '오늘의 바다 부적', 주소: '/charm' },
-        { 이름: '이거 가져가도 되나요', 주소: '/catch' },
-        { 이름: '귀항 도장', 주소: '/' },
-      ]}
+      /* 기록이 하루의 끝이다. 다음 걸음이 없다 — 왼쪽 위 「‹ 홈」으로 돌아간다 */
     >
       {!준비 ? null : !목록.length ? (
         <>
@@ -200,10 +260,38 @@ export default function 기록화면() {
           {/* 목록 */}
           <Card sx={카드모양}>
             <Typography weight="bold" sx={{ fontSize: 크기.보조, color: 색.흐린글 }}>
-              기록 — 최근 것부터
+              기록
             </Typography>
+
+            {/* 순서 고르기 — 셋 중 하나. 누르면 그 자리에서 다시 줄 선다 */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 7 }}>
+              {순서목록.map((o) => {
+                const 켜짐 = 순서 === o.값;
+                return (
+                  <button
+                    key={o.값}
+                    type="button"
+                    onClick={() => 순서바꾸기(o.값)}
+                    style={{
+                      padding: '9px 4px',
+                      borderRadius: 10,
+                      fontFamily: 'inherit',
+                      fontSize: 13.5,
+                      fontWeight: 켜짐 ? 700 : 500,
+                      cursor: 'pointer',
+                      border: `1px solid ${켜짐 ? 'transparent' : 색.선}`,
+                      background: 켜짐 ? 색.반전바탕 : 'transparent',
+                      color: 켜짐 ? 색.반전글 : 색.흐린글,
+                    }}
+                  >
+                    {o.이름}
+                  </button>
+                );
+              })}
+            </div>
+
             <div>
-              {목록.slice(0, 60).map((c, i) => {
+              {정렬하기(목록, 순서).slice(0, 60).map((c, i) => {
                 const t = 가져감(c);
                 return (
                   <FlexBox
@@ -279,25 +367,42 @@ export default function 기록화면() {
                 이 앱은 아무것도 서버로 보내지 않으니, 옮기려면 직접 내보내야 합니다.
               </b>
             </Typography>
-            <Button
-              variant="solid"
-              size="large"
-              fullWidth
-              onClick={내려받기}
-              sx={{ ...버튼모양, backgroundColor: 색.반전바탕, color: 색.반전글 }}
-            >
-              파일로 내려받기
-            </Button>
-            <Button
-              variant="outlined"
-              color="assistive"
-              size="large"
-              fullWidth
-              onClick={복사}
-              sx={{ ...버튼모양, fontSize: 크기.본문 }}
-            >
-              {복사됨 ? '복사했습니다' : '글자로 복사하기'}
-            </Button>
+            {/* 버튼 두 개를 늘 띄워두면 「무엇을 눌러야 하나」가 된다.
+                「내보내기」 하나만 두고, 누른 뒤에 방법을 고르게 한다 */}
+            {!내보내기펼침 ? (
+              <Button
+                variant="solid"
+                size="large"
+                fullWidth
+                onClick={() => 내보내기펼침바꾸기(true)}
+                sx={{ ...버튼모양, backgroundColor: 색.반전바탕, color: 색.반전글 }}
+              >
+                내보내기
+              </Button>
+            ) : (
+              <FlexBox flexDirection="column" gap={8}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    내려받기();
+                    내보내기펼침바꾸기(false);
+                  }}
+                  style={작은버튼(색.반전바탕, 색.반전글, true)}
+                >
+                  파일로 내려받기
+                </button>
+                <button type="button" onClick={복사} style={작은버튼('transparent', 색.글, false)}>
+                  {복사됨 ? '복사했습니다' : '글자로 복사하기'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => 내보내기펼침바꾸기(false)}
+                  style={작은버튼('transparent', 색.흐린글, false, true)}
+                >
+                  그만두기
+                </button>
+              </FlexBox>
+            )}
           </Card>
 
           <Typography sx={{ fontSize: 크기.작게, color: 색.아주흐린글, lineHeight: 1.75, padding: '0 4px' }}>
