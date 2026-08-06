@@ -14,6 +14,7 @@ import 도장그림 from './도장그림';
 import 부적 from '@/lib/부적엔진';
 import { 이름과짧게 } from '@/lib/물때말';
 import 화면틀 from './화면틀';
+import 도장찍기, { 넘김키 } from './도장찍기';
 
 const 버튼모양 = {
   height: 크기.버튼높이,
@@ -70,6 +71,24 @@ export default function 홈화면() {
   const 마지막 = 출항기록[0];
   const 나간시각 = 바다에 ? new Date(바다에.out) : null;
 
+  /* 바다 도장 — 판정을 안 거쳐도 찍을 수 있다 (T8).
+     판정 화면에서 넘어온 경우에는 판정 정보를 갖고 열린다 */
+  const [도장열림, 도장열림바꾸기] = useState(false);
+  const [도장판정, 도장판정바꾸기] = useState(null);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const v = window.sessionStorage.getItem(넘김키);
+      if (v) {
+        도장판정바꾸기(JSON.parse(v));
+        도장열림바꾸기(true);
+        /* 한 번 쓰면 지운다. 다음에 홈을 열 때 또 뜨면 안 된다 */
+        window.sessionStorage.removeItem(넘김키);
+      }
+    } catch (e) {}
+  }, []);
+
   /* 「가족에게 알리기」는 돌아온 직후에만 쓸모가 있다.
      늘 띄워두면 화면만 무거워지고, 다음 달에 봐도 남아 있으면 거슬린다.
      그래서 귀항한 지 3시간 안에만 작게 보인다. */
@@ -88,6 +107,16 @@ export default function 홈화면() {
       홈으로={false}
     >
       <>
+        {도장열림 ? (
+          <도장찍기
+            판정={도장판정}
+            닫기={() => {
+              도장열림바꾸기(false);
+              도장판정바꾸기(null);
+            }}
+          />
+        ) : (
+        <>
         {/* 지금 어디에 있는가 */}
         <Card
           sx={{
@@ -195,8 +224,21 @@ export default function 홈화면() {
         >
           이거 가져가도 되나요
         </Button>
+        <Button
+          variant="outlined"
+          color="assistive"
+          size="large"
+          fullWidth
+          onClick={() => {
+            도장판정바꾸기(null);
+            도장열림바꾸기(true);
+          }}
+          sx={{ ...버튼모양, fontSize: 크기.본문, marginTop: -4 }}
+        >
+          사진 찍기
+        </Button>
         <Typography align="center" sx={{ fontSize: 크기.보조, color: 색.아주흐린글, marginTop: -6 }}>
-          출항 전에 한 장 · 잡으면 판정
+          출항 전에 한 장 · 잡으면 판정 · 찍으면 도장
         </Typography>
 
         <Divider sx={{ marginTop: 6 }} />
@@ -210,6 +252,8 @@ export default function 홈화면() {
           </Link>
         </FlexBox>
         <도장들 목록={출항기록} 준비={준비} />
+        </>
+        )}
       </>
     </화면틀>
   );

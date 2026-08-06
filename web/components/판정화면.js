@@ -15,6 +15,7 @@ import { judge, 메타 } from '@/lib/판정엔진';
 import { 키, 읽기, 쓰기, 날짜말 } from '@/lib/저장소';
 import 재는법그림, { 재는법말 } from './재는법그림';
 import 화면틀 from './화면틀';
+import { 넘김키, 제안길이키 } from './도장찍기';
 
 const 버튼모양 = {
   height: 크기.버튼높이,
@@ -118,8 +119,18 @@ export default function 판정화면() {
 
   function 어종고름(이름) {
     어종바꾸기(이름);
-    길이바꾸기('');
     지역바꾸기(null);
+    /* 도장 C 에서 「이 길이로 판정해볼까요」를 누르고 왔으면 그 값을 미리 넣어준다.
+       🔴 자동으로 판정하지는 않는다 — 사람이 「판정하기」를 눌러야 답이 나온다.
+       한 번 쓰면 지운다. 다음에 다른 물고기를 볼 때 따라오면 안 된다 */
+    const 제안 = 읽기(제안길이키, null);
+    if (제안 != null) {
+      쓰기(제안길이키, null);
+      길이바꾸기(String(제안));
+      판정하기({ 어종: 이름, 길이: '', 지역: null });
+      return;
+    }
+    길이바꾸기('');
     판정하기({ 어종: 이름, 길이: '', 지역: null });
   }
 
@@ -196,6 +207,9 @@ export default function 판정화면() {
         {화면 === '결과' && (
           <결과보기
             결과={결과}
+            어종={어종}
+            길이={길이}
+            짜={짜}
             처음부터={처음부터}
             다시재기={() => {
               길이바꾸기('');
@@ -456,7 +470,7 @@ function 지역고르기({ 결과, 목록, 고름, 처음부터 }) {
 }
 
 /* ---------- 4. 결과 ---------- */
-function 결과보기({ 결과, 처음부터, 다시재기 }) {
+function 결과보기({ 결과, 어종, 길이, 짜, 처음부터, 다시재기 }) {
   const r = 결과;
   const 색깔 = r.단계 === 1 ? 색.됨 : r.단계 === 2 ? 색.주의 : 색.안됨;
 
@@ -546,13 +560,41 @@ function 결과보기({ 결과, 처음부터, 다시재기 }) {
         </div>
       </Card>
 
+      {/* 판정 결과를 그대로 들고 도장으로 간다.
+          도장은 홈에 있다 — 한글 주소를 새로 만들면 정적 내보내기가 깨진다(CHANGES #98) */}
       <Button
+        as={Link}
+        href="/"
         variant="solid"
         color="primary"
         size="large"
         fullWidth
+        onClick={() => {
+          try {
+            window.sessionStorage.setItem(
+              넘김키,
+              JSON.stringify({
+                어종: 어종 || null,
+                길이: 길이 === '' || 길이 == null ? null : Number(길이),
+                단위: r.기준?.단위 || 'cm',
+                짜: 짜 || null,
+                결과: r.결과,
+                단계: r.단계,
+              }),
+            );
+          } catch (e) {}
+        }}
+        sx={{ ...버튼모양, textDecoration: 'none' }}
+      >
+        사진 찍어 도장 남기기
+      </Button>
+      <Button
+        variant="outlined"
+        color="assistive"
+        size="large"
+        fullWidth
         onClick={처음부터}
-        sx={버튼모양}
+        sx={{ ...버튼모양, fontSize: 크기.본문, fontWeight: 500 }}
       >
         다른 물고기 보기
       </Button>
