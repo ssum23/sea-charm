@@ -1,0 +1,75 @@
+# GitHub Pages 자동 배포
+#
+# main 가지에 무언가 올라올 때마다 이 순서로 돈다.
+#   1) 검산을 먼저 돌린다 — 실패하면 배포하지 않는다 (시스템디자인 §8)
+#   2) web/ 을 정적 파일로 내보낸다
+#   3) GitHub Pages 에 올린다
+#
+# 사람이 손댈 일은 없다. 저장하고 올리면 알아서 돈다.
+
+name: 배포
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: # GitHub 화면에서 손으로 돌릴 수도 있게
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  # ⚠️ 작업의 이름표(build·deploy)는 깃허브가 영문만 받는다.
+  #    한글로 두면 「Unexpected symbol」로 워크플로 자체가 안 돌아간다 (2026-08-06 실패).
+  #    화면에 보이는 이름은 아래 name: 이다.
+  build:
+    name: 만들기
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: 필요한 것 내려받기
+        working-directory: web
+        run: npm ci
+
+      # 🔴 여기가 안전선이다. 판정이 틀리면 사용자가 벌금을 문다.
+      - name: 검산 (판정 · 부적)
+        working-directory: web
+        run: npm test
+
+      - name: 정적 파일로 내보내기
+        working-directory: web
+        env:
+          # 주소가 `이름.github.io/저장소이름/` 이라 앞에 한 칸이 붙는다.
+          # 저장소 이름이 바뀌면 이 값도 저절로 따라간다.
+          NEXT_PUBLIC_BASE_PATH: /${{ github.event.repository.name }}
+        run: npm run build
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: web/out
+
+  deploy:
+    name: 올리기
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.pages.outputs.page_url }}
+    steps:
+      - id: pages
+        name: 페이지에 올리기
+        uses: actions/deploy-pages@v4

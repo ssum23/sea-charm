@@ -1,0 +1,602 @@
+'use client';
+
+/* 판정 — 어종 고르기 → 길이 재기 → 결과 (PRD의 G)
+ *
+ * 판정 자체는 lib/judge.js 가 한다. 이 파일은 화면만 그린다.
+ * 시스템디자인 §4 「화면과 완전히 분리한다」를 지킨다 —
+ * 여기서 판정 규칙을 흉내 내거나 결과를 고쳐 쓰지 않는다.
+ */
+
+import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
+import { Button, Card, Chip, FlexBox, TextField, Typography } from '@montage-ui/core';
+import { 크기, 색 } from './크기';
+import { judge, 메타 } from '@/lib/판정엔진';
+import { 키, 읽기, 쓰기, 날짜말 } from '@/lib/저장소';
+import 재는법그림, { 재는법말 } from './재는법그림';
+
+const 버튼모양 = {
+  height: 크기.버튼높이,
+  fontSize: 크기.버튼글씨,
+  fontWeight: 700,
+  borderRadius: 크기.버튼둥글기,
+};
+
+/* 재는 법의 글과 그림은 `재는법그림.js` 한 군데에만 둔다.
+   글을 여기에도 적어두면 어느 날 한쪽만 고쳐지고 서로 다른 말을 한다. */
+
+const 물고기말 = {
+  1: '다 자랐어요.',
+  3: '저 아직 어려요.',
+  4: '곧 알을 낳아요.',
+};
+
+export default function 판정화면() {
+  const [지금, 지금바꾸기] = useState(null);
+  const [어종, 어종바꾸기] = useState(null);
+  const [길이, 길이바꾸기] = useState('');
+  const [지역, 지역바꾸기] = useState(null);
+  const [검색, 검색바꾸기] = useState('');
+  const [결과, 결과바꾸기] = useState(null);
+  const [기록수, 기록수바꾸기] = useState(null);
+
+  useEffect(() => {
+    지금바꾸기(new Date());
+    기록수바꾸기(읽기(키.잡은것, []).length);
+  }, []);
+
+  const 상단목록 = useMemo(() => (지금 ? judge.상단목록(지금, 8) : []), [지금]);
+
+  const 검색결과 = useMemo(() => {
+    const q = 검색.trim();
+    if (!q) return [];
+    return judge
+      .어종목록()
+      .filter((s) => s.이름.includes(q) || s.별칭.some((a) => a.includes(q)))
+      .slice(0, 12);
+  }, [검색]);
+
+  /* 이 어종을 전에 얼마나 크게 잡았는지 — 칭찬 사다리에 쓰인다 */
+  function 기록요약(이름) {
+    const list = 읽기(키.잡은것, []);
+    const 오늘 = new Date().toDateString();
+    let 역대 = null;
+    let 오늘최대 = null;
+    list.forEach((c) => {
+      if (c.어종 !== 이름 || c.길이 == null) return;
+      if (역대 == null || c.길이 > 역대) 역대 = c.길이;
+      if (new Date(c.시각).toDateString() === 오늘) {
+        if (오늘최대 == null || c.길이 > 오늘최대) 오늘최대 = c.길이;
+      }
+    });
+    return { 역대최고: 역대, 오늘최대: 오늘최대 };
+  }
+
+  function 판정하기(다음 = {}) {
+    const 쓸어종 = 다음.어종 !== undefined ? 다음.어종 : 어종;
+    const 쓸길이 = 다음.길이 !== undefined ? 다음.길이 : 길이;
+    const 쓸지역 = 다음.지역 !== undefined ? 다음.지역 : 지역;
+
+    const r = judge({
+      어종: 쓸어종,
+      길이: 쓸길이 === '' ? null : Number(쓸길이),
+      지역: 쓸지역,
+      날짜: new Date(),
+      기록: 기록요약(쓸어종),
+    });
+
+    /* 아직 안 물어본 것만 묻는다. 이미 길이를 재봤는데 또 「길이」를 물으면
+       (경계값) 화면을 되돌리지 않고 결과로 보낸다 — 말투 가이드 §3 */
+    if (r.물음 === '길이' && 쓸길이 === '') {
+      결과바꾸기({ ...r, 화면: '길이' });
+      return;
+    }
+    if (r.물음 === '지역' && !쓸지역) {
+      결과바꾸기({ ...r, 화면: '지역' });
+      return;
+    }
+
+    결과바꾸기({ ...r, 화면: '결과' });
+
+    /* 판정이 끝난 것만 남긴다. 「확실치 않아요」는 기록하지 않는다 */
+    if (r.단계 !== 2) {
+      const list = 읽기(키.잡은것, []);
+      list.unshift({
+        어종: 쓸어종,
+        길이: 쓸길이 === '' ? null : Number(쓸길이),
+        단위: r.기준?.단위 || 'cm',
+        결과: r.결과,
+        단계: r.단계,
+        지역: 쓸지역,
+        시각: new Date().toISOString(),
+      });
+      쓰기(키.잡은것, list.slice(0, 500));
+      기록수바꾸기(list.length);
+    }
+  }
+
+  function 어종고름(이름) {
+    어종바꾸기(이름);
+    길이바꾸기('');
+    지역바꾸기(null);
+    판정하기({ 어종: 이름, 길이: '', 지역: null });
+  }
+
+  function 처음부터() {
+    어종바꾸기(null);
+    길이바꾸기('');
+    지역바꾸기(null);
+    검색바꾸기('');
+    결과바꾸기(null);
+  }
+
+  const 화면 = 결과?.화면 ?? '어종';
+  const 제목 =
+    화면 === '어종'
+      ? '이거 가져가도 되나요'
+      : 어종 + (화면 === '결과' && 길이 ? ` ${길이}${결과?.기준?.단위 || 'cm'}` : '');
+  const 안내 =
+    화면 === '어종'
+      ? '먼저 무엇을 잡으셨는지 골라주세요'
+      : 화면 === '길이'
+        ? '길이를 재서 눌러주세요'
+        : 화면 === '지역'
+          ? '어디서 잡으셨나요'
+          : 지역
+            ? `${지역} 기준`
+            : '전국 기준';
+
+  return (
+    <FlexBox flexDirection="column" sx={{ minHeight: '100dvh' }}>
+      <FlexBox
+        flexDirection="column"
+        gap={2}
+        sx={{
+          backgroundColor: 색.바탕,
+          padding: `calc(env(safe-area-inset-top) + ${크기.여백}px) ${크기.여백}px ${크기.여백}px`,
+        }}
+      >
+        <Typography sx={{ fontSize: 크기.보조, color: 색.흐린글 }}>
+          {지금 ? 날짜말(지금) : ' '}
+        </Typography>
+        <Typography weight="bold" sx={{ fontSize: 크기.큰제목, letterSpacing: '-0.01em' }}>
+          {제목}
+        </Typography>
+        <Typography sx={{ fontSize: 크기.보조, color: 색.흐린글, marginTop: 6 }}>{안내}</Typography>
+      </FlexBox>
+
+      <FlexBox
+        flexDirection="column"
+        gap={크기.사이}
+        sx={{ flex: 1, width: '100%', maxWidth: 560, margin: '0 auto', padding: 크기.여백 }}
+      >
+        {화면 === '어종' && (
+          <어종고르기
+            상단목록={상단목록}
+            검색={검색}
+            검색바꾸기={검색바꾸기}
+            검색결과={검색결과}
+            어종고름={어종고름}
+          />
+        )}
+        {화면 === '길이' && (
+          <길이재기
+            결과={결과}
+            길이={길이}
+            길이바꾸기={길이바꾸기}
+            판정하기={판정하기}
+            처음부터={처음부터}
+          />
+        )}
+        {화면 === '지역' && (
+          <지역고르기
+            결과={결과}
+            목록={메타.시도목록 || []}
+            고름={(L) => {
+              지역바꾸기(L);
+              판정하기({ 지역: L });
+            }}
+            처음부터={처음부터}
+          />
+        )}
+        {화면 === '결과' && (
+          <결과보기
+            결과={결과}
+            처음부터={처음부터}
+            다시재기={() => {
+              길이바꾸기('');
+              결과바꾸기({ ...결과, 화면: '길이' });
+            }}
+          />
+        )}
+      </FlexBox>
+
+      <FlexBox
+        flexDirection="column"
+        alignItems="center"
+        gap={10}
+        sx={{ padding: `16px 20px calc(env(safe-area-inset-bottom) + 16px)` }}
+      >
+        <Typography sx={{ fontSize: 크기.작게, color: 색.아주흐린글 }}>
+          {기록수 ? `지금까지 ${기록수}마리 확인했어요 · 기록은 이 기기 안에만` : '기록은 이 기기 안에만 저장됩니다'}
+        </Typography>
+        <FlexBox flexWrap="wrap" justifyContent="center" gap={16}>
+          <Link href="/charm" style={{ textDecoration: 'none' }}>
+            <Typography sx={{ fontSize: 크기.보조, color: 색.흐린글 }}>오늘의 바다 부적 ›</Typography>
+          </Link>
+          <Link href="/log" style={{ textDecoration: 'none' }}>
+            <Typography sx={{ fontSize: 크기.보조, color: 색.흐린글 }}>확인한 물고기 ›</Typography>
+          </Link>
+          <Link href="/" style={{ textDecoration: 'none' }}>
+            <Typography sx={{ fontSize: 크기.보조, color: 색.흐린글 }}>무사 귀항 도장 ›</Typography>
+          </Link>
+        </FlexBox>
+      </FlexBox>
+    </FlexBox>
+  );
+}
+
+/* ---------- 1. 어종 고르기 ---------- */
+function 어종고르기({ 상단목록, 검색, 검색바꾸기, 검색결과, 어종고름 }) {
+  return (
+    <Card sx={{ backgroundColor: 색.바탕, borderRadius: 18, padding: 크기.여백, gap: 크기.사이, boxShadow: 'var(--semantic-elevation-shadow-normal-xsmall)' }}>
+      <Typography weight="bold" sx={{ fontSize: 크기.보조, color: 색.흐린글 }}>
+        이번 달에 많이 잡히는 것
+      </Typography>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 11 }}>
+        {상단목록.map((s) => (
+          <Button
+            key={s.이름}
+            variant="outlined"
+            color="assistive"
+            size="large"
+            fullWidth
+            onClick={() => 어종고름(s.이름)}
+            sx={{
+              height: 'auto',
+              minHeight: 78,
+              padding: '14px 8px',
+              borderRadius: 크기.버튼둥글기,
+            }}
+          >
+            {/* 이름과 꼬리표를 세로로 쌓는다 — 버튼이 안쪽 내용을 가로로 붙이기 때문에
+                한 겹 싸서 방향을 바꾼다 */}
+            <span
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: 5,
+                width: '100%',
+              }}
+            >
+              <span style={{ fontSize: 22, fontWeight: 700, color: 색.글 }}>{s.이름}</span>
+              {s.금어기중 ? (
+                <span style={{ fontSize: 12, fontWeight: 600, color: 색.안됨 }}>
+                  지금 금어기일 수 있어요
+                </span>
+              ) : s.제철 ? (
+                <span style={{ fontSize: 12, fontWeight: 600, color: 색.됨 }}>제철</span>
+              ) : null}
+            </span>
+          </Button>
+        ))}
+      </div>
+
+      <TextField
+        value={검색}
+        onChange={(e) => 검색바꾸기(e.target.value)}
+        placeholder="다른 어종 찾기"
+        height={54}
+        sx={{ fontSize: 크기.본문 }}
+      />
+
+      {검색.trim() && 검색결과.length === 0 && (
+        <FlexBox flexDirection="column" gap={10}>
+          <Typography sx={{ fontSize: 크기.보조, color: 색.흐린글, lineHeight: 1.6 }}>
+            그런 이름은 기준표에 없어요. 그대로 두고 아래에서 그냥 물어보셔도 됩니다.
+          </Typography>
+          <Button
+            variant="outlined"
+            color="assistive"
+            size="large"
+            fullWidth
+            onClick={() => 어종고름(검색.trim())}
+            sx={버튼모양}
+          >
+            그래도 물어보기
+          </Button>
+        </FlexBox>
+      )}
+
+      {검색결과.length > 0 && (
+        <FlexBox flexWrap="wrap" gap={9}>
+          {검색결과.map((s) => (
+            <Chip
+              key={s.이름}
+              size="large"
+              variant="outlined"
+              onClick={() => 어종고름(s.이름)}
+              sx={{ fontSize: 크기.본문, height: 48, borderRadius: 12 }}
+            >
+              {s.이름}
+              {s.별칭.length ? ` (${s.별칭.join(', ')})` : ''}
+            </Chip>
+          ))}
+        </FlexBox>
+      )}
+    </Card>
+  );
+}
+
+/* ---------- 2. 길이 재기 ---------- */
+function 길이재기({ 결과, 길이, 길이바꾸기, 판정하기, 처음부터 }) {
+  const 기준 = 결과?.기준 || {};
+  const 단위 = 기준.단위 || 'cm';
+  const 그림 = 재는법말(기준.기준, 단위);
+  const 안내 = 그림 ? 그림.말 : 기준.기준 ? `${기준.기준}으로 재세요` : '길이를 재주세요';
+
+  function 누름(k) {
+    if (k === 'del') 길이바꾸기(길이.slice(0, -1));
+    else if (k === '.') {
+      if (!길이.includes('.') && 길이) 길이바꾸기(길이 + '.');
+    } else if (길이.length < 5) 길이바꾸기(길이 + k);
+  }
+
+  const 누를수있음 = !!길이 && Number(길이) > 0;
+
+  return (
+    <Card sx={{ backgroundColor: 색.바탕, borderRadius: 18, padding: 크기.여백, gap: 크기.사이, boxShadow: 'var(--semantic-elevation-shadow-normal-xsmall)' }}>
+      <FlexBox
+        sx={{
+          backgroundColor: 'var(--semantic-fill-alternative)',
+          borderRadius: 12,
+          padding: '14px 16px',
+        }}
+      >
+        <Typography sx={{ fontSize: 크기.보조, color: 색.흐린글, lineHeight: 1.6 }}>
+          <b style={{ color: 색.글 }}>{기준.기준 || '길이'}</b> — {안내}
+          {그림?.주의 && (
+            <>
+              <br />
+              {그림.주의}
+            </>
+          )}
+        </Typography>
+      </FlexBox>
+
+      {/* 어디서 어디까지 재는지 그림으로 — 갈치 항문장이 여기서 갈린다 */}
+      {그림 && (
+        <div style={{ color: 색.글, padding: '2px 0 0' }}>
+          <재는법그림 기준={기준.기준} 단위={단위} 색={색} 글없이 />
+        </div>
+      )}
+
+      <FlexBox alignItems="baseline" justifyContent="center" gap={4} sx={{ padding: '10px 0 2px' }}>
+        <Typography
+          weight="bold"
+          sx={{
+            fontSize: 58,
+            lineHeight: 1.1,
+            letterSpacing: '-0.03em',
+            color: 길이 ? 색.글 : 색.아주흐린글,
+          }}
+        >
+          {길이 || '0'}
+        </Typography>
+        <Typography weight="bold" sx={{ fontSize: 22, color: 색.흐린글 }}>
+          {단위}
+        </Typography>
+      </FlexBox>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 9 }}>
+        {['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', 'del'].map((k) => (
+          <Button
+            key={k}
+            variant="outlined"
+            color="assistive"
+            size="large"
+            fullWidth
+            onClick={() => 누름(k)}
+            sx={{
+              height: 64,
+              borderRadius: 13,
+              fontSize: k === 'del' ? 16 : 크기.숫자판,
+              fontWeight: 700,
+              color: k === 'del' || k === '.' ? 색.흐린글 : 색.글,
+            }}
+          >
+            {k === 'del' ? '지우기' : k}
+          </Button>
+        ))}
+      </div>
+
+      <Button
+        variant="solid"
+        color="primary"
+        size="large"
+        fullWidth
+        disabled={!누를수있음}
+        onClick={() => 판정하기({ 길이 })}
+        sx={버튼모양}
+      >
+        판정하기
+      </Button>
+      <Button
+        variant="outlined"
+        color="assistive"
+        size="large"
+        fullWidth
+        onClick={처음부터}
+        sx={{ ...버튼모양, fontSize: 크기.본문, fontWeight: 500, color: 색.흐린글 }}
+      >
+        어종 다시 고르기
+      </Button>
+    </Card>
+  );
+}
+
+/* ---------- 3. 지역 묻기 ---------- */
+function 지역고르기({ 결과, 목록, 고름, 처음부터 }) {
+  return (
+    <Card sx={{ backgroundColor: 색.바탕, borderRadius: 18, padding: 크기.여백, gap: 크기.사이, boxShadow: 'var(--semantic-elevation-shadow-normal-xsmall)' }}>
+      <FlexBox
+        sx={{
+          backgroundColor: 'var(--semantic-fill-alternative)',
+          borderRadius: 12,
+          padding: '14px 16px',
+        }}
+      >
+        <Typography sx={{ fontSize: 크기.보조, color: 색.흐린글, lineHeight: 1.6 }}>
+          {결과?.이유}. 잡은 곳을 골라주시면 그 지역 기준으로 봅니다
+        </Typography>
+      </FlexBox>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 9 }}>
+        {목록.map((L) => (
+          <Button
+            key={L}
+            variant="outlined"
+            color="assistive"
+            size="large"
+            fullWidth
+            onClick={() => 고름(L)}
+            sx={{ height: 58, borderRadius: 12, fontSize: 크기.본문, fontWeight: 600 }}
+          >
+            {L}
+          </Button>
+        ))}
+      </div>
+
+      <Button
+        variant="outlined"
+        color="assistive"
+        size="large"
+        fullWidth
+        onClick={처음부터}
+        sx={{ ...버튼모양, fontSize: 크기.본문, fontWeight: 500, color: 색.흐린글 }}
+      >
+        처음부터
+      </Button>
+    </Card>
+  );
+}
+
+/* ---------- 4. 결과 ---------- */
+function 결과보기({ 결과, 처음부터, 다시재기 }) {
+  const r = 결과;
+  const 색깔 = r.단계 === 1 ? 색.됨 : r.단계 === 2 ? 색.주의 : 색.안됨;
+
+  return (
+    <>
+      <Card sx={{ backgroundColor: 색.바탕, borderRadius: 18, padding: 크기.여백, gap: 12, boxShadow: 'var(--semantic-elevation-shadow-normal-xsmall)' }}>
+        {r.단계 === 4 && (
+          <FlexBox
+            sx={{
+              alignSelf: 'flex-start',
+              backgroundColor: 색.안됨,
+              borderRadius: 999,
+              padding: '6px 14px',
+            }}
+          >
+            <Typography weight="bold" sx={{ fontSize: 13, color: 색.흰 }}>
+              지금은 금어기
+            </Typography>
+          </FlexBox>
+        )}
+
+        {r.칭찬 && (
+          <Typography weight="bold" sx={{ fontSize: 20, color: 색.됨 }}>
+            {r.칭찬}
+          </Typography>
+        )}
+
+        <Typography
+          weight="bold"
+          sx={{ fontSize: 크기.결과글씨, lineHeight: 1.25, letterSpacing: '-0.025em', color: 색깔 }}
+        >
+          {r.결과}
+        </Typography>
+
+        <Typography sx={{ fontSize: 크기.본문, color: 색.흐린글, lineHeight: 1.65 }}>
+          {r.이유}
+        </Typography>
+
+        {물고기말[r.단계] && (
+          <FlexBox
+            sx={{
+              backgroundColor: 'var(--semantic-fill-alternative)',
+              borderRadius: 12,
+              padding: '13px 15px',
+            }}
+          >
+            <Typography sx={{ fontSize: 크기.보조, color: 색.흐린글 }}>
+              “{물고기말[r.단계]}”
+            </Typography>
+          </FlexBox>
+        )}
+
+        {r.주의?.length > 0 && (
+          <FlexBox flexDirection="column" gap={5}>
+            {r.주의.map((m, i) => (
+              <Typography key={i} sx={{ fontSize: 크기.보조, color: 색.주의, lineHeight: 1.6 }}>
+                · {m}
+              </Typography>
+            ))}
+          </FlexBox>
+        )}
+
+        {/* 벌금 안내는 금어기(4)뿐 아니라 금지체장 미달(3)에도 붙는다.
+            둘 다 같은 수산자원관리법 제65조제2호 대상이다 — 한쪽만 알려주면
+            「길이가 모자란 건 괜찮겠지」로 읽힌다 */}
+        {(r.단계 === 3 || r.단계 === 4) && r.근거?.위반시 && (
+          <FlexBox
+            sx={{
+              backgroundColor: 'var(--semantic-fill-normal)',
+              borderRadius: 12,
+              padding: '13px 15px',
+            }}
+          >
+            <Typography weight="bold" sx={{ fontSize: 크기.보조, color: 색.안됨, lineHeight: 1.6 }}>
+              어기면 {r.근거.위반시} (과태료 아님)
+              <br />
+              수산자원관리법 제65조제2호
+            </Typography>
+          </FlexBox>
+        )}
+
+        <div style={{ borderTop: `1px solid ${색.선}`, paddingTop: 13, marginTop: 4 }}>
+          <Typography sx={{ fontSize: 크기.작게, color: 색.아주흐린글, lineHeight: 1.7 }}>
+            {r.근거?.법령} · {r.근거?.기준일} 기준
+            <br />이 판정은 참고 정보예요. 최종 책임은 잡은 사람에게 있어요.
+          </Typography>
+        </div>
+      </Card>
+
+      <Button
+        variant="solid"
+        color="primary"
+        size="large"
+        fullWidth
+        onClick={처음부터}
+        sx={버튼모양}
+      >
+        다른 물고기 보기
+      </Button>
+
+      {r.단계 === 2 && r.기준 && (
+        <Button
+          variant="outlined"
+          color="assistive"
+          size="large"
+          fullWidth
+          onClick={다시재기}
+          sx={버튼모양}
+        >
+          길이 다시 재기
+        </Button>
+      )}
+    </>
+  );
+}

@@ -1,0 +1,16 @@
+{
+  "name": "무사 귀항 도장",
+  "short_name": "무사귀항",
+  "description": "오늘도 무사히 돌아오시라고",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F7F7F8",
+  "theme_color": "#0066FF",
+  "lang": "ko",
+  "icons": [
+    { "src": "./icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "./icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

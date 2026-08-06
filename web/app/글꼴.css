@@ -1,0 +1,27 @@
+/* Pretendard — 쓰고 있는 디자인 시스템이 기본으로 쓰는 글꼴.
+ * 외부 서버에서 받지 않고 이 앱 안에 넣어둔 파일을 쓴다.
+ * (시스템디자인 §8 「외부 네트워크 요청 0건」)
+ *
+ * Pretendard © Kil Hyung-jin — SIL Open Font License 1.1
+ */
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--semantic-background-normal-alternative);
+  -webkit-tap-highlight-color: transparent;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* 배 위에서 잘못 눌러 글자가 선택되는 것을 막는다 */
+button {
+  -webkit-user-select: none;
+  user-select: none;
+}
