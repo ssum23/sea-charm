@@ -209,7 +209,9 @@ export default function 부적화면() {
 
             {/* 부적을 받고 나면 할 일은 「나가기」다. 판정은 잡은 다음 일이라
                 여기서 큰 버튼으로 재촉할 것이 아니다 — 아래 작은 링크로 남겨 뒀다.
-                「항구로 돌아가기」는 돌아가는 곳이 홈이라는 뜻이다 */}
+                🔴 「항구로 돌아가기」였는데 다른 화면은 전부 「‹ 홈」이라 말이 갈렸다.
+                   같은 곳을 두 이름으로 부르면 그게 바로 길을 잃는 자리다.
+                   한 이름으로 맞춘다 (2026-08-06 지적 반영) */}
             <Button
               as={Link}
               href="/"
@@ -218,7 +220,7 @@ export default function 부적화면() {
               fullWidth
               sx={{ ...버튼모양, backgroundColor: 색.반전바탕, color: 색.반전글, textDecoration: 'none' }}
             >
-              항구로 돌아가기
+              홈으로 돌아가기
             </Button>
             <Button
               variant="outlined"

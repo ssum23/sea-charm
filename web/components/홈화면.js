@@ -144,12 +144,17 @@ export default function 홈화면() {
           </FlexBox>
 
           {바다에 ? (
+            /* 출항은 파랑(시작), 귀항은 초록(무사히 마침).
+               전에는 귀항이 검정이었는데 「이거 가져가도 되나요」도 검정이라
+               한 화면에 검정 버튼이 둘이었다. 검정은 하나만 남긴다.
+               초록은 이 앱에서 「됐다」는 뜻으로 이미 쓰고 있다 —
+               「가져가도 돼요」와 같은 결이다 (2026-08-06 지적 반영) */
             <Button
               variant="solid"
               size="large"
               fullWidth
               onClick={귀항하기}
-              sx={{ ...버튼모양, backgroundColor: 색.반전바탕, color: 색.반전글 }}
+              sx={{ ...버튼모양, backgroundColor: 색.됨, color: 색.흰 }}
             >
               귀항
             </Button>
@@ -166,7 +171,16 @@ export default function 홈화면() {
             </Button>
           )}
 
-          {바다에 ? (
+          {/* 🔴 이 자리는 상태에 따라 내용이 바뀌지만 **높이는 늘 같다**.
+              「출항」을 눌렀을 때 아래 버튼들이 아래로 밀려 내려가면
+              방금 누른 손가락이 다른 버튼을 누르게 된다 (배 위에서는 위험하다).
+              그래서 비어 있어도 자리를 지킨다 */}
+          <FlexBox
+            justifyContent="center"
+            alignItems="center"
+            sx={{ height: 크기.버튼높이, flex: '0 0 auto' }}
+          >
+            {바다에 ? (
             <Button
               variant="outlined"
               color="assistive"
@@ -179,28 +193,19 @@ export default function 홈화면() {
             </Button>
           ) : (
             방금돌아옴 && (
-              <FlexBox justifyContent="center" sx={{ paddingTop: 2 }}>
-                <button
-                  type="button"
-                  onClick={알리기}
-                  style={{
-                    fontSize: 13,
-                    color: 'var(--semantic-label-alternative)',
-                    background: 'none',
-                    border: 'none',
-                    padding: '9px 10px',
-                    cursor: 'pointer',
-                    textDecoration: 'underline',
-                    textUnderlineOffset: 3,
-                    fontFamily: 'inherit',
-                    fontWeight: 500,
-                  }}
-                >
-                  가족에게 도착 알리기
-                </button>
-              </FlexBox>
+              <Button
+                variant="outlined"
+                color="assistive"
+                size="large"
+                fullWidth
+                onClick={알리기}
+                sx={{ ...버튼모양, fontSize: 크기.본문, fontWeight: 500, color: 색.흐린글 }}
+              >
+                가족에게 도착 알리기
+              </Button>
             )
           )}
+          </FlexBox>
         </Card>
 
         {/* 하루 순서대로 — 출항 전에 부적 한 장, 잡으면 판정 */}
@@ -237,9 +242,7 @@ export default function 홈화면() {
         >
           사진 찍기
         </Button>
-        <Typography align="center" sx={{ fontSize: 크기.보조, color: 색.아주흐린글, marginTop: -6 }}>
-          출항 전에 한 장 · 잡으면 판정 · 찍으면 도장
-        </Typography>
+
 
         <Divider sx={{ marginTop: 6 }} />
 
@@ -248,7 +251,9 @@ export default function 홈화면() {
             모은 도장
           </Typography>
           <Link href="/log" style={{ textDecoration: 'none' }}>
-            <Typography sx={{ fontSize: 크기.보조, color: 색.주 }}>확인한 물고기 ›</Typography>
+            <Typography weight="bold" sx={{ fontSize: 크기.본문, color: 색.주 }}>
+              손맛 기록 ›
+            </Typography>
           </Link>
         </FlexBox>
         <도장들 목록={출항기록} 준비={준비} />
@@ -306,8 +311,8 @@ function 도장들({ 목록, 준비 }) {
             }}
           >
             <도장그림 날짜={d} 크기={52} />
-            <Typography sx={{ fontSize: 12, color: 색.흐린글 }}>
-              {d.getMonth() + 1}.{d.getDate()}
+            <Typography sx={{ fontSize: 12, color: 색.흐린글, textAlign: 'center', lineHeight: 1.3 }}>
+              {String(d.getFullYear()).slice(2)}.{d.getMonth() + 1}.{d.getDate()}
             </Typography>
             {/* 그날 바다가 어땠는지 — 도장은 같아도 날은 다르다 */}
             <Typography

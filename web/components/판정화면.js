@@ -172,11 +172,12 @@ export default function 판정화면() {
         기록수 ? `지금까지 ${기록수}마리 확인했어요 · 기록은 이 기기 안에만` : '기록은 이 기기 안에만 저장됩니다'
       }
       /* 하루 순서 — 판정이 쌓이면 기록이 된다 */
-      다음={{ 이름: '확인한 물고기', 주소: '/log' }}
+      다음={{ 이름: '손맛 기록', 주소: '/log' }}
     >
       <>
         {화면 === '어종' && (
           <어종고르기
+            지금={지금}
             상단목록={상단목록}
             검색={검색}
             검색바꾸기={검색바꾸기}
@@ -211,6 +212,7 @@ export default function 판정화면() {
             길이={길이}
             짜={짜}
             처음부터={처음부터}
+            길이넣기={() => 결과바꾸기({ ...결과, 화면: '길이' })}
             다시재기={() => {
               길이바꾸기('');
               결과바꾸기({ ...결과, 화면: '길이' });
@@ -222,13 +224,58 @@ export default function 판정화면() {
   );
 }
 
+/* 바깥으로 나가는 링크. 새 창에서 열고, 나가는 표시를 붙인다.
+   `rel="noreferrer"` — 우리 주소를 상대 쪽에 알려주지 않는다 */
+function 바깥링크({ 주소, 이름 }) {
+  return (
+    <a
+      href={주소}
+      target="_blank"
+      rel="noreferrer"
+      style={{
+        textDecoration: 'none',
+        border: `1px solid ${색.선}`,
+        borderRadius: 999,
+        padding: '7px 13px',
+        fontSize: 13,
+        color: 색.흐린글,
+        display: 'inline-block',
+      }}
+    >
+      {이름} ↗
+    </a>
+  );
+}
+
 /* ---------- 1. 어종 고르기 ---------- */
-function 어종고르기({ 상단목록, 검색, 검색바꾸기, 검색결과, 어종고름 }) {
+function 어종고르기({ 상단목록, 검색, 검색바꾸기, 검색결과, 어종고름, 지금 }) {
+  const 달 = (지금 || new Date()).getMonth() + 1;
+  /* 지금 목록에 올라온 것 중 제철인 것만 이름을 뽑아 한 줄로 알려준다.
+     「왜 이 여덟 개가 여기 있나」에 답이 된다 */
+  const 제철들 = 상단목록.filter((s) => s.제철 && !s.금어기중).map((s) => s.이름);
+  const 금어기들 = 상단목록.filter((s) => s.금어기중).map((s) => s.이름);
+
   return (
     <Card sx={{ backgroundColor: 색.바탕, borderRadius: 18, padding: 크기.여백, gap: 크기.사이, boxShadow: 'var(--semantic-elevation-shadow-normal-xsmall)' }}>
-      <Typography weight="bold" sx={{ fontSize: 크기.보조, color: 색.흐린글 }}>
-        이번 달에 많이 잡히는 것
-      </Typography>
+      <FlexBox flexDirection="column" gap={4}>
+        <Typography weight="bold" sx={{ fontSize: 크기.보조, color: 색.흐린글 }}>
+          {달}월에 많이 잡히는 것
+        </Typography>
+        <Typography sx={{ fontSize: 크기.작게, color: 색.아주흐린글, lineHeight: 1.65 }}>
+          {제철들.length > 0 && (
+            <>
+              지금 제철은 <b style={{ color: 색.됨 }}>{제철들.join(' · ')}</b>
+            </>
+          )}
+          {제철들.length > 0 && 금어기들.length > 0 && <br />}
+          {금어기들.length > 0 && (
+            <>
+              지금 금어기일 수 있는 것은 <b style={{ color: 색.안됨 }}>{금어기들.join(' · ')}</b>
+            </>
+          )}
+          {제철들.length === 0 && 금어기들.length === 0 && '낚시어선 어획 통계 41개월 실측 순서예요'}
+        </Typography>
+      </FlexBox>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 11 }}>
         {상단목록.map((s) => (
@@ -270,13 +317,33 @@ function 어종고르기({ 상단목록, 검색, 검색바꾸기, 검색결과, 
         ))}
       </div>
 
-      <TextField
-        value={검색}
-        onChange={(e) => 검색바꾸기(e.target.value)}
-        placeholder="다른 어종 찾기"
-        height={54}
-        sx={{ fontSize: 크기.본문 }}
-      />
+      {/* 돋보기 — 그림 파일이 아니라 코드로 그린다(외부 요청 0건).
+          글자 크기를 키워도 같이 커지도록 currentColor·em 을 쓴다 */}
+      <div style={{ position: 'relative' }}>
+        <span
+          style={{
+            position: 'absolute',
+            left: 15,
+            top: '50%',
+            transform: 'translateY(-50%)',
+            color: 색.아주흐린글,
+            lineHeight: 0,
+            pointerEvents: 'none',
+          }}
+        >
+          <svg width="19" height="19" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <circle cx="8.6" cy="8.6" r="5.6" stroke="currentColor" strokeWidth="1.8" />
+            <line x1="12.9" y1="12.9" x2="17.4" y2="17.4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+          </svg>
+        </span>
+        <TextField
+          value={검색}
+          onChange={(e) => 검색바꾸기(e.target.value)}
+          placeholder="다른 어종 찾기"
+          height={54}
+          sx={{ fontSize: 크기.본문, '& input': { paddingLeft: '40px' } }}
+        />
+      </div>
 
       {검색.trim() && 검색결과.length === 0 && (
         <FlexBox flexDirection="column" gap={10}>
@@ -470,7 +537,7 @@ function 지역고르기({ 결과, 목록, 고름, 처음부터 }) {
 }
 
 /* ---------- 4. 결과 ---------- */
-function 결과보기({ 결과, 어종, 길이, 짜, 처음부터, 다시재기 }) {
+function 결과보기({ 결과, 어종, 길이, 짜, 처음부터, 다시재기, 길이넣기 }) {
   const r = 결과;
   const 색깔 = r.단계 === 1 ? 색.됨 : r.단계 === 2 ? 색.주의 : 색.안됨;
 
@@ -557,6 +624,36 @@ function 결과보기({ 결과, 어종, 길이, 짜, 처음부터, 다시재기 
             {r.근거?.법령} · {r.근거?.기준일} 기준
             <br />이 판정은 참고 정보예요. 최종 책임은 잡은 사람에게 있어요.
           </Typography>
+
+          {/* 🔴 공식 자료는 앱 안에 넣지 않고 링크로만 연다.
+              국립수산과학원 자료는 항목마다 공공누리 유형이 다르고(제1~제4),
+              제2·제4유형은 상업적 이용 금지, 제3·제4유형은 변형 금지다.
+              사진을 앱에 넣으려면 항목별로 유형을 확인하고 허락을 받아야 한다.
+              그래서 「인터넷이 있을 때만 열리는 링크」로 둔다 —
+              이러면 앱 자체의 「외부 요청 0건」은 그대로 지켜진다.
+              (누르지 않으면 아무것도 받아오지 않는다) */}
+          <FlexBox flexDirection="column" gap={7} sx={{ marginTop: 12 }}>
+            <Typography sx={{ fontSize: 크기.작게, color: 색.흐린글, lineHeight: 1.7 }}>
+              생김새가 헷갈리면 공식 자료와 견줘보세요.{' '}
+              <b style={{ color: 색.아주흐린글 }}>인터넷이 있을 때만 열립니다.</b>
+            </Typography>
+            <FlexBox flexWrap="wrap" gap={7}>
+              <바깥링크
+                주소={`https://www.google.com/search?q=${encodeURIComponent(
+                  (어종 || '') + ' 국립수산과학원 수산생물도감',
+                )}&tbm=isch`}
+                이름="사진으로 견주기"
+              />
+              <바깥링크
+                주소="https://www.nifs.go.kr/frcenter/"
+                이름="수산과학원 자료실"
+              />
+              <바깥링크
+                주소="https://www.law.go.kr/법령/수산자원관리법시행령"
+                이름="법령 원문"
+              />
+            </FlexBox>
+          </FlexBox>
         </div>
       </Card>
 
@@ -598,6 +695,22 @@ function 결과보기({ 결과, 어종, 길이, 짜, 처음부터, 다시재기 
       >
         다른 물고기 보기
       </Button>
+
+      {/* 크기 제한이 없는 어종은 길이를 묻지 않는다 — 물어볼 이유가 없다.
+          그래도 기록에 남기고 싶을 수 있으니 「원하면 넣기」로 열어둔다.
+          판정 결과는 길이를 넣어도 바뀌지 않는다(기준이 없으니까). */}
+      {r.단계 === 1 && !r.기준 && (길이 === '' || 길이 == null) && (
+        <Button
+          variant="outlined"
+          color="assistive"
+          size="large"
+          fullWidth
+          onClick={길이넣기}
+          sx={{ ...버튼모양, fontSize: 크기.본문, fontWeight: 500 }}
+        >
+          길이도 기록해둘까요
+        </Button>
+      )}
 
       {r.단계 === 2 && r.기준 && (
         <Button

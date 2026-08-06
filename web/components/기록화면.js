@@ -1,6 +1,6 @@
 'use client';
 
-/* 확인한 물고기 (PRD의 H)
+/* 손맛 기록 (PRD의 H)
  *
  * 데이터 색만은 디자인 시스템 팔레트를 그대로 쓰지 않는다.
  * CHANGES #77·#78에서 색약 검증을 거쳐 고른 두 색이 있고, 그게 이 화면의 근거다.
@@ -45,6 +45,30 @@ function 작은버튼(바탕, 글자, 굵게, 테없이) {
   };
 }
 
+/* 눌러서 고르는 작은 단추. 기간·순서 둘 다 이걸 쓴다 */
+function 칩({ 켜짐, 누름, children }) {
+  return (
+    <button
+      type="button"
+      onClick={누름}
+      style={{
+        padding: '9px 4px',
+        borderRadius: 10,
+        fontFamily: 'inherit',
+        fontSize: 13,
+        fontWeight: 켜짐 ? 700 : 500,
+        cursor: 'pointer',
+        border: `1px solid ${켜짐 ? 'transparent' : 색.선}`,
+        background: 켜짐 ? 색.반전바탕 : 'transparent',
+        color: 켜짐 ? 색.반전글 : 색.흐린글,
+        whiteSpace: 'nowrap',
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
 const 카드모양 = {
   backgroundColor: 색.바탕,
   borderRadius: 18,
@@ -63,6 +87,28 @@ const 가져감 = (c) => c.단계 === 1;
  * 크기는 단위가 섞이면 비교가 틀린다 — 대문어 700g 이 700cm 로 읽히면 안 된다.
  * 그래서 cm 인 것만 서로 견주고, 나머지는 순서를 매기지 않고 뒤에 둔다.
  */
+/* 기간 — 언제부터 볼지. 「오늘」이 기본이 아니라 「전체」가 기본이다:
+   처음 열었을 때 아무것도 안 보이면 고장으로 읽힌다 */
+const 기간목록 = [
+  { 값: '오늘', 이름: '오늘', 일: 0 },
+  { 값: '주', 이름: '최근 1주일', 일: 7 },
+  { 값: '달', 이름: '최근 1달', 일: 30 },
+  { 값: '전체', 이름: '전체', 일: null },
+];
+
+function 기간자르기(목록, 기간, 지금) {
+  const 칸 = 기간목록.find((g) => g.값 === 기간);
+  if (!칸 || 칸.일 === null) return 목록;
+  const 이제 = 지금 || new Date();
+  if (칸.일 === 0) {
+    /* 「오늘」은 24시간 전이 아니라 오늘 0시부터다. 사람이 그렇게 센다 */
+    const 새벽 = new Date(이제.getFullYear(), 이제.getMonth(), 이제.getDate(), 0, 0, 0, 0);
+    return 목록.filter((c) => new Date(c.시각) >= 새벽);
+  }
+  const 끝 = 이제.getTime() - 칸.일 * 86400000;
+  return 목록.filter((c) => new Date(c.시각).getTime() >= 끝);
+}
+
 const 순서목록 = [
   { 값: '최근', 이름: '최근 것부터' },
   { 값: '많이', 이름: '많이 잡은 순서' },
@@ -115,6 +161,7 @@ export default function 기록화면() {
   const [복사됨, 복사됨바꾸기] = useState(false);
   /* 목록을 어떤 순서로 볼지. 기본은 최근 것부터 — 방금 잡은 것이 궁금하다 */
   const [순서, 순서바꾸기] = useState('최근');
+  const [기간, 기간바꾸기] = useState('전체');
   /* 내보내기는 버튼 두 개를 늘어놓지 않고, 눌렀을 때만 고르게 한다 */
   const [내보내기펼침, 내보내기펼침바꾸기] = useState(false);
 
@@ -131,12 +178,18 @@ export default function 기록화면() {
     return () => clearTimeout(t);
   }, [되돌릴것]);
 
-  function 지우기(i) {
+  /* 🔴 「몇 번째」로 지우면 안 된다.
+     기간을 자르고 순서를 바꾸면 화면의 세 번째가 저장된 세 번째가 아니다.
+     지울 것 자체를 받아서 원래 목록에서 그 자리를 찾는다.
+     (기간·순서 고르기를 넣으면서 생길 수 있었던 결함 — 2026-08-06) */
+  function 지우기(것) {
+    const 자리 = 목록.indexOf(것);
+    if (자리 < 0) return;
     const 새목록 = 목록.slice();
-    const 뺀것 = 새목록.splice(i, 1)[0];
+    const 뺀것 = 새목록.splice(자리, 1)[0];
     목록바꾸기(새목록);
     쓰기(키.잡은것, 새목록);
-    되돌릴것바꾸기({ 자리: i, 것: 뺀것 });
+    되돌릴것바꾸기({ 자리: 자리, 것: 뺀것 });
   }
 
   function 되돌리기() {
@@ -191,13 +244,16 @@ export default function 기록화면() {
     }
   }
 
-  const 감 = 목록.filter(가져감).length;
-  const 놓 = 목록.length - 감;
-  const 방생률 = 목록.length ? Math.round((놓 / 목록.length) * 100) : 0;
+  /* 기간을 먼저 자르고, 그 안에서 숫자와 목록을 만든다.
+     「최근 1주일 방생률」이 되어야 기간 고르기가 뜻이 있다 */
+  const 본것 = 기간자르기(목록, 기간, 지금);
+  const 감 = 본것.filter(가져감).length;
+  const 놓 = 본것.length - 감;
+  const 방생률 = 본것.length ? Math.round((놓 / 본것.length) * 100) : 0;
 
   return (
     <화면틀
-      제목="확인한 물고기"
+      제목="손맛 기록"
       날짜={지금}
       큰숫자={준비 ? 목록.length : 0}
       큰숫자말="마리를 판정했습니다"
@@ -236,6 +292,15 @@ export default function 기록화면() {
         </>
       ) : (
         <>
+          {/* 기간 고르기 */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
+            {기간목록.map((g) => (
+              <칩 key={g.값} 켜짐={기간 === g.값} 누름={() => 기간바꾸기(g.값)}>
+                {g.이름}
+              </칩>
+            ))}
+          </div>
+
           {/* 숫자 셋 */}
           <Card sx={카드모양}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 11 }}>
@@ -243,18 +308,6 @@ export default function 기록화면() {
               <숫자칸 값={놓} 이름="놓아줌" 점={데이터색.놓아줌} />
               <숫자칸 값={`${방생률}%`} 이름="방생률" />
             </div>
-          </Card>
-
-          {/* 어종별 */}
-          <Card sx={카드모양}>
-            <Typography weight="bold" sx={{ fontSize: 크기.보조, color: 색.흐린글 }}>
-              어종별 — 많이 본 순서
-            </Typography>
-            <FlexBox gap={16}>
-              <범례 색깔={데이터색.가져감} 이름="가져감" />
-              <범례 색깔={데이터색.놓아줌} 이름="놓아줌" />
-            </FlexBox>
-            <어종별막대 목록={목록} />
           </Card>
 
           {/* 목록 */}
@@ -265,33 +318,27 @@ export default function 기록화면() {
 
             {/* 순서 고르기 — 셋 중 하나. 누르면 그 자리에서 다시 줄 선다 */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 7 }}>
-              {순서목록.map((o) => {
-                const 켜짐 = 순서 === o.값;
-                return (
-                  <button
-                    key={o.값}
-                    type="button"
-                    onClick={() => 순서바꾸기(o.값)}
-                    style={{
-                      padding: '9px 4px',
-                      borderRadius: 10,
-                      fontFamily: 'inherit',
-                      fontSize: 13.5,
-                      fontWeight: 켜짐 ? 700 : 500,
-                      cursor: 'pointer',
-                      border: `1px solid ${켜짐 ? 'transparent' : 색.선}`,
-                      background: 켜짐 ? 색.반전바탕 : 'transparent',
-                      color: 켜짐 ? 색.반전글 : 색.흐린글,
-                    }}
-                  >
-                    {o.이름}
-                  </button>
-                );
-              })}
+              {순서목록.map((o) => (
+                <칩 key={o.값} 켜짐={순서 === o.값} 누름={() => 순서바꾸기(o.값)}>
+                  {o.이름}
+                </칩>
+              ))}
             </div>
 
+            {/* 「많이 잡은 순서」는 한 마리씩 늘어놓지 않는다.
+                「조피볼락 15마리」처럼 어종별로 묶어 보여주는 것이 그 물음의 답이다.
+                (전에는 이 내용이 위 「어종별」 칸과 겹쳐 있어서 그 칸을 없앴다) */}
+            {순서 === '많이' ? (
+              <>
+                <FlexBox gap={16}>
+                  <범례 색깔={데이터색.가져감} 이름="가져감" />
+                  <범례 색깔={데이터색.놓아줌} 이름="놓아줌" />
+                </FlexBox>
+                <어종별막대 목록={본것} />
+              </>
+            ) : (
             <div>
-              {정렬하기(목록, 순서).slice(0, 60).map((c, i) => {
+              {정렬하기(본것, 순서).slice(0, 60).map((c, i) => {
                 const t = 가져감(c);
                 return (
                   <FlexBox
@@ -331,7 +378,7 @@ export default function 기록화면() {
                     </span>
 
                     <button
-                      onClick={() => 지우기(i)}
+                      onClick={() => 지우기(c)}
                       style={{
                         flexShrink: 0,
                         border: 0,
@@ -349,9 +396,15 @@ export default function 기록화면() {
                 );
               })}
             </div>
-            {목록.length > 60 && (
+            )}
+            {순서 !== '많이' && 본것.length > 60 && (
               <Typography sx={{ fontSize: 크기.작게, color: 색.아주흐린글, lineHeight: 1.7 }}>
-                아래 {목록.length - 60}건은 화면에만 안 보이고 그대로 남아 있습니다
+                아래 {본것.length - 60}건은 화면에만 안 보이고 그대로 남아 있습니다
+              </Typography>
+            )}
+            {본것.length === 0 && (
+              <Typography sx={{ fontSize: 크기.보조, color: 색.아주흐린글, lineHeight: 1.7 }}>
+                이 기간에는 기록이 없어요. 위에서 기간을 넓혀보세요.
               </Typography>
             )}
           </Card>
