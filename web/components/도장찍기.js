@@ -443,10 +443,9 @@ export default function 도장찍기({ 닫기, 판정 }) {
             바다 도장
           </Typography>
           <Typography sx={{ fontSize: 크기.보조, color: 색.흐린글, lineHeight: 1.7 }}>
-            잡은 물고기를 찍으면 날짜와 장소를 얹어 한 장으로 만들어 드려요.
+            물고기를 찍으면 날짜와 장소등 정보를 얹어 한 장으로 만들어 드려요.
             <br />
-            <b style={{ color: 색.글 }}>사진은 이 앱에 저장되지 않습니다.</b> 만들어서 내보내고 바로
-            버립니다.
+            <b style={{ color: 색.글 }}>사진은 이 앱에 저장되지 않습니다.</b> 
           </Typography>
           <input
             ref={파일칸}

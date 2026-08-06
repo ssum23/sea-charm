@@ -197,11 +197,9 @@ export default function 부적화면() {
             <부적종이 r={결과} 지금={지금} />
 
             <Typography sx={{ fontSize: 크기.작게, color: 색.아주흐린글, lineHeight: 1.75, padding: '0 4px' }}>
-              <b style={{ color: 색.흐린글 }}>부적은 물때마다 한 장이에요.</b> 사리·중간·조금이
-              바뀔 때 새 부적이 나옵니다(보통 3~5일). 다시 열어도 같은 것이 나와요.
-              <br />
-              물때는 달의 위상을 계산한 것입니다.{' '}
-              <b style={{ color: 색.흐린글 }}>어획도 안전도 점치지 않습니다.</b>
+              <b style={{ color: 색.흐린글 }}>부적은 물때마다 한 장이에요.</b> 
+              
+              <b style={{ color: 색.흐린글 }}>  어획도 안전도 점치지 않습니다.</b>
             </Typography>
 
             {/* 부적을 받고 나면 할 일은 「나가기」다. 판정은 잡은 다음 일이라
@@ -225,7 +223,7 @@ export default function 부적화면() {
               size="large"
               fullWidth
               onClick={생년지우기}
-              sx={{ ...버튼모양, fontSize: 크기.본문, fontWeight: 500, color: 색.흐린글 }}
+              sx={{ ...버튼모양, fontSize: 크기.홈, fontWeight: 500, color: 색.흐린글 }}
             >
               {결과.띠 ? '생년 다시 넣기' : '띠를 넣어 부적 받기'}
             </Button>

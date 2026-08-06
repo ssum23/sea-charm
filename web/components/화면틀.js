@@ -49,7 +49,7 @@ export default function 화면틀({
       >
         {홈으로 ? (
           <Link href="/" style={{ textDecoration: 'none', alignSelf: 'flex-start' }}>
-            <Typography sx={{ fontSize: 크기.보조, color: 색.흐린글, padding: '2px 0' }}>
+            <Typography sx={{ fontSize: 크기.홈, color: 색.흐린글, padding: '2px 0' }}>
               ‹ 홈
             </Typography>
           </Link>
