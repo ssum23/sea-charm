@@ -31,6 +31,8 @@ import { 읽기, 쓰기 } from '@/lib/저장소';
 /* 최근 값을 기억한다 — 같은 배를 또 탄다. 두 번째부터는 누르기만 하면 된다 */
 const 배키 = 'seacharm.boat.v1';
 const 시도키 = 'seacharm.sido.v1';
+/* 도장에 한 줄 더 — 사람이 아무거나 적는다 (2026-08-06 사장님 지시) */
+const 메모키 = 'seacharm.stampmemo.v1';
 /* 판정 화면에서 도장으로 넘어올 때 쓰는 임시 자리.
    sessionStorage 라서 창을 닫으면 사라진다 — 남겨둘 값이 아니다 */
 export const 넘김키 = 'seacharm.stamp-handoff.v1';
@@ -103,6 +105,8 @@ function 그리기A(cv, 이미지, 정보) {
   줄들.push({ 글: `${정보.날짜} · ${정보.시각}`, 크기: 단 * 3.6, 굵게: true });
   const 아래 = [정보.시도, 정보.배].filter(Boolean).join(' · ');
   if (아래) 줄들.push({ 글: 아래, 크기: 단 * 3, 굵게: false });
+  /* 사람이 직접 적은 한 줄 — 시·도와 배 다음에 온다 */
+  if (정보.메모) 줄들.push({ 글: 정보.메모, 크기: 단 * 2.8, 굵게: false });
 
   /* 🔴 판정을 안 거쳤으면 이 줄을 아예 만들지 않는다. 빈칸을 남기지 않는다 */
   if (정보.판정) {
@@ -228,7 +232,10 @@ function 그리기B(cv, 이미지, 정보, 눈금) {
   const 단 = W / 100;
 
   const 길이 = 눈금.길이 * W; // 화면 가로 대비 비율
-  const 두께 = Math.max(단 * 5, 길이 * 0.075);
+  /* 🔴 2026-08-06 — 자를 더 얇고 더 투명하게 (사장님 지적).
+     자가 두꺼우면 물고기를 덮는다. 자는 「재는 도구」가 아니라
+     「눈금이 같이 찍힌 사진」을 만드는 장치다 — 사진이 주인공이다 */
+  const 두께 = Math.max(단 * 3.4, 길이 * 0.052);
   const cx = 눈금.x * W;
   const cy = 눈금.y * H;
 
@@ -237,12 +244,12 @@ function 그리기B(cv, 이미지, 정보, 눈금) {
   ctx.rotate((눈금.각도 * Math.PI) / 180);
 
   /* 자 몸통 */
-  ctx.fillStyle = 'rgba(250,248,242,0.92)';
+  ctx.fillStyle = 'rgba(250,248,242,0.55)';
   ctx.beginPath();
   ctx.roundRect(-길이 / 2, -두께 / 2, 길이, 두께, 두께 * 0.14);
   ctx.fill();
-  ctx.strokeStyle = 'rgba(40,44,52,0.35)';
-  ctx.lineWidth = Math.max(1, 단 * 0.14);
+  ctx.strokeStyle = 'rgba(40,44,52,0.22)';
+  ctx.lineWidth = Math.max(1, 단 * 0.1);
   ctx.stroke();
 
   /* 눈금 — 0~60cm. 5cm마다 숫자 */
@@ -283,6 +290,7 @@ export default function 도장찍기({ 닫기, 판정 }) {
   const [고른종류, 고른종류바꾸기] = useState('A');
   const [시도, 시도바꾸기] = useState('');
   const [배, 배바꾸기] = useState('');
+  const [메모, 메모바꾸기] = useState('');
   const [저장됨, 저장됨바꾸기] = useState('');
 
   /* C — 두 점 재기 */
@@ -302,6 +310,7 @@ export default function 도장찍기({ 닫기, 판정 }) {
   useEffect(() => {
     시도바꾸기(읽기(시도키, '') || '');
     배바꾸기(읽기(배키, '') || '');
+    메모바꾸기(읽기(메모키, '') || '');
   }, []);
 
   /* 사진은 브라우저 메모리에만 둔다. 창을 닫으면 사라진다 */
@@ -347,6 +356,7 @@ export default function 도장찍기({ 닫기, 판정 }) {
       시각: 시각글(이제),
       시도: 시도,
       배: 배,
+      메모: 메모,
       /* 🔴 판정을 안 거쳐 왔으면 null. 캔버스에서 그 줄을 아예 그리지 않는다 */
       판정: 판정
         ? {
@@ -359,7 +369,7 @@ export default function 도장찍기({ 닫기, 판정 }) {
           }
         : null,
     };
-  }, [시도, 배, 판정]);
+  }, [시도, 배, 메모, 판정]);
 
   /* 미리보기 다시 그리기 */
   useEffect(() => {
@@ -374,6 +384,7 @@ export default function 도장찍기({ 닫기, 판정 }) {
   function 기억하기() {
     쓰기(시도키, 시도);
     쓰기(배키, 배);
+    쓰기(메모키, 메모);
   }
 
   function 내려받기() {
@@ -542,7 +553,13 @@ export default function 도장찍기({ 닫기, 판정 }) {
                     <button
                       key={k.이름}
                       type="button"
+                      /* 🔴 한 번 더 누르면 선택이 풀린다 (2026-08-06 사장님 지시).
+                         고른 뒤 마음이 바뀌었을 때 빠져나갈 길이 없었다 */
                       onClick={() => {
+                        if (켜짐) {
+                          기준이름바꾸기('기준물');
+                          return;
+                        }
                         기준이름바꾸기(k.이름);
                         기준cm바꾸기(k.cm);
                       }}
@@ -687,6 +704,15 @@ export default function 도장찍기({ 닫기, 판정 }) {
               value={배}
               placeholder="대박호 · 안흥항"
               onChange={(e) => 배바꾸기(e.target.value)}
+            />
+
+            {/* 🔴 자유롭게 적는 칸 (2026-08-06 사장님 지시).
+                시·도와 배 다음 줄에 그대로 찍힌다.
+                🔴 상세 주소는 여기에도 적지 않는 게 좋다 — PRD §0-5(포인트 비공개) */}
+            <TextField
+              value={메모}
+              placeholder="한마디 — 첫 출조 · 아들과 함께"
+              onChange={(e) => 메모바꾸기(e.target.value)}
             />
 
             {판정 ? (

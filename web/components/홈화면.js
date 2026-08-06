@@ -120,7 +120,7 @@ export default function 홈화면() {
       제목="홈"
       날짜={준비 && 지금 ? 지금 : null}
       큰숫자={준비 ? 출항기록.length : 0}
-      큰숫자말="번 돌아왔습니다"
+      큰숫자말="번 다녀왔습니다"
       바닥글="기록은 이 기기 안에만 저장됩니다"
       /* 여기가 홈이다 — 되돌아갈 곳이 없다 */
       홈으로={false}
@@ -175,7 +175,7 @@ export default function 홈화면() {
               onClick={귀항하기}
               sx={{ ...버튼모양, backgroundColor: 색.됨, color: 색.흰 }}
             >
-              귀항
+              🏠 귀항
             </Button>
           ) : (
             <Button
@@ -186,7 +186,7 @@ export default function 홈화면() {
               onClick={출항하기}
               sx={버튼모양}
             >
-              출항
+              ⚓ 출항
             </Button>
           )}
 
@@ -236,7 +236,7 @@ export default function 홈화면() {
           fullWidth
           sx={{ ...버튼모양, backgroundColor: '#8b5a2b', color: 색.흰, textDecoration: 'none' }}
         >
-          오늘의 바다 부적
+          🧿 오늘의 바다 부적
         </Button>
         <Button
           as={Link}
@@ -246,7 +246,7 @@ export default function 홈화면() {
           fullWidth
           sx={{ ...버튼모양, backgroundColor: 색.반전바탕, color: 색.반전글, textDecoration: 'none', marginTop: -4 }}
         >
-          이거 가져가도 되나요
+          🎣 이거 가져가도 되나요
         </Button>
         <Button
           variant="outlined"
@@ -259,7 +259,7 @@ export default function 홈화면() {
           }}
           sx={{ ...버튼모양, fontSize: 크기.홈본문, marginTop: -4 }}
         >
-          사진 찍기
+          📸 사진 찍기
         </Button>
 
 

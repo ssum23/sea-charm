@@ -72,18 +72,19 @@ export default function 도장그림({ 날짜, 크기: 그림크기 = 56, 색깔
           네 글자보다 두 글자가 훨씬 커져서 작게 놓아도 읽힌다 */}
       {/* 두 글자를 안쪽 테(14~86) 의 위·아래 반칸 정중앙에 놓는다.
           글자 아래끝 기준(baseline)으로 y 를 주면 위로 쏠려 보인다 —
-          dominantBaseline="central" 로 글자 한가운데를 기준으로 잡는다
-          (2026-08-06 「도장이 위쪽으로 쏠린다」 지적 반영) */}
+          🔴 2026-08-06 (2) — `dominantBaseline` 으로 고쳤더니 맥에서는 가운데였는데
+          **아이폰에서는 그대로 쏠려 보였다.** 사파리가 이 속성을 제대로 안 지킨다.
+          그래서 어디서나 통하는 방식으로 바꿨다 — 기준은 글자 아래끝(기본)으로 두고
+          `dy` 로 글자 높이의 0.35배만큼 내려서 눈으로 가운데가 되게 한다 */}
       <g
         filter={`url(#${이름표})`}
         fill={색깔}
         fontSize="30"
         fontWeight="700"
         textAnchor="middle"
-        dominantBaseline="central"
       >
-        <text x="50" y="32">歸</text>
-        <text x="50" y="68">港</text>
+        <text x="50" y="32" dy="0.35em">歸</text>
+        <text x="50" y="68" dy="0.35em">港</text>
       </g>
     </svg>
   );
