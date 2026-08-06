@@ -172,7 +172,7 @@ export default function 판정화면() {
         기록수 ? `지금까지 ${기록수}마리 확인했어요 · 기록은 이 기기 안에만` : '기록은 이 기기 안에만 저장됩니다'
       }
       /* 하루 순서 — 판정이 쌓이면 기록이 된다 */
-      다음={{ 이름: '손맛 기록', 주소: '/log' }}
+      다음={{ 이름: '조과 기록', 주소: '/log' }}
     >
       <>
         {화면 === '어종' && (
@@ -233,16 +233,15 @@ function 바깥링크({ 주소, 이름 }) {
       target="_blank"
       rel="noreferrer"
       style={{
-        textDecoration: 'none',
-        border: `1px solid ${색.선}`,
-        borderRadius: 999,
-        padding: '7px 13px',
-        fontSize: 13,
+        textDecoration: 'underline',
+        textUnderlineOffset: 3,
+        fontSize: 13.5,
         color: 색.흐린글,
         display: 'inline-block',
+        padding: '4px 0',
       }}
     >
-      {이름} ↗
+      {이름}
     </a>
   );
 }
@@ -633,11 +632,13 @@ function 결과보기({ 결과, 어종, 길이, 짜, 처음부터, 다시재기,
               이러면 앱 자체의 「외부 요청 0건」은 그대로 지켜진다.
               (누르지 않으면 아무것도 받아오지 않는다) */}
           <FlexBox flexDirection="column" gap={7} sx={{ marginTop: 12 }}>
+            {/* 「인터넷이 있을 때만 열립니다」를 뺐다 — 밑줄 친 글은 누르면 링크로 간다는 걸
+                누구나 안다. 링크면 인터넷이 필요한 것도 안다. 과한 친절은 글만 늘린다
+                (2026-08-06 지적 반영) */}
             <Typography sx={{ fontSize: 크기.작게, color: 색.흐린글, lineHeight: 1.7 }}>
-              생김새가 헷갈리면 공식 자료와 견줘보세요.{' '}
-              <b style={{ color: 색.아주흐린글 }}>인터넷이 있을 때만 열립니다.</b>
+              생김새가 헷갈리면 공식 자료와 견줘보세요.
             </Typography>
-            <FlexBox flexWrap="wrap" gap={7}>
+            <FlexBox flexWrap="wrap" gap={14}>
               <바깥링크
                 주소={`https://www.google.com/search?q=${encodeURIComponent(
                   (어종 || '') + ' 국립수산과학원 수산생물도감',

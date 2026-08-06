@@ -1,6 +1,6 @@
 'use client';
 
-/* 손맛 기록 (PRD의 H)
+/* 조과 기록 (PRD의 H)
  *
  * 데이터 색만은 디자인 시스템 팔레트를 그대로 쓰지 않는다.
  * CHANGES #77·#78에서 색약 검증을 거쳐 고른 두 색이 있고, 그게 이 화면의 근거다.
@@ -12,6 +12,9 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Button, Card, FlexBox, Typography } from '@montage-ui/core';
 import { 크기, 색 } from './크기';
+import 부적 from '@/lib/부적엔진';
+import { 짧게 as 물때짧게 } from '@/lib/물때말';
+import { judge } from '@/lib/판정엔진';
 import { 키, 읽기, 쓰기 } from '@/lib/저장소';
 import 화면틀 from './화면틀';
 
@@ -78,6 +81,59 @@ const 카드모양 = {
 };
 
 const 가져감 = (c) => c.단계 === 1;
+
+/* 한 줄에 붙일 곁정보.
+ *
+ * 왜 필요한가 — 「참돔 36cm · 오후 3:12」만 있으면 남는 것이 없다.
+ * 이 앱이 아는 것을 같이 적어야 기록이 자산이 된다:
+ *   ① N짜        낚시하는 사람이 쓰는 크기 말
+ *   ② 기준 대비   「기준 24cm 초과 12cm」 — 국가 통계에 없는 정보다
+ *   ③ 그날 물때   그때 바다가 어땠는지. 다음에 참고가 된다
+ *
+ * 판정을 다시 하지 않는다 — 이미 저장된 결과를 바꾸지 않고, 기준값만 꺼내 쓴다.
+ */
+function 곁정보(c) {
+  const 잼 = typeof c.길이 === 'number' && c.길이 > 0;
+  const 짜 = 잼 ? judge.짜(c.어종, c.길이) : null;
+
+  let 기준말 = null;
+  if (잼) {
+    try {
+      const r = judge({ 어종: c.어종, 길이: null, 날짜: new Date(c.시각) });
+      const b = r.기준;
+      if (b && b.값 != null && (b.단위 || 'cm') === (c.단위 || 'cm')) {
+        const 차 = Math.round((c.길이 - b.값) * 10) / 10;
+        기준말 =
+          차 > 0
+            ? `기준 ${b.값}${b.단위} 보다 ${차}${b.단위} 큼`
+            : `기준 ${b.값}${b.단위} 이하 — 놓아줄 크기`;
+      }
+    } catch (e) {
+      /* 기준표에 없는 어종 — 곁정보 없이 간다 */
+    }
+  }
+
+  let 물때 = null;
+  try {
+    const 단계 = 부적.물때(new Date(c.시각)).단계;
+    물때 = 물때짧게[단계] ? `${단계} · ${물때짧게[단계]}` : 단계;
+  } catch (e) {}
+
+  return { 짜, 기준말, 물때 };
+}
+
+/* 그 어종에서 가장 큰 기록인가. 단위가 다르면 견주지 않는다 */
+function 최고인가(c, 전체) {
+  if (!(typeof c.길이 === 'number' && c.길이 > 0)) return false;
+  const 단위 = c.단위 || 'cm';
+  let 최고 = 0;
+  전체.forEach((x) => {
+    if (x.어종 !== c.어종) return;
+    if ((x.단위 || 'cm') !== 단위) return;
+    if (typeof x.길이 === 'number' && x.길이 > 최고) 최고 = x.길이;
+  });
+  return 최고 === c.길이 && 최고 > 0;
+}
 
 /* 목록 순서 세 가지.
  *  최근 — 방금 잡은 것이 위. 기본값
@@ -253,7 +309,7 @@ export default function 기록화면() {
 
   return (
     <화면틀
-      제목="손맛 기록"
+      제목="조과 기록"
       날짜={지금}
       큰숫자={준비 ? 목록.length : 0}
       큰숫자말="마리를 판정했습니다"
@@ -354,9 +410,42 @@ export default function 기록화면() {
                         {typeof c.길이 === 'number' && c.길이 > 0
                           ? ` ${c.길이}${c.단위 || 'cm'}`
                           : ''}
+                        {/* N짜 — 낚시하는 사람이 크기를 부르는 말 */}
+                        {곁정보(c).짜 && (
+                          <span style={{ color: 색.흐린글, fontWeight: 400 }}>
+                            {' · '}
+                            {곁정보(c).짜}
+                          </span>
+                        )}
+                        {/* 그 어종에서 가장 큰 기록이면 표시. 「얻을 것」이 여기 있다 */}
+                        {최고인가(c, 목록) && (
+                          <span
+                            style={{
+                              marginLeft: 7,
+                              fontSize: 11,
+                              fontWeight: 700,
+                              color: 색.주,
+                              border: `1px solid ${색.주}`,
+                              borderRadius: 999,
+                              padding: '2px 7px',
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            최고 기록
+                          </span>
+                        )}
                       </Typography>
+
+                      {/* 기준과 얼마나 떨어졌나 — 이게 이 앱만 아는 정보다 */}
+                      {곁정보(c).기준말 && (
+                        <Typography sx={{ fontSize: 12.5, color: 색.흐린글 }}>
+                          {곁정보(c).기준말}
+                        </Typography>
+                      )}
+
                       <Typography sx={{ fontSize: 12.5, color: 색.아주흐린글 }}>
                         {시각말(c.시각)}
+                        {곁정보(c).물때 ? ` · ${곁정보(c).물때}` : ''}
                         {c.지역 ? ` · ${c.지역}` : ''}
                       </Typography>
                     </FlexBox>

@@ -16,6 +16,18 @@ import { 이름과짧게 } from '@/lib/물때말';
 import 화면틀 from './화면틀';
 import 도장찍기, { 넘김키 } from './도장찍기';
 
+/* 테두리 없는 버튼 — 「출항 기록 취소」·「가족에게 알리기」에 쓴다.
+   홈에 네모난 버튼이 줄줄이 쌓이면 무엇이 중요한지 안 보인다.
+   높이는 같게 둬서 눌렀을 때 아래 버튼이 밀려 내려가지 않는다 */
+const 테없는버튼 = {
+  height: 크기.버튼높이,
+  fontSize: 크기.본문,
+  fontWeight: 500,
+  borderRadius: 크기.버튼둥글기,
+  border: 'none',
+  backgroundColor: 'transparent',
+};
+
 const 버튼모양 = {
   height: 크기.버튼높이,
   fontSize: 크기.버튼글씨,
@@ -187,7 +199,7 @@ export default function 홈화면() {
               size="large"
               fullWidth
               onClick={취소하기}
-              sx={{ ...버튼모양, fontSize: 크기.본문, fontWeight: 500, color: 색.흐린글 }}
+              sx={{ ...테없는버튼, color: 색.흐린글 }}
             >
               출항 기록 취소
             </Button>
@@ -199,7 +211,7 @@ export default function 홈화면() {
                 size="large"
                 fullWidth
                 onClick={알리기}
-                sx={{ ...버튼모양, fontSize: 크기.본문, fontWeight: 500, color: 색.흐린글 }}
+                sx={{ ...테없는버튼, color: 색.흐린글 }}
               >
                 가족에게 도착 알리기
               </Button>
@@ -252,7 +264,7 @@ export default function 홈화면() {
           </Typography>
           <Link href="/log" style={{ textDecoration: 'none' }}>
             <Typography weight="bold" sx={{ fontSize: 크기.본문, color: 색.주 }}>
-              손맛 기록 ›
+              조과 기록 ›
             </Typography>
           </Link>
         </FlexBox>
