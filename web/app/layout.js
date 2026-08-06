@@ -9,8 +9,8 @@ import './글꼴.css';
 const 밑 = process.env.NEXT_PUBLIC_BASE_PATH || '';
 
 export const metadata = {
-  title: '무사 귀항 도장',
-  description: '오늘도 무사히 돌아오시라고',
+  title: '귀항 도장',
+  description: '오늘도 잘 다녀오시라고',
   manifest: `${밑}/manifest.webmanifest`,
   icons: { icon: `${밑}/icon-192.png`, apple: `${밑}/icon-192.png` },
 };

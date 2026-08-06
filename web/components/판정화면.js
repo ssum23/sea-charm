@@ -228,7 +228,7 @@ export default function 판정화면() {
             <Typography sx={{ fontSize: 크기.보조, color: 색.흐린글 }}>확인한 물고기 ›</Typography>
           </Link>
           <Link href="/" style={{ textDecoration: 'none' }}>
-            <Typography sx={{ fontSize: 크기.보조, color: 색.흐린글 }}>무사 귀항 도장 ›</Typography>
+            <Typography sx={{ fontSize: 크기.보조, color: 색.흐린글 }}>귀항 도장 ›</Typography>
           </Link>
         </FlexBox>
       </FlexBox>

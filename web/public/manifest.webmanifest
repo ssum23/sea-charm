@@ -1,7 +1,7 @@
 {
-  "name": "무사 귀항 도장",
-  "short_name": "무사귀항",
-  "description": "오늘도 무사히 돌아오시라고",
+  "name": "귀항 도장",
+  "short_name": "귀항 도장",
+  "description": "오늘도 잘 다녀오시라고",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

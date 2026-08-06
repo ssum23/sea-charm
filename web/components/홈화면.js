@@ -10,6 +10,8 @@ import Link from 'next/link';
 import { Button, Card, Divider, FlexBox, Typography } from '@montage-ui/core';
 import { 크기, 색 } from './크기';
 import { 키, 읽기, 쓰기, 날짜말, 시각말, 걸린시간 } from '@/lib/저장소';
+import 도장그림 from './도장그림';
+import 부적 from '@/lib/부적엔진';
 
 const 버튼모양 = {
   height: 크기.버튼높이,
@@ -58,13 +60,20 @@ export default function 홈화면() {
     const 마지막 = 출항기록[0];
     if (!마지막) return;
     const d = new Date(마지막.back);
-    const 글 = `무사히 돌아왔습니다. ${날짜말(d)} ${시각말(d)} 귀항.`;
+    const 글 = `잘 돌아왔습니다. ${날짜말(d)} ${시각말(d)} 귀항.`;
     if (navigator.share) navigator.share({ text: 글 }).catch(() => {});
     else window.location.href = 'sms:?&body=' + encodeURIComponent(글);
   }
 
   const 마지막 = 출항기록[0];
   const 나간시각 = 바다에 ? new Date(바다에.out) : null;
+
+  /* 「가족에게 알리기」는 돌아온 직후에만 쓸모가 있다.
+     늘 띄워두면 화면만 무거워지고, 다음 달에 봐도 남아 있으면 거슬린다.
+     그래서 귀항한 지 3시간 안에만 작게 보인다. */
+  const 알림창 = 3 * 60 * 60 * 1000;
+  const 방금돌아옴 =
+    !바다에 && 마지막 && 지금 && 지금 - new Date(마지막.back) < 알림창;
 
   return (
     <FlexBox flexDirection="column" sx={{ minHeight: '100dvh' }}>
@@ -81,14 +90,14 @@ export default function 홈화면() {
           {준비 && 지금 ? 날짜말(지금) : ' '}
         </Typography>
         <Typography weight="bold" sx={{ fontSize: 크기.큰제목, letterSpacing: '-0.01em' }}>
-          무사 귀항 도장
+          귀항 도장
         </Typography>
         <FlexBox alignItems="baseline" gap={8} sx={{ marginTop: 8 }}>
           <Typography weight="bold" sx={{ fontSize: 46, lineHeight: 1, color: 색.주 }}>
             {준비 ? 출항기록.length : 0}
           </Typography>
           <Typography sx={{ fontSize: 크기.본문, color: 색.흐린글 }}>
-            번 무사히 돌아왔습니다
+            번 돌아왔습니다
           </Typography>
         </FlexBox>
       </FlexBox>
@@ -159,17 +168,27 @@ export default function 홈화면() {
               출항 기록 취소
             </Button>
           ) : (
-            마지막 && (
-              <Button
-                variant="outlined"
-                color="assistive"
-                size="large"
-                fullWidth
-                onClick={알리기}
-                sx={버튼모양}
-              >
-                가족에게 도착 알리기
-              </Button>
+            방금돌아옴 && (
+              <FlexBox justifyContent="center" sx={{ paddingTop: 2 }}>
+                <button
+                  type="button"
+                  onClick={알리기}
+                  style={{
+                    fontSize: 13,
+                    color: 'var(--semantic-label-alternative)',
+                    background: 'none',
+                    border: 'none',
+                    padding: '9px 10px',
+                    cursor: 'pointer',
+                    textDecoration: 'underline',
+                    textUnderlineOffset: 3,
+                    fontFamily: 'inherit',
+                    fontWeight: 500,
+                  }}
+                >
+                  가족에게 도착 알리기
+                </button>
+              </FlexBox>
             )
           )}
         </Card>
@@ -270,24 +289,13 @@ function 도장들({ 목록, 준비 }) {
               borderRadius: 14,
             }}
           >
-            <FlexBox
-              alignItems="center"
-              justifyContent="center"
-              sx={{
-                width: 48,
-                height: 48,
-                borderRadius: '50%',
-                border: `2.5px solid ${색.주}`,
-                color: 색.주,
-                transform: 'rotate(-8deg)',
-              }}
-            >
-              <Typography weight="bold" sx={{ fontSize: 16, letterSpacing: '-0.04em', color: 색.주 }}>
-                무사
-              </Typography>
-            </FlexBox>
+            <도장그림 날짜={d} 크기={52} />
             <Typography sx={{ fontSize: 12, color: 색.흐린글 }}>
               {d.getMonth() + 1}.{d.getDate()}
+            </Typography>
+            {/* 그날 바다가 어땠는지 — 도장은 같아도 날은 다르다 */}
+            <Typography sx={{ fontSize: 11, color: 색.아주흐린글, marginTop: -3 }}>
+              {부적.물때(d).단계}
             </Typography>
           </FlexBox>
         );
