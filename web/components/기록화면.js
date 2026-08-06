@@ -572,7 +572,14 @@ export default function 기록화면() {
             zIndex: 10,
           }}
         >
-          <Typography sx={{ fontSize: 크기.기록알림, color: 색.반전글 }}>한 건 지웠습니다</Typography>
+          {/* 🔴 2026-08-06 — 가로가 모자라 「되돌리기」가 아래로 내려갔다.
+              글은 줄어들 수 있게(minWidth 0), 버튼은 절대 안 줄어들게(flexShrink 0),
+              그리고 버튼 글자는 한 줄로 못박는다(whiteSpace nowrap) */}
+          <Typography
+            sx={{ fontSize: 크기.기록알림, color: 색.반전글, minWidth: 0, flex: '1 1 auto' }}
+          >
+            한 건 지웠습니다
+          </Typography>
           <button
             onClick={되돌리기}
             style={{
@@ -583,6 +590,9 @@ export default function 기록화면() {
               fontSize: 크기.기록알림,
               cursor: 'pointer',
               fontFamily: 'inherit',
+              whiteSpace: 'nowrap',
+              flex: '0 0 auto',
+              padding: '2px 0',
             }}
           >
             되돌리기

@@ -102,17 +102,17 @@ function 그리기A(cv, 이미지, 정보) {
   const 단 = W / 100; // 사진 크기에 따라 글씨도 같이 커지게
 
   const 줄들 = [];
-  줄들.push({ 글: `${정보.날짜} · ${정보.시각}`, 크기: 단 * 3.6, 굵게: true });
+  줄들.push({ 글: `${정보.날짜} · ${정보.시각}`, 크기: 단 * 4.2, 굵게: true });
   const 아래 = [정보.시도, 정보.배].filter(Boolean).join(' · ');
-  if (아래) 줄들.push({ 글: 아래, 크기: 단 * 3, 굵게: false });
+  if (아래) 줄들.push({ 글: 아래, 크기: 단 * 3.5, 굵게: false });
   /* 사람이 직접 적은 한 줄 — 시·도와 배 다음에 온다 */
-  if (정보.메모) 줄들.push({ 글: 정보.메모, 크기: 단 * 2.8, 굵게: false });
+  if (정보.메모) 줄들.push({ 글: 정보.메모, 크기: 단 * 3.2, 굵게: false });
 
   /* 🔴 판정을 안 거쳤으면 이 줄을 아예 만들지 않는다. 빈칸을 남기지 않는다 */
   if (정보.판정) {
     줄들.push({
       글: [정보.판정.제목, 정보.판정.짜, 정보.판정.결과].filter(Boolean).join(' · '),
-      크기: 단 * 3.2,
+      크기: 단 * 3.8,
       굵게: true,
       색: 정보.판정.색,
     });
@@ -431,11 +431,31 @@ export default function 도장찍기({ 닫기, 판정 }) {
     );
   }
 
+  /* 🔴 2026-08-06 — 누른 자리가 엉뚱한 데 찍히던 것 (사장님 지적)
+   *
+   * 전에는 **캔버스를 감싼 바깥 상자**를 재서 자리를 계산했다.
+   * 그 상자는 캔버스와 크기가 같을 때도 있고 아닐 때도 있다 — 다르면 그만큼 어긋난다.
+   * 이제 **캔버스 자체를 재서** 계산한다. 어긋날 자리가 없다.
+   *
+   * 그리고 화면 밖으로 벗어난 값은 0~1 안으로 잘라 넣는다.
+   * 손가락이 가장자리에 살짝 걸치면 1.02 같은 값이 나와 사진 밖에 점이 찍혔다. */
+  function 자리계산(e) {
+    const cv = 캔버스.current;
+    if (!cv) return null;
+    const r = cv.getBoundingClientRect();
+    if (!r.width || !r.height) return null;
+    const 자르기 = (v) => Math.min(1, Math.max(0, v));
+    return {
+      x: 자르기((e.clientX - r.left) / r.width),
+      y: 자르기((e.clientY - r.top) / r.height),
+    };
+  }
+
   /* C — 미리보기를 눌러 점을 찍는다 */
   function 눌렀을때(e) {
-    if (고른종류 !== 'C' || !미리보기.current) return;
-    const r = 미리보기.current.getBoundingClientRect();
-    const p = { x: (e.clientX - r.left) / r.width, y: (e.clientY - r.top) / r.height };
+    if (고른종류 !== 'C') return;
+    const p = 자리계산(e);
+    if (!p) return;
     if (무엇을찍나 === '기준') {
       const 다음 = 기준점.length >= 2 ? [p] : [...기준점, p];
       기준점바꾸기(다음);
@@ -443,6 +463,40 @@ export default function 도장찍기({ 닫기, 판정 }) {
     } else {
       물고기점바꾸기(물고기점.length >= 2 ? [p] : [...물고기점, p]);
     }
+  }
+
+  /* 마지막에 찍은 점 하나만 지운다 — 잘못 눌렀을 때 처음부터 다시 하지 않아도 된다 */
+  function 마지막점지우기() {
+    if (무엇을찍나 === '물고기' && 물고기점.length > 0) {
+      물고기점바꾸기(물고기점.slice(0, -1));
+      return;
+    }
+    if (기준점.length > 0) {
+      기준점바꾸기(기준점.slice(0, -1));
+      무엇을찍나바꾸기('기준');
+      return;
+    }
+    무엇을찍나바꾸기('기준');
+  }
+
+  /* 🔴 B — 자를 손가락으로 끌어 옮긴다 (사장님 지시).
+     화살표 조절만으로는 물고기에 맞추기 어렵다. 끌어다 놓는 편이 빠르다.
+     ⚠️ 끄는 동안 화면이 같이 밀리지 않게 `touchAction: 'none'` 을 준다 */
+  const 끄는중 = useRef(false);
+  function 끌기시작(e) {
+    if (고른종류 !== 'B') return;
+    끄는중.current = true;
+    const p = 자리계산(e);
+    if (p) 눈금바꾸기((전) => ({ ...전, x: p.x, y: p.y }));
+    try { e.currentTarget.setPointerCapture(e.pointerId); } catch (err) {}
+  }
+  function 끄는동안(e) {
+    if (!끄는중.current || 고른종류 !== 'B') return;
+    const p = 자리계산(e);
+    if (p) 눈금바꾸기((전) => ({ ...전, x: p.x, y: p.y }));
+  }
+  function 끌기끝() {
+    끄는중.current = false;
   }
 
   return (
@@ -494,12 +548,17 @@ export default function 도장찍기({ 닫기, 판정 }) {
             <div
               ref={미리보기}
               onClick={눌렀을때}
+              onPointerDown={끌기시작}
+              onPointerMove={끄는동안}
+              onPointerUp={끌기끝}
+              onPointerCancel={끌기끝}
               style={{
                 position: 'relative',
                 lineHeight: 0,
                 borderRadius: 12,
                 overflow: 'hidden',
-                cursor: 고른종류 === 'C' ? 'crosshair' : 'default',
+                touchAction: 고른종류 === 'B' ? 'none' : 'auto',
+                cursor: 고른종류 === 'C' ? 'crosshair' : 고른종류 === 'B' ? 'grab' : 'default',
               }}
             >
               <canvas ref={캔버스} style={{ width: '100%', height: 'auto', display: 'block' }} />
@@ -606,6 +665,26 @@ export default function 도장찍기({ 닫기, 판정 }) {
                   <Typography weight="bold" sx={{ fontSize: 크기.도장묶음 }}>
                     약 {어림}cm
                   </Typography>
+                )}
+                {(기준점.length > 0 || 물고기점.length > 0) && (
+                  <button
+                    type="button"
+                    onClick={마지막점지우기}
+                    style={{
+                      alignSelf: 'flex-start',
+                      border: 'none',
+                      background: 'transparent',
+                      padding: '4px 0',
+                      fontFamily: 'inherit',
+                      fontSize: 크기.도장설명,
+                      color: 색.흐린글,
+                      textDecoration: 'underline',
+                      textUnderlineOffset: 3,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    방금 찍은 점 지우기
+                  </button>
                 )}
               </FlexBox>
 

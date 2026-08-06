@@ -142,6 +142,9 @@ export default function 홈화면() {
             backgroundColor: 색.바탕,
             borderRadius: 18,
             padding: 크기.카드여백,
+            /* 🔴 출항 칸이 화면을 너무 먹었다 — 위아래만 줄인다 (사장님 지시) */
+            paddingTop: 12,
+            paddingBottom: 12,
             gap: 크기.사이,
             boxShadow: 'var(--semantic-elevation-shadow-normal-xsmall)',
           }}
@@ -262,19 +265,27 @@ export default function 홈화면() {
           📸 사진 찍기
         </Button>
 
+        {/* 🔴 2026-08-06 — 조과 기록을 큰 버튼으로 올렸다 (사장님 지시).
+            전에는 「모은 도장」 옆의 작은 글자였다.
+            **배에서 내려 집에 가서 볼 수도 있는 화면**이라, 홈에서 바로 갈 수 있어야 한다.
+            작은 링크는 없앴다 — 같은 곳으로 가는 길이 둘이면 눈이 헤맨다 */}
+        <Button
+          as={Link}
+          href="/log"
+          variant="outlined"
+          color="assistive"
+          size="large"
+          fullWidth
+          sx={{ ...버튼모양, fontSize: 크기.홈본문, marginTop: -4, textDecoration: 'none' }}
+        >
+          📋 조과 기록
+        </Button>
 
         <Divider sx={{ marginTop: 6 }} />
 
-        <FlexBox justifyContent="space-between" alignItems="baseline">
-          <Typography weight="bold" sx={{ fontSize: 크기.홈보조, color: 색.흐린글 }}>
-            모은 도장
-          </Typography>
-          <Link href="/log" style={{ textDecoration: 'none' }}>
-            <Typography weight="bold" sx={{ fontSize: 크기.홈본문, color: 색.주 }}>
-              조과 기록 ›
-            </Typography>
-          </Link>
-        </FlexBox>
+        <Typography weight="bold" sx={{ fontSize: 크기.홈보조, color: 색.흐린글 }}>
+          모은 도장
+        </Typography>
         <도장들 목록={출항기록} 준비={준비} />
         </>
         )}
