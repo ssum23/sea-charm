@@ -373,12 +373,16 @@ function 부적종이({ r, 지금 }) {
         color: 종이.글,
         border: '1px solid rgba(139,90,43,.35)',
         borderRadius: 18,
-        padding: '26px 22px 22px',
+        padding: '20px 18px 18px',
         boxShadow: '0 2px 10px rgba(90,74,56,.14)',
         backgroundImage:
           'repeating-linear-gradient(0deg,rgba(139,90,43,.045) 0 1px,transparent 1px 26px),' +
           'repeating-linear-gradient(90deg,rgba(139,90,43,.045) 0 1px,transparent 1px 26px)',
-        fontFamily: '"Nanum Myeongjo", -apple-system, "Apple SD Gothic Neo", serif',
+        /* 🔴 2026-08-06 — 명조체를 뺐다.
+           「나눔명조」는 이 앱에 들어 있지 않아 폰이 제멋대로 다른 명조로 바꿔 그렸다.
+           그래서 부적 화면만 글꼴이 달라 보였다(사장님 지적 2회).
+           종이 느낌은 글꼴이 아니라 **색·모눈 무늬·도장**이 낸다 — 그건 그대로 둔다 */
+        fontFamily: 'inherit',
       }}
     >
       <div
@@ -575,7 +579,7 @@ function 생년묻기({ 입력, 입력바꾸기, 확정, 건너뛰기 }) {
       sx={{
         backgroundColor: 색.바탕,
         borderRadius: 18,
-        padding: 크기.여백,
+        padding: 크기.카드여백,
         gap: 크기.사이,
         boxShadow: 'var(--semantic-elevation-shadow-normal-xsmall)',
       }}

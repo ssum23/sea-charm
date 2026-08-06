@@ -338,8 +338,8 @@ function 어종칸({ 이름, 제철, 금어기중, 즐겨짐, 고름, 즐겨토�
         onClick={() => 고름(이름)}
         sx={{
           height: 'auto',
-          minHeight: 72,
-          padding: '10px 4px',
+          minHeight: 크기.어종칸높이,
+          padding: '8px 4px',
           borderRadius: 크기.버튼둥글기,
         }}
       >
@@ -452,7 +452,25 @@ function 어종고르기({ 상단목록, 검색, 검색바꾸기, 검색결과, 
   const 최근만 = (최근 || []).filter((n) => (즐겨 || []).indexOf(n) === -1);
 
   return (
-    <Card sx={{ backgroundColor: 색.바탕, borderRadius: 18, padding: 크기.여백, gap: 크기.사이, boxShadow: 'var(--semantic-elevation-shadow-normal-xsmall)' }}>
+    <Card sx={{ backgroundColor: 색.바탕, borderRadius: 18, padding: 크기.카드여백, gap: 크기.사이, boxShadow: 'var(--semantic-elevation-shadow-normal-xsmall)' }}>
+      {/* 🔴 2026-08-06 — 「지금 제철은…」 설명 두 줄을 **맨 위로** 올렸다.
+          전에는 목록 제목과 칸 사이에 끼어 있어, 제목과 칸이 서로 떨어져 보였다.
+          이 두 줄은 「이 달에 뭐가 잡히나」를 훑는 글이라 **맨 처음에 읽는 것이 맞다** */}
+      <Typography sx={{ fontSize: 크기.판정작게, color: 색.아주흐린글, lineHeight: 1.65 }}>
+        {제철들.length > 0 && (
+          <>
+            지금 제철은 <b style={{ color: 색.됨 }}>{제철들.join(' · ')}</b>
+          </>
+        )}
+        {제철들.length > 0 && 금어기들.length > 0 && <br />}
+        {금어기들.length > 0 && (
+          <>
+            지금 금어기일 수 있는 것은 <b style={{ color: 색.안됨 }}>{금어기들.join(' · ')}</b>
+          </>
+        )}
+        {제철들.length === 0 && 금어기들.length === 0 && '낚시어선 어획 통계 41개월 실측 순서예요'}
+      </Typography>
+
       {/* 🔴 2026-08-06 폰 점검 — 검색을 맨 위로 올렸다.
           전에는 여덟 칸 아래에 있어서, 목록에 없는 어종을 잡은 사람은
           **화면을 내려야 검색이 있다는 걸 알았다.**
@@ -542,25 +560,10 @@ function 어종고르기({ 상단목록, 검색, 검색바꾸기, 검색결과, 
         </Typography>
       )}
 
-      <FlexBox flexDirection="column" gap={4}>
-        <Typography weight="bold" sx={{ fontSize: 크기.판정보조, color: 색.흐린글 }}>
-          {달}월에 많이 잡히는 것
-        </Typography>
-        <Typography sx={{ fontSize: 크기.판정작게, color: 색.아주흐린글, lineHeight: 1.65 }}>
-          {제철들.length > 0 && (
-            <>
-              지금 제철은 <b style={{ color: 색.됨 }}>{제철들.join(' · ')}</b>
-            </>
-          )}
-          {제철들.length > 0 && 금어기들.length > 0 && <br />}
-          {금어기들.length > 0 && (
-            <>
-              지금 금어기일 수 있는 것은 <b style={{ color: 색.안됨 }}>{금어기들.join(' · ')}</b>
-            </>
-          )}
-          {제철들.length === 0 && 금어기들.length === 0 && '낚시어선 어획 통계 41개월 실측 순서예요'}
-        </Typography>
-      </FlexBox>
+      {/* 설명은 맨 위로 갔고, 여기엔 제목만 남는다 — 칸 바로 위에 붙는다 */}
+      <Typography weight="bold" sx={{ fontSize: 크기.판정보조, color: 색.흐린글, marginBottom: -4 }}>
+        {달}월에 많이 잡히는 것
+      </Typography>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
         {상단목록.map((s) => (
@@ -600,7 +603,7 @@ function 길이재기({ 결과, 길이, 길이바꾸기, 판정하기, 처음부
   const 누를수있음 = !!길이 && Number(길이) > 0;
 
   return (
-    <Card sx={{ backgroundColor: 색.바탕, borderRadius: 18, padding: 크기.여백, gap: 크기.사이, boxShadow: 'var(--semantic-elevation-shadow-normal-xsmall)' }}>
+    <Card sx={{ backgroundColor: 색.바탕, borderRadius: 18, padding: 크기.카드여백, gap: 크기.사이, boxShadow: 'var(--semantic-elevation-shadow-normal-xsmall)' }}>
       <FlexBox
         sx={{
           backgroundColor: 'var(--semantic-fill-alternative)',
@@ -693,7 +696,7 @@ function 길이재기({ 결과, 길이, 길이바꾸기, 판정하기, 처음부
 /* ---------- 3. 지역 묻기 ---------- */
 function 지역고르기({ 결과, 목록, 고름, 처음부터 }) {
   return (
-    <Card sx={{ backgroundColor: 색.바탕, borderRadius: 18, padding: 크기.여백, gap: 크기.사이, boxShadow: 'var(--semantic-elevation-shadow-normal-xsmall)' }}>
+    <Card sx={{ backgroundColor: 색.바탕, borderRadius: 18, padding: 크기.카드여백, gap: 크기.사이, boxShadow: 'var(--semantic-elevation-shadow-normal-xsmall)' }}>
       <FlexBox
         sx={{
           backgroundColor: 'var(--semantic-fill-alternative)',

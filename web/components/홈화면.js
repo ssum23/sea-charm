@@ -19,13 +19,20 @@ import 도장찍기, { 넘김키 } from './도장찍기';
 /* 테두리 없는 버튼 — 「출항 기록 취소」·「가족에게 알리기」에 쓴다.
    홈에 네모난 버튼이 줄줄이 쌓이면 무엇이 중요한지 안 보인다.
    높이는 같게 둬서 눌렀을 때 아래 버튼이 밀려 내려가지 않는다 */
+/* 🔴 2026-08-06 — `border: 'none'` 만으로는 테두리가 안 없어졌다.
+   버튼이 `variant="outlined"` 로 **자기 테두리를 나중에 다시 그린다.**
+   `&&` 로 우리 쪽 규칙을 한 단계 세게 걸어 이긴다 */
 const 테없는버튼 = {
   height: 크기.홈버튼높이,
   fontSize: 크기.홈본문,
   fontWeight: 500,
   borderRadius: 크기.버튼둥글기,
-  border: 'none',
-  backgroundColor: 'transparent',
+  '&&': {
+    border: 'none',
+    outline: 'none',
+    boxShadow: 'none',
+    backgroundColor: 'transparent',
+  },
 };
 
 const 버튼모양 = {
@@ -134,7 +141,7 @@ export default function 홈화면() {
           sx={{
             backgroundColor: 색.바탕,
             borderRadius: 18,
-            padding: 크기.여백,
+            padding: 크기.카드여백,
             gap: 크기.사이,
             boxShadow: 'var(--semantic-elevation-shadow-normal-xsmall)',
           }}
@@ -213,7 +220,7 @@ export default function 홈화면() {
                 onClick={알리기}
                 sx={{ ...테없는버튼, color: 색.흐린글 }}
               >
-                가족에게 도착 알리기
+                도착 알리기
               </Button>
             )
           )}

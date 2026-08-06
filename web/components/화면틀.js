@@ -49,7 +49,7 @@ export default function 화면틀({
         gap={2}
         sx={{
           backgroundColor: 색.바탕,
-          padding: `calc(env(safe-area-inset-top) + ${크기.여백}px) ${크기.여백}px ${크기.여백}px`,
+          padding: `calc(env(safe-area-inset-top) + ${크기.여백}px) ${크기.여백}px ${크기.카드여백}px`,
         }}
       >
         {/* 머리 한 줄 — 왼쪽 「‹ 홈」, 오른쪽 「다음 한 걸음」.
@@ -110,8 +110,8 @@ export default function 화면틀({
       <FlexBox
         flexDirection="column"
         alignItems="center"
-        gap={12}
-        sx={{ padding: `16px 20px calc(env(safe-area-inset-bottom) + 16px)` }}
+        gap={8}
+        sx={{ padding: `12px 20px calc(env(safe-area-inset-bottom) + 12px)` }}
       >
         {바닥글 && (
           <Typography align="center" sx={{ fontSize: 크기.바닥글, color: 색.아주흐린글 }}>
