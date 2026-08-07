@@ -120,10 +120,13 @@ button {
   transform-origin: 50% 92%;
 }
 
+/* 🔴 2026-08-07 — 96px → 120px.
+   막대를 통 **위에** 올리고 구멍(y=82) 위쪽만 남기도록 자르면서,
+   시작 자리를 더 아래로 내려야 완전히 숨는다.
+   96px 이면 막대 머리가 구멍 위로 삐져나온 채로 시작한다. */
 @keyframes 막대나오기 {
-  from { transform: translateY(96px); opacity: 0; }
-  60%  { opacity: 1; }
-  to   { transform: translateY(0);    opacity: 1; }
+  from { transform: translateY(120px); }
+  to   { transform: translateY(0); }
 }
 .막대나옴 {
   animation: 막대나오기 0.55s 0.6s cubic-bezier(0.22, 1.2, 0.36, 1) both;
