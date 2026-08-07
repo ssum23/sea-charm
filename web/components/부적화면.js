@@ -21,6 +21,8 @@ import 화면틀 from './화면틀';
 import { 풀이 as 물때풀이, 짧게 as 물때짧게 } from '@/lib/물때말';
 
 const 생년키 = 'seacharm.birthyear.v1';
+/* 어떤 부적까지 뽑아 봤는지 — 같은 부적을 다시 볼 때는 연출을 되풀이하지 않는다 */
+const 뽑은것키 = 'seacharm.charmdrawn.v1';
 const 행운키 = 'seacharm.luck.v1';
 const 이력키 = 'seacharm.charms.v1';
 
@@ -176,6 +178,10 @@ export default function 부적화면() {
   const [결과, 결과바꾸기] = useState(null);
   const [이력, 이력바꾸기] = useState([]);
   const [이력펼침, 이력펼침바꾸기] = useState(false);
+  /* 🔴 뽑기 연출 — 켜져 있으면 통이 보이고, 꺼지면 부적이 보인다.
+     물때가 바뀌거나 띠를 바꿔 **새 부적이 나올 때만** 켠다.
+     같은 부적을 다시 보러 들어올 때마다 흔들면 그건 연출이 아니라 방해다 */
+  const [뽑는중, 뽑는중바꾸기] = useState(false);
 
   useEffect(() => {
     const 오늘 = new Date();
@@ -198,6 +204,33 @@ export default function 부적화면() {
     결과바꾸기(r);
     이력남기기(r);
     이력바꾸기(이력읽기());
+
+    /* ── 뽑기 연출을 켤 것인가 ──────────────────────────
+       「이 부적을 이미 뽑아 봤나」로 정한다. 표시는 `물때키 + 띠`다 —
+       물때가 바뀌면 새 부적이고, 띠를 넣어도 내용이 바뀌므로 다시 뽑는 게 맞다. */
+    const 표 = String(r.물때키 || '') + '|' + String(r.띠 || '');
+    let 이미봤나 = false;
+    try { 이미봤나 = window.localStorage.getItem(뽑은것키) === 표; } catch (e) {}
+
+    /* 🔴 「동작 줄이기」를 켠 사람에게는 연출을 아예 건너뛴다.
+       안 움직이는 통을 1.4초 보여주는 건 그냥 기다리게 하는 것이다 */
+    let 움직임싫음 = false;
+    try {
+      움직임싫음 = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    } catch (e) {}
+
+    if (이미봤나 || 움직임싫음) {
+      뽑는중바꾸기(false);
+      return;
+    }
+
+    뽑는중바꾸기(true);
+    try { window.localStorage.setItem(뽑은것키, 표); } catch (e) {}
+
+    /* 통 흔들기 0.95초 + 막대가 다 나오는 데 1.15초 → 조금 뜸 들이고 넘어간다.
+       🔴 사람이 또 누르지 않는다 (사장님 지시) */
+    const 시계 = setTimeout(() => 뽑는중바꾸기(false), 1450);
+    return () => clearTimeout(시계);
   }, [생년, 지금]);
 
   const 생년물어야함 = 준비 && !생년 && 입력 !== '건너뜀';
@@ -235,6 +268,9 @@ export default function 부적화면() {
         />
       ) : (
         결과 && (
+          뽑는중 ? (
+            <뽑기통 물때이름={결과.물때} />
+          ) : (
           <>
             <부적종이 r={결과} 지금={지금} />
 
@@ -278,6 +314,7 @@ export default function 부적화면() {
               펼치기={() => 이력펼침바꾸기(!이력펼침)}
             />
           </>
+          )
         )
       )}
     </화면틀>
@@ -419,6 +456,142 @@ function 지난부적({ 목록, 펼침, 펼치기 }) {
  *    「이렇게 하면 더 잡힌다」는 말은 안 한다. `부적.js` 의 검산이 이걸 막는다.
  *    「지나가던 물고기 왈」이라는 꼬리표가 이게 농담임을 한 번 더 알린다.
  */
+/* ─────────────────────────────────────────────
+   뽑기통 — 오미쿠지 (2026-08-07 사장님이 시안 셋 중 ①을 고르심)
+
+   왜 이걸 넣는가 —
+   부적은 「받는 물건」이다. 그냥 화면에 떠 있으면 **받은 느낌이 없다.**
+   흔들어서 뽑는 손동작이 한 번 들어가야 그때부터 내 것이 된다.
+
+   🔴 두 번 누르게 하지 않는다 (사장님 지시).
+      막대가 나오면 **저절로** 부적으로 넘어간다. 배 나가기 전에 쓰는 화면이라
+      한 번이라도 덜 누르는 쪽이 맞다.
+
+   그림은 코드다 — 그림 파일을 받아오면 「외부 통신 0건」이 깨진다(PRD §0-10).
+   ───────────────────────────────────────────── */
+
+/* 나무 통 — 판자를 세로로 이어 붙이고 쇠테 두 줄로 조인 모양.
+   판자 이음선·나뭇결·쇠테의 못까지 그려야 「나무 통」으로 보인다.
+   네모 상자 하나에 갈색만 칠하면 종이상자로 보인다. */
+function 뽑기통({ 물때이름 }) {
+  const 나뭇결 = [46, 58, 70, 82, 94, 106];
+  return (
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: 330,
+      }}
+    >
+      <svg
+        className="통흔들"
+        viewBox="0 0 152 250"
+        width="196"
+        height="322"
+        role="img"
+        aria-label="부적을 뽑는 나무 통"
+        style={{ overflow: 'visible' }}
+      >
+        <defs>
+          <linearGradient id="나무결" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stopColor="#a9702f" />
+            <stop offset="18%" stopColor="#c08a45" />
+            <stop offset="52%" stopColor="#96602a" />
+            <stop offset="82%" stopColor="#7d4d20" />
+            <stop offset="100%" stopColor="#6a3f19" />
+          </linearGradient>
+          <linearGradient id="쇠테" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stopColor="#6b6f74" />
+            <stop offset="22%" stopColor="#b9bfc5" />
+            <stop offset="55%" stopColor="#7d838a" />
+            <stop offset="100%" stopColor="#565b60" />
+          </linearGradient>
+          <linearGradient id="막대결" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stopColor="#efdcb8" />
+            <stop offset="45%" stopColor="#f7ecd6" />
+            <stop offset="100%" stopColor="#d8bf90" />
+          </linearGradient>
+        </defs>
+
+        {/* 바닥 그림자 — 통이 떠 있지 않게 */}
+        <ellipse cx="76" cy="238" rx="52" ry="8" fill="rgba(18,48,57,0.16)" />
+
+        {/* 막대 — 통보다 먼저 그려서 통 뒤에서 솟아 나오게 보인다 */}
+        <g className="막대나옴">
+          <rect x="66" y="18" width="20" height="112" rx="7" fill="url(#막대결)" />
+          {/* 붉은 머리 — 오미쿠지 막대의 표시 */}
+          <rect x="66" y="18" width="20" height="16" rx="7" fill="#9c3524" />
+          <text
+            x="76" y="52" textAnchor="middle" fontSize="13" fontWeight="700"
+            fill="#8a5527" writingMode="tb"
+          >
+            {물때이름 || '오늘'}
+          </text>
+        </g>
+
+        {/* 통 몸통 */}
+        <path
+          d="M30 66 L122 66 L118 226 C118 232 112 236 76 236 C40 236 34 232 34 226 Z"
+          fill="url(#나무결)"
+        />
+        {/* 판자 이음선 */}
+        <g stroke="rgba(60,32,10,0.38)" strokeWidth="1.4">
+          {나뭇결.map((x, i) => (
+            <line key={i} x1={30 + x * 0.62} y1="68" x2={34 + x * 0.6} y2="234" />
+          ))}
+        </g>
+        {/* 나뭇결 — 아주 흐리게 */}
+        <g stroke="rgba(255,236,205,0.16)" strokeWidth="1" fill="none">
+          <path d="M48 84 C54 120 46 160 52 210" />
+          <path d="M92 78 C86 126 96 168 90 220" />
+        </g>
+
+        {/* 쇠테 두 줄 — 못까지 그린다 */}
+        {[96, 186].map((y, i) => (
+          <g key={i}>
+            <rect x={31 - i * 0.5} y={y} width={90 + i} height="14" fill="url(#쇠테)" rx="2" />
+            <rect x={31 - i * 0.5} y={y} width={90 + i} height="14" fill="none" rx="2"
+              stroke="rgba(30,32,35,0.45)" strokeWidth="1" />
+            <circle cx="42" cy={y + 7} r="1.8" fill="rgba(40,44,48,0.7)" />
+            <circle cx="110" cy={y + 7} r="1.8" fill="rgba(40,44,48,0.7)" />
+          </g>
+        ))}
+
+        {/* 이름표 — 통 가운데에 붙인 나무 패 */}
+        <g>
+          <rect x="44" y="120" width="64" height="52" rx="7" fill="#f3e3c6"
+            stroke="rgba(90,58,22,0.55)" strokeWidth="1.6" />
+          <text x="76" y="140" textAnchor="middle" fontSize="14" fontWeight="800" fill="#7d4d20">
+            오늘의
+          </text>
+          <text x="76" y="160" textAnchor="middle" fontSize="14" fontWeight="800" fill="#7d4d20">
+            바 다
+          </text>
+        </g>
+
+        {/* 통 입구 — 안쪽이 어둡게 파여 있어야 「구멍」으로 보인다 */}
+        <ellipse cx="76" cy="66" rx="46" ry="12" fill="#4a2c10" />
+        <ellipse cx="76" cy="66" rx="46" ry="12" fill="none"
+          stroke="rgba(255,236,205,0.28)" strokeWidth="2" />
+        <ellipse cx="76" cy="64" rx="38" ry="8.5" fill="#311c09" />
+      </svg>
+
+      <div
+        style={{
+          marginTop: 10,
+          fontSize: 크기.부적잔글씨,
+          color: 색.아주흐린글,
+          letterSpacing: '.06em',
+        }}
+      >
+        통을 흔드는 중이에요
+      </div>
+    </div>
+  );
+}
+
 function 부적종이({ r, 지금 }) {
   return (
     <div

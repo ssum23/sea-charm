@@ -15,6 +15,7 @@ import 부적 from '@/lib/부적엔진';
 import { 이름과짧게 } from '@/lib/물때말';
 import 화면틀 from './화면틀';
 import 도장찍기, { 넘김키 } from './도장찍기';
+import 준비물 from './준비물';
 
 /* 테두리 없는 버튼 — 「출항 기록 취소」·「가족에게 알리기」에 쓴다.
    홈에 네모난 버튼이 줄줄이 쌓이면 무엇이 중요한지 안 보인다.
@@ -104,6 +105,8 @@ export default function 홈화면() {
   /* 바다 도장 — 판정을 안 거쳐도 찍을 수 있다 (T8).
      판정 화면에서 넘어온 경우에는 판정 정보를 갖고 열린다 */
   const [도장열림, 도장열림바꾸기] = useState(false);
+  /* 준비물 목록 — 나가기 전에 훑는 것이라 홈에 둔다 (2026-08-07 사장님 지시) */
+  const [준비물열림, 준비물열림바꾸기] = useState(false);
   const [도장판정, 도장판정바꾸기] = useState(null);
 
   useEffect(() => {
@@ -137,7 +140,9 @@ export default function 홈화면() {
       홈으로={false}
     >
       <>
-        {도장열림 ? (
+        {준비물열림 ? (
+          <준비물 닫기={() => 준비물열림바꾸기(false)} />
+        ) : 도장열림 ? (
           <도장찍기
             판정={도장판정}
             닫기={() => {
@@ -292,6 +297,18 @@ export default function 홈화면() {
           sx={{ ...버튼모양, fontSize: 크기.홈본문, marginTop: -4, textDecoration: 'none' }}
         >
           📋 조과 기록
+        </Button>
+        {/* 🔴 준비물은 「나가기 전」에 쓰는 것이라 출항 가까이 두고 싶지만,
+            홈 위쪽은 출항·귀항이 차지해야 한다(배 위에서 급하게 누르는 것). 그래서 여기다 */}
+        <Button
+          variant="outlined"
+          color="assistive"
+          size="large"
+          fullWidth
+          onClick={() => 준비물열림바꾸기(true)}
+          sx={{ ...버튼모양, fontSize: 크기.홈본문, marginTop: -4 }}
+        >
+          🎒 준비물
         </Button>
 
         <Divider sx={{ marginTop: 6 }} />

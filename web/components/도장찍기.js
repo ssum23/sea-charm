@@ -178,28 +178,47 @@ function 그리기C(cv, 이미지, 정보, 재기) {
   const H = cv.height;
   const 단 = W / 100;
 
-  function 선(점들, 색깔, 이름) {
-    if (점들.length < 2) return;
-    const [p, q] = 점들;
-    const a = { x: p.x * W, y: p.y * H };
-    const b = { x: q.x * W, y: q.y * H };
+  /* 🔴 2026-08-07 — 점 하나만 찍었을 때 아무것도 안 보이던 것 (사장님 지적)
+     전에는 점이 **둘 다 찍혀야** 선을 그렸고, 점 자체도 그 안에서만 그렸다.
+     그래서 처음 한 번 눌렀을 때 화면이 그대로여서 **눌린 건지 아닌지 알 수 없었다.**
+     이제 점은 찍는 즉시 그린다. 번호(①②)도 같이 붙인다 — 어느 쪽을 먼저 찍었는지 보인다. */
+  function 점찍기(점들, 색깔, 이름) {
+    if (!점들 || !점들.length) return;
+    const 자리 = 점들.map((p) => ({ x: p.x * W, y: p.y * H }));
+
     ctx.save();
-    ctx.strokeStyle = 색깔;
-    ctx.lineWidth = 단 * 0.55;
-    ctx.lineCap = 'round';
-    ctx.beginPath();
-    ctx.moveTo(a.x, a.y);
-    ctx.lineTo(b.x, b.y);
-    ctx.stroke();
-    [a, b].forEach((c) => {
+    /* 두 점이 다 있으면 잇는 선 */
+    if (자리.length === 2) {
+      ctx.strokeStyle = 색깔;
+      ctx.lineWidth = 단 * 0.55;
+      ctx.lineCap = 'round';
       ctx.beginPath();
-      ctx.arc(c.x, c.y, 단 * 1.1, 0, Math.PI * 2);
+      ctx.moveTo(자리[0].x, 자리[0].y);
+      ctx.lineTo(자리[1].x, 자리[1].y);
+      ctx.stroke();
+    }
+
+    /* 점 — 찍는 즉시 보인다. 사진이 밝든 어둡든 보이게 흰 테를 두른다 */
+    자리.forEach((c, i) => {
+      ctx.beginPath();
+      ctx.arc(c.x, c.y, 단 * 1.5, 0, Math.PI * 2);
       ctx.fillStyle = 색깔;
       ctx.fill();
+      ctx.lineWidth = 단 * 0.4;
+      ctx.strokeStyle = 'rgba(20,24,30,0.85)';
+      ctx.stroke();
+      /* 번호 */
+      ctx.font = 글꼴(단 * 2.0, true);
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = 'rgba(20,24,30,0.95)';
+      ctx.fillText(String(i + 1), c.x, c.y + 단 * 0.05);
     });
-    if (이름) {
-      const mx = (a.x + b.x) / 2;
-      const my = (a.y + b.y) / 2;
+
+    /* 이름표 — 두 점이 다 있을 때만 */
+    if (자리.length === 2 && 이름) {
+      const mx = (자리[0].x + 자리[1].x) / 2;
+      const my = (자리[0].y + 자리[1].y) / 2;
       ctx.font = 글꼴(단 * 2.8, true);
       ctx.textAlign = 'center';
       ctx.textBaseline = 'bottom';
@@ -216,8 +235,9 @@ function 그리기C(cv, 이미지, 정보, 재기) {
     ctx.textBaseline = 'top';
   }
 
-  선(재기.기준점, 'rgba(255,255,255,0.9)', 재기.기준이름);
-  선(재기.물고기점, '#ffd34d', 재기.어림 ? `약 ${재기.어림}cm` : null);
+  /* 🔴 물고기를 먼저 찍는다 (2026-08-07 사장님 지시) — 그래서 물고기를 먼저 그린다 */
+  점찍기(재기.물고기점, '#ffd34d', 재기.어림 ? `약 ${재기.어림}cm` : null);
+  점찍기(재기.기준점, 'rgba(255,255,255,0.92)', 재기.기준이름);
   return cv;
 }
 
@@ -227,8 +247,8 @@ function 그리기C(cv, 이미지, 정보, 재기) {
 
    🔴 2026-08-07 — 줄자처럼 다시 그렸다 (사장님 지시)
      ① **10cm마다 빨간 선**. 줄자가 그렇게 생겼다. 5cm는 검정, 1cm는 가늘게.
-     ② **양 끝에 손잡이**를 그린다. 손잡이가 보여야 「잡아당길 수 있구나」를 안다.
-     ③ 두께를 조금 키웠다 — 빨간 눈금과 숫자가 같이 들어가야 한다. */
+     ② 두께를 조금 키웠다 — 빨간 눈금과 숫자가 같이 들어가야 한다.
+     ③ (2차) 양 끝 손잡이는 **뺐다** — 아래를 보라. */
 
 /* 자의 양 끝이 사진 위 어디인지 — 화면과 그림이 같은 계산을 쓴다 */
 export function 자양끝(눈금, W, H) {
@@ -292,19 +312,10 @@ function 그리기B(cv, 이미지, 정보, 눈금) {
   }
   ctx.restore();
 
-  /* 🔴 양 끝 손잡이 — 「여기를 잡아당기면 된다」를 눈으로 알린다.
-     사진에도 같이 찍히지만 아주 흐리게 둬서 거슬리지 않는다 */
-  const 끝 = 자양끝(눈금, W, H);
-  const 알 = Math.max(단 * 2.2, 두께 * 0.42);
-  for (const p of [끝.a, 끝.b]) {
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, 알, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(250,248,242,0.85)';
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(200,42,34,0.9)';
-    ctx.lineWidth = Math.max(1.2, 단 * 0.28);
-    ctx.stroke();
-  }
+  /* 🔴 2026-08-07 (2) — 양 끝 손잡이를 없앴다.
+     손잡이를 달았더니 「저기만 잡아야 하나」로 읽혔고, 끝을 잡아 늘리는 조작 자체가
+     자를 쓰는 방식이 아니었다(사장님). 이제 자 아무 데나 잡으면 옮겨지고
+     두 손가락으로 크기·기울기를 바꾼다. 사진에 군더더기도 하나 줄었다. */
 
   ctx.textAlign = 'left';
   ctx.textBaseline = 'top';
@@ -339,7 +350,12 @@ export default function 도장찍기({ 닫기, 판정 }) {
   const [기준이름, 기준이름바꾸기] = useState('손바닥 폭');
   const [기준점, 기준점바꾸기] = useState([]);
   const [물고기점, 물고기점바꾸기] = useState([]);
-  const [무엇을찍나, 무엇을찍나바꾸기] = useState('기준');
+  /* 🔴 2026-08-07 — **물고기를 먼저 찍는다** (사장님 지적).
+     전에는 기준물부터 찍게 했는데, 사람은 물고기를 재려고 이 화면에 들어온다.
+     재려는 것을 먼저 찍고, 「그래서 몇 cm냐」를 알기 위해 기준물을 나중에 찍는 게 순서다. */
+  const [무엇을찍나, 무엇을찍나바꾸기] = useState('물고기');
+  /* 기준물 칸은 접혀 있다가 물고기 두 점을 다 찍으면 저절로 펼쳐진다 */
+  const [기준칸열림, 기준칸열림바꾸기] = useState(false);
 
   /* B — 눈금자 */
   const [눈금, 눈금바꾸기] = useState({ x: 0.5, y: 0.55, 길이: 0.8, 각도: 0 });
@@ -370,7 +386,8 @@ export default function 도장찍기({ 닫기, 판정 }) {
     이미지.src = url;
     기준점바꾸기([]);
     물고기점바꾸기([]);
-    무엇을찍나바꾸기('기준');
+    무엇을찍나바꾸기('물고기');
+    기준칸열림바꾸기(false);
     저장됨바꾸기('');
   }
 
@@ -499,45 +516,55 @@ export default function 도장찍기({ 닫기, 판정 }) {
     if (고른종류 !== 'C') return;
     const p = 자리계산(e);
     if (!p) return;
-    if (무엇을찍나 === '기준') {
-      const 다음 = 기준점.length >= 2 ? [p] : [...기준점, p];
-      기준점바꾸기(다음);
-      if (다음.length === 2) 무엇을찍나바꾸기('물고기');
+    if (무엇을찍나 === '물고기') {
+      const 다음 = 물고기점.length >= 2 ? [p] : [...물고기점, p];
+      물고기점바꾸기(다음);
+      /* 물고기를 다 찍으면 기준물 차례로 넘어가고, 접혀 있던 칸이 열린다 */
+      if (다음.length === 2) {
+        무엇을찍나바꾸기('기준');
+        기준칸열림바꾸기(true);
+      }
     } else {
-      물고기점바꾸기(물고기점.length >= 2 ? [p] : [...물고기점, p]);
+      기준점바꾸기(기준점.length >= 2 ? [p] : [...기준점, p]);
     }
   }
 
   /* 마지막에 찍은 점 하나만 지운다 — 잘못 눌렀을 때 처음부터 다시 하지 않아도 된다 */
+  /* 마지막에 찍은 점 하나만 지운다 — 잘못 눌렀을 때 처음부터 다시 하지 않아도 된다.
+     지우는 순서는 찍은 순서의 반대다: 기준물 → 물고기 */
   function 마지막점지우기() {
-    if (무엇을찍나 === '물고기' && 물고기점.length > 0) {
-      물고기점바꾸기(물고기점.slice(0, -1));
-      return;
-    }
-    if (기준점.length > 0) {
+    if (무엇을찍나 === '기준' && 기준점.length > 0) {
       기준점바꾸기(기준점.slice(0, -1));
-      무엇을찍나바꾸기('기준');
       return;
     }
-    무엇을찍나바꾸기('기준');
+    if (물고기점.length > 0) {
+      물고기점바꾸기(물고기점.slice(0, -1));
+      무엇을찍나바꾸기('물고기');
+      return;
+    }
+    무엇을찍나바꾸기('물고기');
   }
 
-  /* 🔴 B — 자를 손으로 다룬다 (2026-08-07 사장님 지시 전면 개편)
+  /* 🔴 B — 자를 손으로 다룬다 (2026-08-07 두 번째 개편, 사장님 지시)
    *
-   * 전에는 사진 아무 데나 누르면 자가 **그 자리로 순간이동**했다.
-   * 사장님 말 — 「바로 움직이는 거 불편하고 쓸모없어」. 맞다.
-   * 조금만 스치면 애써 맞춰둔 자리가 날아갔다.
+   * 지금까지 두 번 틀렸다 —
+   *   ① 처음엔 **아무 데나 누르면 자가 그 자리로 순간이동**했다. 스치기만 해도 날아갔다.
+   *   ② 그래서 **양 끝에 손잡이**를 달아 끌게 했더니, 사장님 말 — 「끝을 잡고 늘리는
+   *      형식은 이상하다」. 맞다. 자를 그렇게 쓰는 앱은 없다.
    *
-   * 이제 —
-   *   ① **자 몸통을 잡고 끌면** 잡은 지점을 그대로 유지한 채 따라온다(순간이동 없음).
-   *   ② **양 끝 손잡이를 잡고 끌면** 반대쪽 끝은 고정된 채로
-   *      **각도와 길이가 같이 바뀐다.** 줄자를 물고기 머리에서 꼬리로 늘이는 것과 같다.
-   *   ③ **자에서 벗어난 곳을 누르면 아무 일도 안 일어난다.**
+   * 이제 **지도 앱과 같은 방식**이다. 사람들이 이미 손에 익힌 방식이라 배울 게 없다.
+   *   - **손가락 하나** → 자를 끌어 옮긴다 (잡은 지점 그대로. 순간이동 없음)
+   *   - **손가락 둘** → 벌리면 길어지고, 오므리면 짧아지고, 비틀면 기울어진다
+   *   - 손잡이는 없앴다. 손잡이가 있으면 「저기만 잡아야 하나」로 읽힌다
+   *
+   * 어떻게 아나 — 화면에 닿아 있는 손가락을 `누른손가락` 에 모아두고 그 수로 가른다.
+   * 두 번째 손가락이 닿는 순간의 **거리·각도·자 상태**를 기준점으로 저장해두고,
+   * 그 뒤로는 「기준점 대비 얼마나 벌어졌나/돌았나」만 본다.
    */
-  const 끄는것 = useRef(null); // 'ㄱ끝' | 'ㄴ끝' | '몸통'
-  const 잡은자리 = useRef({ dx: 0, dy: 0 });
+  const 누른손가락 = useRef(new Map());
+  const 한손기준 = useRef(null);
+  const 두손기준 = useRef(null);
 
-  /* 사진 안의 실제 점(px)으로 바꾼다 — 각도 계산은 px 로 해야 맞다 */
   function 점px(e) {
     const cv = 캔버스.current;
     const p = 자리계산(e);
@@ -545,73 +572,82 @@ export default function 도장찍기({ 닫기, 판정 }) {
     return { x: p.x * cv.width, y: p.y * cv.height, W: cv.width, H: cv.height };
   }
 
-  function 거리(a, b) {
-    return Math.hypot(a.x - b.x, a.y - b.y);
+  /* 두 손가락 사이의 거리와 각도 */
+  function 두손재기() {
+    const [a, b] = Array.from(누른손가락.current.values());
+    return {
+      거리: Math.hypot(a.x - b.x, a.y - b.y),
+      각도: (Math.atan2(b.y - a.y, b.x - a.x) * 180) / Math.PI,
+      가운데: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 },
+    };
   }
 
   function 끌기시작(e) {
     if (고른종류 !== 'B') return;
     const p = 점px(e);
     if (!p) return;
-    const 끝 = 자양끝(눈금, p.W, p.H);
-    /* 🔴 손가락 크기로 잡는다. 사진의 픽셀 수는 폰마다 다르므로
-       「몇 픽셀」이 아니라 **사진 가로의 몇 퍼센트**로 잡아야 어느 폰에서나 같다.
-       (처음에 26픽셀로 뒀는데, 큰 사진에서는 손톱만 한 자리가 됐다) */
-    const 손잡이반경 = p.W * 0.08;
-
-    if (거리(p, 끝.a) <= 손잡이반경) 끄는것.current = 'ㄱ끝';
-    else if (거리(p, 끝.b) <= 손잡이반경) 끄는것.current = 'ㄴ끝';
-    else {
-      /* 몸통을 잡았나 — 자 가운데 선에서 얼마나 떨어져 있나로 본다 */
-      const 가운데 = { x: 눈금.x * p.W, y: 눈금.y * p.H };
-      const 라디안 = (눈금.각도 * Math.PI) / 180;
-      const 상대 = { x: p.x - 가운데.x, y: p.y - 가운데.y };
-      const 가로 = 상대.x * Math.cos(라디안) + 상대.y * Math.sin(라디안);
-      const 세로 = -상대.x * Math.sin(라디안) + 상대.y * Math.cos(라디안);
-      const 반길이 = (눈금.길이 * p.W) / 2;
-      const 반두께 = p.W * 0.075; // 자 몸통을 잡는 자리도 손가락 크기로
-      if (Math.abs(가로) > 반길이 || Math.abs(세로) > 반두께) return; // 자 바깥 — 아무 일 없음
-      끄는것.current = '몸통';
-      잡은자리.current = { dx: p.x - 가운데.x, dy: p.y - 가운데.y };
-    }
+    누른손가락.current.set(e.pointerId, p);
     try { e.currentTarget.setPointerCapture(e.pointerId); } catch (err) {}
+
+    if (누른손가락.current.size === 1) {
+      /* 잡은 지점과 자 가운데의 거리를 기억해 둔다 = 순간이동하지 않는다 */
+      한손기준.current = { dx: p.x - 눈금.x * p.W, dy: p.y - 눈금.y * p.H };
+      두손기준.current = null;
+    } else if (누른손가락.current.size === 2) {
+      const m = 두손재기();
+      두손기준.current = { ...m, 길이: 눈금.길이, 각도자: 눈금.각도, x: 눈금.x, y: 눈금.y };
+      한손기준.current = null;
+    }
   }
 
   function 끄는동안(e) {
-    if (!끄는것.current || 고른종류 !== 'B') return;
+    if (고른종류 !== 'B') return;
+    if (!누른손가락.current.has(e.pointerId)) return;
     const p = 점px(e);
     if (!p) return;
-    const 모드 = 끄는것.current;
+    누른손가락.current.set(e.pointerId, p);
 
-    if (모드 === '몸통') {
-      /* 잡은 지점과 자 가운데의 거리를 그대로 유지한다 = 순간이동하지 않는다 */
-      눈금바꾸기((전) => ({
-        ...전,
-        x: Math.min(1, Math.max(0, (p.x - 잡은자리.current.dx) / p.W)),
-        y: Math.min(1, Math.max(0, (p.y - 잡은자리.current.dy) / p.H)),
-      }));
+    /* ── 손가락 둘 — 크기와 기울기 ── */
+    if (누른손가락.current.size >= 2 && 두손기준.current) {
+      const 지금 = 두손재기();
+      const 기준 = 두손기준.current;
+      if (기준.거리 < 1) return;
+      const 배 = 지금.거리 / 기준.거리;
+      const 돈각 = 지금.각도 - 기준.각도;
+      /* 두 손가락 가운데가 움직인 만큼 자도 따라 옮긴다 — 손에 붙어 있는 느낌이 난다 */
+      const 옮김x = 지금.가운데.x - 기준.가운데.x;
+      const 옮김y = 지금.가운데.y - 기준.가운데.y;
+      눈금바꾸기({
+        x: Math.min(1, Math.max(0, 기준.x + 옮김x / p.W)),
+        y: Math.min(1, Math.max(0, 기준.y + 옮김y / p.H)),
+        길이: Math.min(1.8, Math.max(0.15, 기준.길이 * 배)),
+        각도: Math.round(((기준.각도자 + 돈각 + 540) % 360) - 180),
+      });
       return;
     }
 
-    /* 끝을 끄는 중 — 반대쪽 끝은 붙박이다 */
-    const 끝 = 자양끝(눈금, p.W, p.H);
-    const 붙박이 = 모드 === 'ㄱ끝' ? 끝.b : 끝.a;
-    const 길이px = Math.max(거리(붙박이, p), p.W * 0.12); // 너무 짧아져 사라지지 않게
-    let 각 = (Math.atan2(p.y - 붙박이.y, p.x - 붙박이.x) * 180) / Math.PI;
-    if (모드 === 'ㄱ끝') 각 += 180; // ㄱ끝을 끌면 자의 방향이 반대다
-    const 가운데x = (붙박이.x + p.x) / 2;
-    const 가운데y = (붙박이.y + p.y) / 2;
-    눈금바꾸기((전) => ({
-      ...전,
-      x: Math.min(1, Math.max(0, 가운데x / p.W)),
-      y: Math.min(1, Math.max(0, 가운데y / p.H)),
-      길이: Math.min(1.6, 길이px / p.W),
-      각도: Math.round(각),
-    }));
+    /* ── 손가락 하나 — 옮기기 ── */
+    if (누른손가락.current.size === 1 && 한손기준.current) {
+      눈금바꾸기((전) => ({
+        ...전,
+        x: Math.min(1, Math.max(0, (p.x - 한손기준.current.dx) / p.W)),
+        y: Math.min(1, Math.max(0, (p.y - 한손기준.current.dy) / p.H)),
+      }));
+    }
   }
 
-  function 끌기끝() {
-    끄는것.current = null;
+  function 끌기끝(e) {
+    if (e && e.pointerId != null) 누른손가락.current.delete(e.pointerId);
+    else 누른손가락.current.clear();
+    두손기준.current = null;
+    /* 두 손가락 중 하나만 떼면 남은 하나로 계속 옮길 수 있게 기준을 다시 잡는다 */
+    if (누른손가락.current.size === 1) {
+      const cv = 캔버스.current;
+      const [남은] = Array.from(누른손가락.current.values());
+      if (cv && 남은) 한손기준.current = { dx: 남은.x - 눈금.x * cv.width, dy: 남은.y - 눈금.y * cv.height };
+    } else {
+      한손기준.current = null;
+    }
   }
 
   return (
@@ -667,6 +703,7 @@ export default function 도장찍기({ 닫기, 판정 }) {
               onPointerMove={끄는동안}
               onPointerUp={끌기끝}
               onPointerCancel={끌기끝}
+              onPointerLeave={끌기끝}
               style={{
                 position: 'relative',
                 lineHeight: 0,
@@ -716,91 +753,22 @@ export default function 도장찍기({ 닫기, 판정 }) {
               <Typography weight="bold" sx={{ fontSize: 크기.도장보조, color: 색.흐린글 }}>
                 두 점 재기
               </Typography>
-              <Typography sx={{ fontSize: 크기.도장작게, color: 색.주의, lineHeight: 1.7 }}>
-                기준물과 물고기가 같은 바닥에 놓여 있어야 맞아요.
-              </Typography>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 7 }}>
-                {기준물.map((k) => {
-                  const 켜짐 = 기준이름 === k.이름;
-                  return (
-                    <button
-                      key={k.이름}
-                      type="button"
-                      /* 🔴 한 번 더 누르면 선택이 풀린다 (2026-08-06 사장님 지시).
-                         고른 뒤 마음이 바뀌었을 때 빠져나갈 길이 없었다 */
-                      onClick={() => {
-                        if (켜짐) {
-                          /* 한 번 더 누르면 풀린다. 🔴 숫자도 같이 비운다 —
-                             풀었는데 숫자가 남아 있으면 「안 지워졌다」로 보인다 */
-                          기준이름바꾸기('기준물');
-                          기준칸바꾸기('');
-                          return;
-                        }
-                        기준이름바꾸기(k.이름);
-                        기준칸바꾸기(String(k.cm));
-                      }}
-                      style={{
-                        padding: '10px 6px',
-                        borderRadius: 10,
-                        fontFamily: 'inherit',
-                        fontSize: 크기.도장설명,
-                        fontWeight: 켜짐 ? 700 : 500,
-                        cursor: 'pointer',
-                        border: `1px solid ${켜짐 ? 'transparent' : 색.선}`,
-                        background: 켜짐 ? 색.반전바탕 : 'transparent',
-                        color: 켜짐 ? 색.반전글 : 색.흐린글,
-                      }}
-                    >
-                      {k.이름} {k.cm}cm
-                    </button>
-                  );
-                })}
-              </div>
-
-              <FlexBox alignItems="center" gap={9}>
-                <Typography sx={{ fontSize: 크기.도장작게, color: 색.흐린글 }}>직접 넣기</Typography>
-                <TextField
-                  value={기준칸}
-                  inputMode="decimal"
-                  placeholder="숫자"
-                  onChange={(e) => {
-                    /* 숫자·점만 받는다. 비우는 것도 그대로 둔다 */
-                    const 글 = e.target.value.replace(/[^0-9.]/g, '');
-                    기준칸바꾸기(글);
-                    기준이름바꾸기('기준물');
-                  }}
-                  sx={{ flex: 1 }}
-                />
-                <Typography sx={{ fontSize: 크기.도장작게, color: 색.흐린글 }}>cm</Typography>
-                {기준칸 !== '' && (
-                  <button
-                    type="button"
-                    aria-label="기준 길이 지우기"
-                    onClick={() => {
-                      기준칸바꾸기('');
-                      기준이름바꾸기('기준물');
-                    }}
-                    style={{
-                      width: 34, height: 34, borderRadius: 17, flex: '0 0 auto',
-                      border: `1px solid ${색.선}`, background: 'transparent',
-                      color: 색.흐린글, fontFamily: 'inherit', fontSize: 16, cursor: 'pointer',
-                      lineHeight: 1,
-                    }}
-                  >
-                    ×
-                  </button>
-                )}
-              </FlexBox>
-
+              {/* ── ① 물고기 먼저 ──────────────────────────────
+                  🔴 2026-08-07 — 순서를 뒤집었다 (사장님 지적).
+                  사람은 **물고기를 재려고** 이 화면에 들어온다. 재려는 것을 먼저 찍는다.
+                  기준물은 「그래서 몇 cm냐」를 알기 위한 자일 뿐이라 나중이다. */}
               <FlexBox flexDirection="column" gap={4}>
                 <Typography sx={{ fontSize: 크기.도장보조, color: 색.글, lineHeight: 1.7 }}>
-                  {무엇을찍나 === '기준'
-                    ? `① 사진에서 ${기준이름}의 양 끝을 눌러주세요 (${기준점.length}/2)`
-                    : `② 물고기의 머리와 꼬리를 눌러주세요 (${물고기점.length}/2)`}
+                  <b>① 물고기</b>의 머리와 꼬리를 눌러주세요{' '}
+                  <span style={{ color: 색.흐린글 }}>({물고기점.length}/2)</span>
+                </Typography>
+                <Typography sx={{ fontSize: 크기.도장보조, color: 물고기점.length === 2 ? 색.글 : 색.아주흐린글, lineHeight: 1.7 }}>
+                  <b>② 기준이 될 물건</b>의 양 끝을 눌러주세요{' '}
+                  <span style={{ color: 색.흐린글 }}>({기준점.length}/2)</span>
                 </Typography>
                 {어림 != null && (
-                  <Typography weight="bold" sx={{ fontSize: 크기.도장묶음 }}>
+                  <Typography weight="bold" sx={{ fontSize: 크기.도장묶음, marginTop: 2 }}>
                     약 {어림}cm
                   </Typography>
                 )}
@@ -826,6 +794,102 @@ export default function 도장찍기({ 닫기, 판정 }) {
                 )}
               </FlexBox>
 
+              {/* ── ② 기준물 — 접어둔다 ────────────────────────
+                  🔴 사장님 「기준물 점찍기가 있는 건 좋은데 좀 방해되는 것 같기도 하다」.
+                  없앨 수는 없다(이게 없으면 cm 를 못 낸다). 대신 **처음엔 접어두고**,
+                  물고기 두 점을 다 찍으면 그때 저절로 펼쳐진다. */}
+              {!기준칸열림 ? (
+                <button
+                  type="button"
+                  onClick={() => 기준칸열림바꾸기(true)}
+                  style={{
+                    alignSelf: 'flex-start', border: 'none', background: 'transparent',
+                    padding: '2px 0', fontFamily: 'inherit', fontSize: 크기.도장설명,
+                    color: 색.흐린글, textDecoration: 'underline', textUnderlineOffset: 3,
+                    cursor: 'pointer',
+                  }}
+                >
+                  기준이 될 물건 고르기 ▾
+                </button>
+              ) : (
+                <FlexBox flexDirection="column" gap={크기.사이}>
+                  <Typography sx={{ fontSize: 크기.도장작게, color: 색.주의, lineHeight: 1.7 }}>
+                    기준물과 물고기가 <b>같은 바닥에 놓여 있어야</b> 맞아요.
+                  </Typography>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 7 }}>
+                    {기준물.map((k) => {
+                      const 켜짐 = 기준이름 === k.이름;
+                      return (
+                        <button
+                          key={k.이름}
+                          type="button"
+                          /* 한 번 더 누르면 선택이 풀린다. 숫자도 같이 비운다 —
+                             풀었는데 숫자가 남아 있으면 「안 지워졌다」로 보인다 */
+                          onClick={() => {
+                            if (켜짐) {
+                              기준이름바꾸기('기준물');
+                              기준칸바꾸기('');
+                              return;
+                            }
+                            기준이름바꾸기(k.이름);
+                            기준칸바꾸기(String(k.cm));
+                          }}
+                          style={{
+                            padding: '10px 6px',
+                            borderRadius: 10,
+                            fontFamily: 'inherit',
+                            fontSize: 크기.도장설명,
+                            fontWeight: 켜짐 ? 700 : 500,
+                            cursor: 'pointer',
+                            border: `1px solid ${켜짐 ? 'transparent' : 색.선}`,
+                            background: 켜짐 ? 색.반전바탕 : 'transparent',
+                            color: 켜짐 ? 색.반전글 : 색.흐린글,
+                          }}
+                        >
+                          {k.이름} {k.cm}cm
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <FlexBox alignItems="center" gap={9}>
+                    <Typography sx={{ fontSize: 크기.도장작게, color: 색.흐린글 }}>직접 넣기</Typography>
+                    <TextField
+                      value={기준칸}
+                      inputMode="decimal"
+                      placeholder="숫자"
+                      onChange={(e) => {
+                        /* 숫자·점만 받는다. 비우는 것도 그대로 둔다 */
+                        const 글 = e.target.value.replace(/[^0-9.]/g, '');
+                        기준칸바꾸기(글);
+                        기준이름바꾸기('기준물');
+                      }}
+                      sx={{ flex: 1 }}
+                    />
+                    <Typography sx={{ fontSize: 크기.도장작게, color: 색.흐린글 }}>cm</Typography>
+                    {기준칸 !== '' && (
+                      <button
+                        type="button"
+                        aria-label="기준 길이 지우기"
+                        onClick={() => {
+                          기준칸바꾸기('');
+                          기준이름바꾸기('기준물');
+                        }}
+                        style={{
+                          width: 34, height: 34, borderRadius: 17, flex: '0 0 auto',
+                          border: `1px solid ${색.선}`, background: 'transparent',
+                          color: 색.흐린글, fontFamily: 'inherit', fontSize: 16, cursor: 'pointer',
+                          lineHeight: 1,
+                        }}
+                      >
+                        ×
+                      </button>
+                    )}
+                  </FlexBox>
+                </FlexBox>
+              )}
+
               <FlexBox gap={8}>
                 <Button
                   variant="outlined"
@@ -835,7 +899,8 @@ export default function 도장찍기({ 닫기, 판정 }) {
                   onClick={() => {
                     기준점바꾸기([]);
                     물고기점바꾸기([]);
-                    무엇을찍나바꾸기('기준');
+                    무엇을찍나바꾸기('물고기');
+                    기준칸열림바꾸기(false);
                   }}
                   sx={{ ...버튼, height: 46, fontSize: 크기.도장보조, fontWeight: 500 }}
                 >
@@ -867,9 +932,8 @@ export default function 도장찍기({ 닫기, 판정 }) {
                 눈금 자국
               </Typography>
               <Typography sx={{ fontSize: 크기.도장작게, color: 색.아주흐린글, lineHeight: 1.7 }}>
-                <b style={{ color: 색.흐린글 }}>빨간 동그라미 두 개를 물고기 머리와 꼬리로 끌어주세요.</b>{' '}
-                자 가운데를 잡으면 통째로 옮겨집니다. 이 눈금은 사진에 남기는 표시일 뿐이고
-                판정에는 쓰지 않습니다.
+                <b style={{ color: 색.흐린글 }}>손가락 하나로 끌면 옮겨지고, 두 손가락으로 벌리면 길어집니다.</b>{' '}
+                비틀면 기울어져요. 이 눈금은 사진에 남기는 표시일 뿐이고 판정에는 쓰지 않습니다.
               </Typography>
               {/* 🔴 손잡이(막대)는 「미세 조정」으로만 남긴다.
                   좌우·위아래는 손으로 끄는 편이 훨씬 빠르므로 없앴다 —

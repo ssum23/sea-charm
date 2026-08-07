@@ -85,3 +85,47 @@ button {
 @media (prefers-reduced-motion: reduce) {
   .부적뽑기 { animation: none; }
 }
+
+/* 🔴 2026-08-07 — 부적 뽑기 (오미쿠지)
+ *
+ * 사장님이 시안 셋 중 **① 오미쿠지**를 고르셨다.
+ * 흐름은 한 번에 이어진다 — **통이 흔들리고 → 막대가 나오고 → 저절로 부적으로 넘어간다.**
+ * (막대를 또 눌러야 하는 두 번 누르기는 안 한다 — 사장님 지시)
+ *
+ * 시간표
+ *   0.00s  통이 흔들리기 시작
+ *   0.60s  막대가 통 입구에서 솟기 시작
+ *   1.15s  막대가 다 나와 멈춤
+ *   1.45s  화면이 부적으로 바뀐다 (이건 자바스크립트가 잰다)
+ *
+ * 🔴 「동작 줄이기」를 켠 사람에게는 **연출 자체를 건너뛴다.**
+ *    안 움직이는 통을 1.45초 동안 보여주는 건 그냥 기다리게 하는 것이다.
+ *    (건너뛰는 것도 자바스크립트가 한다 — 여기 규칙은 혹시 모를 대비다)
+ */
+@keyframes 통흔들기 {
+  0%   { transform: rotate(0)      translateY(0); }
+  10%  { transform: rotate(-13deg) translateY(-3px); }
+  24%  { transform: rotate(11deg)  translateY(0); }
+  38%  { transform: rotate(-9deg)  translateY(-2px); }
+  52%  { transform: rotate(7deg)   translateY(0); }
+  66%  { transform: rotate(-5deg)  translateY(-1px); }
+  80%  { transform: rotate(3deg)   translateY(0); }
+  100% { transform: rotate(0)      translateY(0); }
+}
+.통흔들 {
+  animation: 통흔들기 0.95s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+  transform-origin: 50% 92%;
+}
+
+@keyframes 막대나오기 {
+  from { transform: translateY(96px); opacity: 0; }
+  60%  { opacity: 1; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+.막대나옴 {
+  animation: 막대나오기 0.55s 0.6s cubic-bezier(0.22, 1.2, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .통흔들, .막대나옴 { animation: none; }
+}
