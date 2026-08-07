@@ -17,7 +17,7 @@
  *  - 그림 파일을 쓰지 않는다 — 외부 통신 0건(PRD §0-10).
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button, Card, FlexBox, TextField, Typography } from '@montage-ui/core';
 import { 크기, 색 } from './크기';
 import { 읽기, 쓰기 } from '@/lib/저장소';
@@ -158,10 +158,6 @@ export default function 준비물({ 닫기 }) {
             : 남은수 === 0
               ? '다 챙기셨어요. 잘 다녀오세요.'
               : `아직 ${남은수}가지 남았어요.`}
-          <br />
-          <span style={{ fontSize: 크기.도장작게, color: 색.아주흐린글 }}>
-            체크는 이 기기 안에만 남습니다.
-          </span>
         </Typography>
       </Card>
 
@@ -191,6 +187,7 @@ export default function 준비물({ 닫기 }) {
         </Typography>
         <Typography sx={{ fontSize: 크기.도장작게, color: 색.아주흐린글, lineHeight: 1.6 }}>
           사람마다 챙기는 것이 다릅니다. 여기에 더해두면 다음에도 남아 있어요.
+          {내것.length > 0 && <><br />지울 것은 <b>왼쪽으로 미세요</b>.</>}
         </Typography>
         {내것.length > 0 && (
           <FlexBox flexDirection="column" gap={0}>
@@ -257,34 +254,133 @@ export default function 준비물({ 닫기 }) {
   );
 }
 
-/* 한 줄 — 배 위에서 장갑 낀 손으로 누른다. 줄 전체가 버튼이다 */
+/* 한 줄 — 배 위에서 장갑 낀 손으로 누른다. 줄 전체가 버튼이다.
+ *
+ * 🔴 2026-08-07 (사장님 지적)
+ *   ① 줄간격을 촘촘하게 — 28가지가 화면을 너무 길게 먹었다.
+ *   ② 지우기는 **왼쪽으로 미는 것**으로 한다.
+ *      - 처음엔 꾹 누르기로 했다가 바꿨다. 꾹 누르기는 **눌렀는지 아닌지 안 보인다** —
+ *        손가락을 떼기 전까지 아무 일도 안 일어나서 「되나?」 하고 한 번 더 누르게 된다.
+ *        미는 것은 **미는 만큼 빨간 칸이 드러나** 지금 무엇이 일어나는지 손이 안다.
+ *      - 80px 넘게 밀어야 지워진다. 덜 밀면 제자리로 돌아온다.
+ *      - 🔴 세로로 긁는 것과 부딪히면 안 된다. `touch-action: pan-y` 로
+ *        **세로는 화면에 양보하고 가로만 우리가 가져간다.**
+ *      - 🔴 확인 창(alert)은 쓰지 않는다. 화면이 멈춘다.
+ */
 function 칸({ 이름, 켜짐, 누름, 지우기 }) {
+  const [밀림, 밀림바꾸기] = useState(0);
+  const [끄는중, 끄는중바꾸기] = useState(false);
+  const 시작점 = useRef(null);
+  const 가로인가 = useRef(null);
+  const 밀었나 = useRef(false);
+
+  const 문턱 = 80;
+
+  function 시작(e) {
+    if (!지우기) return;
+    시작점.current = { x: e.clientX, y: e.clientY };
+    가로인가.current = null;
+    밀었나.current = false;
+  }
+
+  function 움직임(e) {
+    if (!지우기 || !시작점.current) return;
+    const dx = e.clientX - 시작점.current.x;
+    const dy = e.clientY - 시작점.current.y;
+    /* 처음 몇 픽셀로 가로인지 세로인지 정한다. 한 번 정하면 안 바꾼다 */
+    if (가로인가.current === null) {
+      if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return;
+      가로인가.current = Math.abs(dx) > Math.abs(dy);
+      if (가로인가.current) 끄는중바꾸기(true);
+    }
+    if (!가로인가.current) return;
+    /* 오른쪽으로는 안 밀린다. 왼쪽으로만, 그리고 끝에서는 뻑뻑해진다 */
+    const 왼쪽 = Math.min(0, dx);
+    밀림바꾸기(왼쪽 < -문턱 ? -문턱 + (왼쪽 + 문턱) * 0.25 : 왼쪽);
+    if (Math.abs(dx) > 8) 밀었나.current = true;
+  }
+
+  function 끝(e) {
+    if (!지우기) return;
+    const 밀린만큼 = 밀림;
+    시작점.current = null;
+    가로인가.current = null;
+    끄는중바꾸기(false);
+    if (밀린만큼 <= -문턱) {
+      /* 지우기 전에 끝까지 밀어 보낸다 — 사라지는 것이 보여야 한다 */
+      밀림바꾸기(-320);
+      setTimeout(() => 지우기(), 160);
+    } else {
+      밀림바꾸기(0);
+    }
+  }
+
+  const 지울참 = 밀림 <= -문턱;
+
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+    <div
+      style={{
+        position: 'relative',
+        overflow: 'hidden',
+        borderRadius: 8,
+        touchAction: 지우기 ? 'pan-y' : 'auto',
+      }}
+    >
+      {/* 뒤에 깔리는 빨간 칸 — 미는 만큼 드러난다 */}
+      {지우기 && (
+        <div
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            inset: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'flex-end',
+            paddingRight: 14,
+            background: 색.안됨,
+            color: 색.흰,
+            fontSize: 크기.도장작게,
+            fontWeight: 700,
+            opacity: 밀림 < 0 ? 1 : 0,
+          }}
+        >
+          {지울참 ? '놓으면 지워집니다' : '지우기'}
+        </div>
+      )}
+
       <button
         type="button"
-        onClick={누름}
+        onClick={() => { if (밀었나.current) { 밀었나.current = false; return; } 누름(); }}
+        onPointerDown={시작}
+        onPointerMove={움직임}
+        onPointerUp={끝}
+        onPointerCancel={끝}
+        onPointerLeave={(e) => { if (시작점.current) 끝(e); }}
         style={{
-          flex: 1,
+          position: 'relative',
+          width: '100%',
           display: 'flex',
           alignItems: 'center',
-          gap: 12,
-          padding: '12px 2px',
+          gap: 11,
+          padding: '7px 2px',
           border: 'none',
-          background: 'transparent',
+          background: 색.바탕,
           fontFamily: 'inherit',
           fontSize: 크기.도장본문,
           textAlign: 'left',
           cursor: 'pointer',
           color: 켜짐 ? 색.아주흐린글 : 색.글,
+          transform: `translateX(${밀림}px)`,
+          transition: 끄는중 ? 'none' : 'transform .18s ease',
+          WebkitTouchCallout: 'none',
         }}
       >
         {/* 네모 칸 — 코드로 그린다. 이모지를 쓰면 폰마다 모양이 다르다 */}
         <span
           aria-hidden="true"
           style={{
-            width: 26,
-            height: 26,
+            width: 24,
+            height: 24,
             flex: '0 0 auto',
             borderRadius: 8,
             border: `2px solid ${켜짐 ? 색.됨 : 색.선}`,
@@ -309,28 +405,6 @@ function 칸({ 이름, 켜짐, 누름, 지우기 }) {
         </span>
         <span style={{ textDecoration: 켜짐 ? 'line-through' : 'none' }}>{이름}</span>
       </button>
-      {지우기 && (
-        <button
-          type="button"
-          aria-label={`${이름} 지우기`}
-          onClick={지우기}
-          style={{
-            width: 34,
-            height: 34,
-            flex: '0 0 auto',
-            borderRadius: 17,
-            border: 'none',
-            background: 'transparent',
-            color: 색.아주흐린글,
-            fontFamily: 'inherit',
-            fontSize: 16,
-            cursor: 'pointer',
-            lineHeight: 1,
-          }}
-        >
-          ×
-        </button>
-      )}
     </div>
   );
 }

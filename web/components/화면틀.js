@@ -29,6 +29,8 @@ export default function 화면틀({
   날짜,
   안내,
   큰숫자,
+  /* 숫자 **앞**에 붙는 말 — 「총」 · 「오늘」 · 「최근 1주일」 */
+  큰숫자앞말,
   큰숫자말,
   바닥글,
   /* 홈이면 false. 그 밖에는 왼쪽 위에 「‹ 홈」이 붙는다 */
@@ -87,6 +89,9 @@ export default function 화면틀({
 
         {큰숫자 != null ? (
           <FlexBox alignItems="baseline" gap={8} sx={{ marginTop: 8 }}>
+            {큰숫자앞말 && (
+              <Typography sx={{ fontSize: 크기.머리큰숫자말, color: 색.흐린글 }}>{큰숫자앞말}</Typography>
+            )}
             <Typography weight="bold" sx={{ fontSize: 크기.머리큰숫자, lineHeight: 1, color: 색.주 }}>
               {큰숫자}
             </Typography>
