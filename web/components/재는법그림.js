@@ -205,19 +205,71 @@ function 외투장() {
   );
 }
 
-/* 무게 — 길이가 아니라 그램으로 재는 어종(대문어) */
+/* 무게 — 길이가 아니라 그램으로 재는 어종. 지금은 대문어 하나뿐이다(600g 이하 방생).
+ *
+ * 🔴 2026-08-07 다시 그림 (폰 점검 23번 — 「대문어 그림이 이상하다」)
+ *   전에는 저울 위에 둥근 덩어리 하나에 더듬이 두 개가 위로 뻗어 있어서,
+ *   문어인지 버섯인지 알 수 없었다. 무엇을 올리라는 것인지도 안 보였다.
+ *
+ *   시안 셋을 그려 사장님이 **③ 「대문어를 크게」**를 고르셨다.
+ *   ① 대문어가 화면의 주인공이다. 외투(머리) · 눈 둘 · 다리 여덟.
+ *   ② 저울은 오른쪽 위에 **눈금판만** 작게 둔다 — 「g 으로 읽는다」만 알리면 된다.
+ *   ③ 저울(눈금판·눈금·바늘)은 이 파일의 규칙대로 「읽어야 하는 곳」이라 굵은 선이다.
+ *   ④ 20px 로 줄여도 문어와 눈금판이 각각 뭉개지지 않는지 확인했다.
+ */
 function 무게() {
   return (
     <>
-      {/* 저울 */}
-      <path {...몸선} d="M46 78 L146 78 L146 62 L46 62 Z" />
-      <circle cx="96" cy="70" r="6" {...몸선} />
-      {/* 올려둔 것 */}
-      <path {...몸선} d="M76 62 C74 44 84 32 96 32 C108 32 118 44 116 62" />
-      <g stroke="currentColor" strokeWidth="1.4" opacity="0.35" fill="none">
-        <path d="M82 40 C76 32 72 26 70 20" />
-        <path d="M110 40 C116 32 120 26 122 20" />
+      {/* ── 대문어 — 재는 대상이라 흐린 선 ───────────────── */}
+      {/* 외투(머리) — 위는 둥글고 눈 아래에서 살짝 좁아진다 */}
+      <g {...몸선} strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8">
+        <path d="M72 8 C94 8 110 25 110 42 C110 51 103 57 96 59 C87 61 80 62 71 62 C62 62 55 61 46 59 C39 57 33 51 33 42 C33 25 50 8 72 8 Z" />
+        {/* 광택 두 줄 — 이게 있어야 덩어리가 아니라 몸으로 보인다 */}
+        <path d="M48 27 C55 19 64 16 72 17" />
+        <path d="M99 22 C104 27 107 33 107 39" />
       </g>
+      {/* 다리 여덟 — 왼쪽 끝 하나는 끝이 말려 있다 */}
+      <g
+        fill="none" stroke="currentColor" strokeWidth="2.1"
+        opacity="0.45" strokeLinecap="round"
+      >
+        <path d="M40 55 C28 64 16 70 8 71 C3 71.6 1.5 68 5 66" />
+        <path d="M50 60 C42 69 31 75 22 77" />
+        <path d="M61 62 C58 70 52 76 45 78" />
+        <path d="M71 63 C70 70 67 75 63 78" />
+        <path d="M81 62 C83 70 88 76 94 78" />
+        <path d="M92 60 C99 69 108 74 116 76" />
+        <path d="M101 55 C110 63 119 68 126 70" />
+        <path d="M107 48 C116 54 124 58 131 60" />
+      </g>
+      <circle cx="58" cy="43" r="4" fill="currentColor" opacity="0.6" />
+      <circle cx="86" cy="43" r="4" fill="currentColor" opacity="0.6" />
+
+      {/* ── 저울 눈금판 — 읽어야 하는 곳이라 굵은 선 ──────── */}
+      <g
+        fill="none" stroke="currentColor" strokeWidth="2.4"
+        strokeLinecap="round" strokeLinejoin="round"
+      >
+        <circle cx="152" cy="27" r="19" />
+        {/* 받침 */}
+        <path d="M141 43.5 L163 43.5" />
+      </g>
+      {/* 눈금 */}
+      <g stroke="currentColor" strokeWidth="1.5" opacity="0.6" strokeLinecap="round">
+        <path d="M152 10 L152 14" />
+        <path d="M139 18 L142 20.5" />
+        <path d="M165 18 L162 20.5" />
+      </g>
+      {/* 바늘 */}
+      <path d="M152 27 L163 18" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" />
+      <circle cx="152" cy="27" r="2" fill="currentColor" />
+      {/* 단위 — 「cm 가 아니라 g」임을 그림 안에서도 한 번 더 말한다 */}
+      <text
+        x="152" y="37" textAnchor="middle" fontSize="11" fontWeight="700"
+        fill="currentColor" opacity="0.85"
+      >
+        g
+      </text>
     </>
   );
 }
