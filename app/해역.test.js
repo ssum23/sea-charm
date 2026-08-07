@@ -101,6 +101,56 @@ T('대구는 동해에 있고 남해에는 없다',
 T('한치는 제주·남해에 있고 서해에는 없다',
   !!해역.어종['한치']['제주'] && !!해역.어종['한치']['남해'] && 해역.어종['한치']['서해'] === null);
 
+/* ── 낚시 전문지 교차 확인 (2026-08-07 신설) ──
+   🔴 통계만 믿지 않는다. 「많이 잡혔다」와 낚시인이 말하는 「시즌」은 서로 다른 것을 잰다. */
+T('전문지 자료가 있고 출처가 적혀 있다', (function () {
+  if (!해역.전문지 || !해역.메타.전문지) return false;
+  return Object.keys(해역.전문지).length >= 30 &&
+         (해역.메타.전문지.출처 || []).length >= 3;
+})());
+
+T('🔴 전문지 어종 이름도 기준표에 있다', (function () {
+  var 나쁨 = Object.keys(해역.전문지).filter(function (n) { return !이름들[n]; });
+  if (나쁨.length) 실패목록.push('      기준표에 없는 이름: ' + 나쁨.join(', '));
+  return 나쁨.length === 0;
+})());
+
+T('전문지 월은 1~12다', (function () {
+  return Object.keys(해역.전문지).every(function (n) {
+    var ms = 해역.전문지[n].월;
+    return Array.isArray(ms) && ms.length > 0 &&
+           ms.every(function (m) { return m >= 1 && m <= 12; });
+  });
+})());
+
+T('🔴 전문지가 통계를 덮지 않는다 — 통계에 없는 달은 「제철」이 될 수 없다', (function () {
+  /* 「제철」은 **둘 다** 가리킬 때만이다. 전문지만 가리키는 달은 아무 배지도 안 붙는다.
+     이게 뒤집히면 커뮤니티 글 하나가 40개월 실측을 이기게 된다 */
+  var 나쁨 = [];
+  Object.keys(해역.전문지).forEach(function (n) {
+    var 칸 = 해역.어종[n];
+    if (!칸) return;
+    해역.해역.forEach(function (h) {
+      var v = 칸[h];
+      if (!v) return;
+      해역.전문지[n].월.forEach(function (m) {
+        /* 전문지가 말해도 통계가 낮으면 제철이 아니어야 한다 — 계산은 화면이 하지만
+           자료 자체가 그렇게 쓰여 있는지(통계 값이 그대로 남아 있는지)를 본다 */
+        if (typeof v.월[m - 1] !== 'number') 나쁨.push(n + '/' + h + '/' + m);
+      });
+    });
+  });
+  return 나쁨.length === 0;
+})());
+
+T('아는 사실과 맞는다 — 대구는 겨울, 주꾸미는 가을, 볼락은 겨울', (function () {
+  function 있나(n, ms) {
+    var v = 해역.전문지[n];
+    return !!v && ms.every(function (m) { return v.월.indexOf(m) !== -1; });
+  }
+  return 있나('대구', [12, 1]) && 있나('주꾸미', [9, 10]) && 있나('볼락', [1, 2]);
+})());
+
 /* ── 🔴 판정과 섞이지 않는가 ── */
 T('🔴 판정 엔진은 해역시즌 자료를 불러오지 않는다 (해역은 목록 순서일 뿐이다)', (function () {
   var 엔진 = fs.readFileSync(path.join(__dirname, 'judge.js'), 'utf8');
