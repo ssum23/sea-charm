@@ -17,6 +17,8 @@
 !/app/judge.js
 !/app/judge.test.js
 !/app/species.json
+!/app/해역시즌.json
+!/app/해역.test.js
 !/app/부적.js
 !/app/부적.test.js
 

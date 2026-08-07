@@ -12,6 +12,7 @@ import Link from 'next/link';
 import { Button, Card, Chip, FlexBox, TextField, Typography } from '@montage-ui/core';
 import { 크기, 색 } from './크기';
 import { judge, 메타 } from '@/lib/판정엔진';
+import { 해역들, 이달몫, 해역제철, 해역에있나 } from '@/lib/해역';
 import { 키, 읽기, 쓰기, 날짜말, 즐겨찾기최대, 최근최대 } from '@/lib/저장소';
 import 어종그림 from '@/lib/어종그림';
 import 재는법그림, { 재는법말 } from './재는법그림';
@@ -50,6 +51,22 @@ export default function 판정화면() {
    * 🔴 판정 규칙은 하나도 안 바뀐다. 기준이 있는 어종은 **법이 정한 단위를 그대로 쓰고**
    *    이 고르개는 아예 안 나온다. */
   const [잰단위, 잰단위바꾸기] = useState('cm');
+
+  /* 🔴 2026-08-07 — 해역 (폰 점검 29번)
+   * 「8월에 많이 잡히는 것」이 전국 기준이라 **서해 사람에게 갈치가, 동해 사람에게 주꾸미가** 떴다.
+   * 실제로 주꾸미 어획은 **거의 전부 서해**다(40개월 실측). 고른 해역은 기기에 기억한다 —
+   * 사람은 늘 같은 바다로 나간다. 🔴 판정에는 아무 영향이 없다. 목록 순서만 바뀐다. */
+  const [해역, 해역바꾸기] = useState(null);   // null = 전국
+
+  useEffect(() => {
+    해역바꾸기(읽기(키.해역, null));
+  }, []);
+
+  function 해역고름(h) {
+    const 다음 = 해역 === h ? null : h;   // 한 번 더 누르면 전국으로 돌아온다
+    해역바꾸기(다음);
+    쓰기(키.해역, 다음);
+  }
   const [검색, 검색바꾸기] = useState('');
   const [결과, 결과바꾸기] = useState(null);
   const [기록수, 기록수바꾸기] = useState(null);
@@ -98,7 +115,34 @@ export default function 판정화면() {
     즐겨알림바꾸기('');
   }
 
-  const 상단목록 = useMemo(() => (지금 ? judge.상단목록(지금, 8) : []), [지금]);
+  /* 🔴 해역을 고르면 **그 해역 자료로 다시 줄 세운다.**
+     `judge.상단목록` 은 건드리지 않는다 — 엔진은 전국 기준 그대로 두고,
+     화면에서 한 번 더 걸러 순서만 바꾼다. 판정 코드에 손대지 않는 길이다. */
+  const 상단목록 = useMemo(() => {
+    if (!지금) return [];
+    if (!해역) return judge.상단목록(지금, 8);
+
+    const 달 = 지금.getMonth() + 1;
+    return judge
+      .상단목록(지금, 999)
+      .map((s) => {
+        const 몫 = 이달몫(s.이름, 해역, 달);
+        return {
+          ...s,
+          제철: 해역제철(s.이름, 해역, 달) === true,
+          몫: 몫 == null ? -1 : 몫,
+          자료없음: !해역에있나(s.이름, 해역),
+        };
+      })
+      /* 그 해역 자료가 없는 어종은 뒤로 보낸다 — 지우지는 않는다.
+         「없다」가 아니라 「우리가 모른다」이기 때문이다 */
+      .sort((a, b) => {
+        if (a.자료없음 !== b.자료없음) return a.자료없음 ? 1 : -1;
+        if (a.몫 !== b.몫) return b.몫 - a.몫;
+        return a.인기 - b.인기;
+      })
+      .slice(0, 8);
+  }, [지금, 해역]);
 
   const 검색결과 = useMemo(() => {
     const q = 검색.trim();
@@ -268,6 +312,8 @@ export default function 판정화면() {
         {화면 === '어종' && (
           <어종고르기
             지금={지금}
+            해역={해역}
+            해역고름={해역고름}
             상단목록={상단목록}
             검색={검색}
             검색바꾸기={검색바꾸기}
@@ -469,7 +515,7 @@ function 어종줄({ 제목, 목록, 즐겨, 고름, 즐겨토글 }) {
 }
 
 /* ---------- 1. 어종 고르기 ---------- */
-function 어종고르기({ 상단목록, 검색, 검색바꾸기, 검색결과, 어종고름, 지금, 즐겨, 즐겨토글, 즐겨알림, 최근 }) {
+function 어종고르기({ 상단목록, 검색, 검색바꾸기, 검색결과, 어종고름, 지금, 즐겨, 즐겨토글, 즐겨알림, 최근, 해역, 해역고름 }) {
   const 달 = (지금 || new Date()).getMonth() + 1;
   /* 지금 목록에 올라온 것 중 제철인 것만 이름을 뽑아 한 줄로 알려준다.
      「왜 이 여덟 개가 여기 있나」에 답이 된다 */
@@ -496,8 +542,49 @@ function 어종고르기({ 상단목록, 검색, 검색바꾸기, 검색결과, 
             지금 금어기일 수 있는 것은 <b style={{ color: 색.안됨 }}>{금어기들.join(' · ')}</b>
           </>
         )}
-        {제철들.length === 0 && 금어기들.length === 0 && '낚시어선 어획 통계 41개월 실측 순서예요'}
+        {제철들.length === 0 && 금어기들.length === 0 &&
+          (해역 ? `${해역} 낚시어선 어획 통계 40개월 실측 순서예요` : '낚시어선 어획 통계 41개월 실측 순서예요')}
+        {(제철들.length > 0 || 금어기들.length > 0) && 해역 && (
+          <>
+            <br />
+            <span style={{ color: 색.아주흐린글 }}>{해역} 낚시어선 어획 40개월 기준이에요</span>
+          </>
+        )}
       </Typography>
+
+      {/* 🔴 2026-08-07 — 어느 바다로 나가시나요 (폰 점검 29번)
+          한 번 고르면 기억한다. 한 번 더 누르면 전국으로 돌아온다.
+          🔴 이건 **목록 순서만** 바꾼다 — 판정은 전국 기준 그대로다 */}
+      <FlexBox gap={5} alignItems="center" sx={{ flexWrap: 'wrap' }}>
+        <Typography sx={{ fontSize: 크기.판정작게, color: 색.아주흐린글, flex: '0 0 auto' }}>
+          어느 바다
+        </Typography>
+        {해역들.map((h) => {
+          const 켜짐 = 해역 === h;
+          return (
+            <button
+              key={h}
+              type="button"
+              onClick={() => 해역고름 && 해역고름(h)}
+              style={{
+                flex: 1,
+                minWidth: 52,
+                padding: '7px 4px',
+                borderRadius: 9,
+                fontFamily: 'inherit',
+                fontSize: 크기.판정꼬리표,
+                fontWeight: 켜짐 ? 700 : 500,
+                cursor: 'pointer',
+                border: `1px solid ${켜짐 ? 'transparent' : 색.선}`,
+                background: 켜짐 ? 색.반전바탕 : 'transparent',
+                color: 켜짐 ? 색.반전글 : 색.흐린글,
+              }}
+            >
+              {h}
+            </button>
+          );
+        })}
+      </FlexBox>
 
       {/* 🔴 2026-08-06 폰 점검 — 검색을 맨 위로 올렸다.
           전에는 여덟 칸 아래에 있어서, 목록에 없는 어종을 잡은 사람은
