@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p 3000",
-    "build": "next build",
+    "build": "next build && node scripts/오프라인목록.mjs",
     "start": "npx serve out -l 3000",
     "test": "node ../app/judge.test.js && node ../app/부적.test.js",
     "postinstall": "node scripts/글꼴복사.mjs"
