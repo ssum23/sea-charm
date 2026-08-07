@@ -237,7 +237,9 @@ export default function 홈화면() {
           variant="solid"
           size="large"
           fullWidth
-          sx={{ ...버튼모양, backgroundColor: '#8b5a2b', color: 색.흰, textDecoration: 'none' }}
+          /* 🔴 2026-08-07 — 갈색(#8b5a2b)이 앱 안에서 혼자 튀었다(사장님 「너무 똥색」).
+              부적 종이의 노란 그림자와 같은 색으로 바꿔 한 가족으로 묶는다 */
+          sx={{ ...버튼모양, backgroundColor: '#F2C14E', color: '#123039', textDecoration: 'none' }}
         >
           🧿 오늘의 바다 부적
         </Button>

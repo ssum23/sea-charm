@@ -81,12 +81,14 @@ function 이번물때행운(오늘) {
   const 날 = 부적.물때키(오늘);
   try {
     const v = JSON.parse(window.localStorage.getItem(행운키) || 'null');
-    if (v && v.날 === 날 && v.색 && v.숫자) return v;
+    /* 🔴 2026-08-07 — 자리·한마디가 없는 **옛 저장값**이면 새로 뽑는다.
+       그게 없으면 열 때마다 한마디가 바뀌어 부적이 아니라 잡음이 된다 */
+    if (v && v.날 === 날 && v.색 && v.숫자 && v.자리 && v.한마디) return v;
   } catch (e) {
     /* 못 읽으면 새로 뽑는다 */
   }
   const 새것 = 부적.행운뽑기();
-  const 저장 = { 날, 색: 새것.색, 숫자: 새것.숫자 };
+  const 저장 = { 날, 색: 새것.색, 숫자: 새것.숫자, 자리: 새것.자리, 한마디: 새것.한마디 };
   try {
     window.localStorage.setItem(행운키, JSON.stringify(저장));
   } catch (e) {}
@@ -111,14 +113,23 @@ function 기간말(g) {
   return g.길이 <= 1 ? 짧게(g.시작) : `${짧게(g.시작)} ~ ${짧게(g.끝)}`;
 }
 
-/* 부적 종이 색 — 디자인 시스템 팔레트 밖이다. 일부러 그렇게 둔다 */
+/* 부적 종이 색 — 디자인 시스템 팔레트 밖이다. 일부러 그렇게 둔다.
+   🔴 2026-08-07 전면 교체 — 한지(갈색)에서 **밝은 바다색 + 굵은 테 + 노란 그림자**로.
+   갈색은 앱 안에서 혼자 튀었다. 이름표 `갈색`은 뜻과 안 맞아 `강조`로 바꿨다 */
 const 종이 = {
-  바탕: '#f4ecd8',
-  글: '#5a4a38',
-  진한글: '#3a2e21',
-  갈색: '#8b5a2b',
-  도장: '#9c3524',
-  선: 'rgba(139,90,43,.28)',
+  바탕: '#ffffff',
+  글: '#2E4A50',
+  진한글: '#123039',
+  강조: '#2C8098',          // 「오 늘 의 바 다」 같은 작은 글씨
+  테: '#123039',            // 굵은 테두리 · 물때 딱지 바탕
+  그림자: '#F2C14E',        // 노란 그림자 · 지느러미 · 도장 바탕
+  물고기: '#7FCBE0',
+  말풍선바탕: '#FFF7E0',
+  말풍선글: '#6A4E0E',
+  말풍선테: '#E0B84A',
+  칸바탕: '#EEF6F8',
+  도장: '#F2C14E',
+  선: 'rgba(18,48,57,.18)',
 };
 
 const 버튼모양 = {
@@ -315,7 +326,7 @@ function 지난부적({ 목록, 펼침, 펼치기 }) {
                 <div style={{ fontSize: 크기.부적띠이름, fontWeight: 700, color: 종이.진한글 }}>
                   {x.물때}
                   {물때짧게[x.물때] && (
-                    <span style={{ fontWeight: 500, color: 종이.갈색, marginLeft: 6 }}>
+                    <span style={{ fontWeight: 500, color: 종이.강조, marginLeft: 6 }}>
                       · {물때짧게[x.물때]}
                     </span>
                   )}
@@ -363,170 +374,166 @@ function 지난부적({ 목록, 펼침, 펼치기 }) {
 }
 
 /* ---------- 부적 종이 ---------- */
+/* 🔴 2026-08-07 — 부적 겉모습을 새로 만들었다 (사장님·대표님 결정)
+ *
+ * 전에는 「한지 부적」이었다. 갈색이 앱 안에서 혼자 튀었고, 스크롤을 내려야 다 보였다.
+ * 이제 **밝은 바다색 + 굵은 테 + 노란 그림자**다 — 뽑기 종이처럼 「받는 것」으로 보이게.
+ *
+ * 넣은 것 셋 (대표님 피드백)
+ *   ① **물고기가 크게** — 이름만 있는 화면은 심심하다
+ *   ② **지나가던 물고기 왈** — 물고기가 건네는 한마디. 장난기를 이게 만든다
+ *   ③ **한 화면에 딱** — 스크롤 없이 다 보인다
+ *
+ * 🔴 넘지 않는 선 — 한마디는 **자리·행동·준비물**만 말한다.
+ *    「이렇게 하면 더 잡힌다」는 말은 안 한다. `부적.js` 의 검산이 이걸 막는다.
+ *    「지나가던 물고기 왈」이라는 꼬리표가 이게 농담임을 한 번 더 알린다.
+ */
 function 부적종이({ r, 지금 }) {
   return (
     <div
       style={{
         position: 'relative',
-        overflow: 'hidden',
         background: 종이.바탕,
         color: 종이.글,
-        border: '1px solid rgba(139,90,43,.35)',
-        borderRadius: 18,
-        padding: '20px 18px 18px',
-        boxShadow: '0 2px 10px rgba(90,74,56,.14)',
-        backgroundImage:
-          'repeating-linear-gradient(0deg,rgba(139,90,43,.045) 0 1px,transparent 1px 26px),' +
-          'repeating-linear-gradient(90deg,rgba(139,90,43,.045) 0 1px,transparent 1px 26px)',
-        /* 🔴 2026-08-06 — 명조체를 뺐다.
-           「나눔명조」는 이 앱에 들어 있지 않아 폰이 제멋대로 다른 명조로 바꿔 그렸다.
-           그래서 부적 화면만 글꼴이 달라 보였다(사장님 지적 2회).
-           종이 느낌은 글꼴이 아니라 **색·모눈 무늬·도장**이 낸다 — 그건 그대로 둔다 */
+        border: `3px solid ${종이.테}`,
+        borderRadius: 22,
+        padding: '15px 14px 14px',
+        /* 노란 그림자 — 뽑기 종이처럼 살짝 떠 보이게 */
+        boxShadow: `5px 5px 0 ${종이.그림자}`,
         fontFamily: 'inherit',
       }}
     >
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'flex-start',
-          justifyContent: 'space-between',
-          gap: 12,
-          borderBottom: `1px solid ${종이.선}`,
-          paddingBottom: 11,
-          marginBottom: 18,
-        }}
-      >
-        <span style={{ fontSize: 크기.부적종이머리, letterSpacing: '.22em', color: 종이.갈색 }}>오 늘 의 바 다</span>
-        <span style={{ fontSize: 크기.부적종이머리, color: 종이.갈색, textAlign: 'right', lineHeight: 1.6 }}>
-          {기간말(r.구간)}
-          {r.띠 && (
-            <>
-              <br />
-              {r.띠}띠
-            </>
-          )}
+      {/* 머리 — 왼쪽에 이름, 오른쪽에 물때 */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 8 }}>
+        <span style={{ fontSize: 크기.부적종이머리, letterSpacing: '.16em', color: 종이.강조 }}>오 늘 의 바 다</span>
+        <span
+          style={{
+            fontSize: 크기.부적물때표,
+            fontWeight: 800,
+            padding: '3px 10px',
+            borderRadius: 999,
+            background: 종이.테,
+            color: 종이.그림자,
+            flex: '0 0 auto',
+          }}
+        >
+          {r.물때}
         </span>
       </div>
 
-      {/* 도장 */}
       <div
         style={{
-          position: 'absolute',
-          right: 18,
-          top: 64,
-          width: 70,
-          height: 70,
-          borderRadius: '50%',
-          border: `2.5px solid ${종이.도장}`,
-          color: 종이.도장,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
           fontSize: 크기.부적제목,
           fontWeight: 800,
-          transform: 'rotate(-9deg)',
-          opacity: 0.85,
-        }}
-      >
-        {r.도장}
-      </div>
-
-      <div
-        style={{
-          fontSize: 크기.부적제목작게,
-          fontWeight: 800,
-          letterSpacing: '-.02em',
-          lineHeight: 1.38,
+          lineHeight: 1.34,
+          letterSpacing: '-.025em',
           color: 종이.진한글,
-          paddingRight: 74,
-          wordBreak: 'keep-all',
-          overflowWrap: 'break-word',
         }}
       >
         {r.제목}
       </div>
 
-      {/* 물때 이름과 뜻 — 제목만으로는 「조금」이 무슨 말인지 모른다 */}
-      <div
-        style={{
-          marginTop: 9,
-          paddingRight: 74,
-          fontSize: 크기.부적띠말,
-          lineHeight: 1.6,
-          color: 종이.갈색,
-          wordBreak: 'keep-all',
-        }}
-      >
-        <b style={{ color: 종이.진한글 }}>{r.물때}</b>
-        {물때풀이[r.물때] ? ` · ${물때풀이[r.물때]}` : ''}
-      </div>
-
-      {r.띠말 && (
+      {/* 지나가던 물고기 왈 — 점선 말풍선 */}
+      {r.한마디 && (
         <div
           style={{
-            wordBreak: 'keep-all',
-            marginTop: 20,
-            padding: '15px 17px',
-            background: 'rgba(139,90,43,.10)',
-            borderLeft: `3px solid ${종이.갈색}`,
-            borderRadius: '0 9px 9px 0',
-            fontSize: 크기.부적행운,
+            marginTop: 11,
+            borderRadius: 16,
+            padding: '11px 13px',
+            background: 종이.말풍선바탕,
+            border: `2px dashed ${종이.말풍선테}`,
+            color: 종이.말풍선글,
+            fontSize: 크기.부적한마디,
             fontWeight: 700,
-            color: '#4a3a28',
             lineHeight: 1.5,
           }}
         >
-          <span
-            style={{
-              display: 'block',
-              fontSize: 크기.부적행운말,
-              fontWeight: 600,
-              letterSpacing: '.06em',
-              color: 종이.갈색,
-              marginBottom: 7,
-            }}
-          >
-            {r.띠}띠에게
+          “{r.한마디}”
+          <span style={{ display: 'block', fontSize: 크기.부적말한이, fontWeight: 600, opacity: 0.7, marginTop: 3 }}>
+            — 지나가던 물고기 왈
           </span>
-          {r.띠말}
         </div>
       )}
 
-      {r.행운색 && (
-        <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
-          <행운칸 이름="행운의 색">
+      {/* 물고기 — 그림 파일이 아니라 코드로 그린다(외부 요청 0건) */}
+      <div style={{ position: 'relative', height: 116, marginTop: 4, overflow: 'hidden' }}>
+        <svg
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+          style={{ position: 'absolute', left: '50%', top: -22, width: 172, height: 172, transform: 'translateX(-50%) rotate(-6deg)' }}
+        >
+          <path d="M19 12 L23.8 7.6 C22.8 10.4 22.8 13.6 23.8 16.4 Z" fill={종이.그림자} stroke={종이.테} strokeWidth="1" strokeLinejoin="round" />
+          <path d="M6.6 8.2 L8.2 5 L10 7.6 L12 4.8 L13.4 7.4 L15.6 5.4 L16.6 8.8 Z" fill={종이.그림자} stroke={종이.테} strokeWidth="1" strokeLinejoin="round" />
+          <path d="M9 16.4 L10.2 19.4 L12.4 17.2 L13.6 19.6 L15 16.8 Z" fill={종이.그림자} stroke={종이.테} strokeWidth="1" strokeLinejoin="round" />
+          <path
+            d="M1.4 12 C2.6 9 6.4 6.6 11.4 6.6 C15.4 6.6 18.6 8.4 19.8 10.6 C20.2 11.4 20.2 12.6 19.8 13.4 C18.6 15.6 15.4 17.4 11.4 17.4 C6.4 17.4 2.6 15 1.4 12 Z"
+            fill={종이.물고기} stroke={종이.테} strokeWidth="1.2" strokeLinejoin="round"
+          />
+          <path d="M2.6 13.8 C5.6 16.4 10.8 17.4 15.4 16.2 C11 17.6 5 16.8 2.6 13.8 Z" fill="#F0FAFD" />
+          <path d="M6 8 C4.6 9.8 4.6 14.2 6.2 16 C4.9 13.6 4.9 10.2 6 8 Z" fill={종이.테} opacity=".35" />
+          <circle cx="4" cy="10.8" r="2.2" fill="#fff" stroke={종이.테} strokeWidth=".8" />
+          <circle cx="4.1" cy="10.9" r="1.5" fill={종이.그림자} />
+          <circle cx="4.1" cy="10.9" r=".9" fill={종이.테} />
+          <circle cx="3.55" cy="10.35" r=".45" fill="#fff" />
+        </svg>
+      </div>
+
+      {/* 오늘의 자리 · 행운의 색과 숫자 — 둘 다 재미로 보는 것이다 */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 7, marginTop: 10 }}>
+        <행운칸 이름="오늘의 자리">{r.자리 || '아무 자리나'}</행운칸>
+        {r.행운색 ? (
+          <행운칸 이름="행운의 색 · 숫자">
             <i
               style={{
                 display: 'inline-block',
-                width: 14,
-                height: 14,
+                width: 12,
+                height: 12,
                 borderRadius: '50%',
-                marginRight: 7,
-                verticalAlign: -2,
+                marginRight: 6,
+                verticalAlign: -1,
                 border: '1px solid rgba(0,0,0,.18)',
                 background: r.행운색.색,
               }}
             />
-            {r.행운색.이름}
+            {r.행운색.이름} · {r.행운숫자}
           </행운칸>
-          <행운칸 이름="행운의 숫자">{r.행운숫자}</행운칸>
-        </div>
+        ) : (
+          <행운칸 이름="행운의 색 · 숫자">띠를 넣으면 나와요</행운칸>
+        )}
+      </div>
+
+      {r.띠말 && (
+        <div style={{ fontSize: 크기.부적띠말, lineHeight: 1.6, marginTop: 10 }}>{r.띠말}</div>
       )}
 
-      <div
-        style={{
-          wordBreak: 'keep-all',
-          marginTop: 20,
-          paddingTop: 14,
-          borderTop: '1px solid rgba(139,90,43,.25)',
-          fontSize: 크기.부적근거,
-          color: '#7a6650',
-          lineHeight: 1.7,
-        }}
-      >
-        <b style={{ color: 종이.갈색 }}>왜 이 말인가</b>
-        <br />
+      <div style={{ fontSize: 크기.부적근거, color: '#6E8A93', lineHeight: 1.6, marginTop: 8 }}>
         {r.근거}
+      </div>
+
+      {/* 발 — 유효 기간과 「재미로 보는 것」, 그리고 도장 */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 10, marginTop: 12 }}>
+        <div style={{ fontSize: 크기.부적유효, color: '#7C949B', lineHeight: 1.5 }}>
+          {기간말(r.구간)}
+          <br />
+          <b>재미로 보는 것이에요</b>
+        </div>
+        <div
+          aria-hidden="true"
+          style={{
+            width: 46,
+            height: 46,
+            borderRadius: 14,
+            background: 종이.그림자,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: 크기.부적도장,
+            transform: 'rotate(-8deg)',
+            flex: '0 0 auto',
+          }}
+        >
+          🎣
+        </div>
       </div>
     </div>
   );
@@ -534,29 +541,11 @@ function 부적종이({ r, 지금 }) {
 
 function 행운칸({ 이름, children }) {
   return (
-    <div
-      style={{
-        flex: 1,
-        background: 'rgba(139,90,43,.07)',
-        border: '1px solid rgba(139,90,43,.18)',
-        borderRadius: 11,
-        padding: '11px 12px',
-        textAlign: 'center',
-      }}
-    >
-      <span
-        style={{
-          display: 'block',
-          fontSize: 크기.부적유효,
-          fontWeight: 600,
-          letterSpacing: '.05em',
-          color: 종이.갈색,
-          marginBottom: 6,
-        }}
-      >
-        {이름}
-      </span>
-      <span style={{ fontSize: 크기.부적숫자, fontWeight: 800, color: '#4a3a28' }}>{children}</span>
+    <div style={{ flex: 1, borderRadius: 13, padding: '8px 10px', background: 종이.칸바탕 }}>
+      <div style={{ fontSize: 크기.부적행운말, color: 종이.강조 }}>{이름}</div>
+      <div style={{ fontSize: 크기.부적행운, fontWeight: 800, marginTop: 2, color: 종이.진한글 }}>
+        {children}
+      </div>
     </div>
   );
 }
