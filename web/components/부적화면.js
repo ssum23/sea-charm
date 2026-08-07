@@ -16,6 +16,7 @@ import { 크기, 색 } from './크기';
 import 부적 from '@/lib/부적엔진';
 import { judge } from '@/lib/판정엔진';
 import 어종그림, { 그림있음 } from '@/lib/어종그림';
+import 도장그림 from './도장그림';
 import 화면틀 from './화면틀';
 import { 풀이 as 물때풀이, 짧게 as 물때짧게 } from '@/lib/물때말';
 
@@ -544,22 +545,12 @@ function 부적종이({ r, 지금 }) {
           <br />
           <b>재미로 보는 것이에요</b>
         </div>
-        <div
-          aria-hidden="true"
-          style={{
-            width: 46,
-            height: 46,
-            borderRadius: 14,
-            background: 종이.그림자,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: 크기.부적도장,
-            transform: 'rotate(-8deg)',
-            flex: '0 0 auto',
-          }}
-        >
-          🎣
+        {/* 🔴 2026-08-07 — 낚싯대 이모지를 뺐다 (사장님 「부적 이모지 별로임」).
+            대신 **오늘 다녀오면 받게 될 귀항 도장**을 그려 넣는다.
+            ① 이모지는 폰마다 그림이 달라 종이 부적과 따로 논다. 이건 우리가 그린 것이다.
+            ② 부적과 도장이 **한 벌로 보인다** — 「나가서 돌아오면 이 도장」이 한 장에 있다. */}
+        <div style={{ flex: '0 0 auto' }}>
+          <도장그림 날짜={지금} 크기={46} 색깔={종이.도장} />
         </div>
       </div>
     </div>

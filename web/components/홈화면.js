@@ -10,7 +10,7 @@ import Link from 'next/link';
 import { Button, Card, Divider, FlexBox, Typography } from '@montage-ui/core';
 import { 크기, 색 } from './크기';
 import { 키, 읽기, 쓰기, 날짜말, 시각말, 걸린시간 } from '@/lib/저장소';
-import 도장그림 from './도장그림';
+import 도장그림, { 도장고르기, 아이디로, 도장가짓수 } from './도장그림';
 import 부적 from '@/lib/부적엔진';
 import { 이름과짧게 } from '@/lib/물때말';
 import 화면틀 from './화면틀';
@@ -66,7 +66,18 @@ export default function 홈화면() {
   }
 
   function 귀항하기() {
-    const 새기록 = [{ out: 바다에.out, back: new Date().toISOString() }, ...출항기록];
+    /* 🔴 도장을 「지금」 정해서 기록에 같이 적어둔다 (2026-08-07).
+       나중에 도장 목록을 손대도 **이미 받은 도장은 안 바뀐다.**
+       한 번 받은 것이 바뀌면 모으는 물건이 아니게 된다 */
+    const 돌아온때 = new Date();
+    const 새기록 = [
+      {
+        out: 바다에.out,
+        back: 돌아온때.toISOString(),
+        도장: 도장고르기(돌아온때).아이디,
+      },
+      ...출항기록,
+    ];
     출항기록바꾸기(새기록);
     바다에바꾸기(null);
     쓰기(키.출항, 새기록);
@@ -285,15 +296,35 @@ export default function 홈화면() {
 
         <Divider sx={{ marginTop: 6 }} />
 
-        <Typography weight="bold" sx={{ fontSize: 크기.홈보조, color: 색.흐린글 }}>
-          모은 도장
-        </Typography>
+        {/* 🔴 「몇 종을 모았나」를 같이 보여준다 (2026-08-07 사장님 지시).
+            도장이 다 같으면 모을 이유가 없다. 종류가 몇 개인지 보여야 모으는 물건이 된다 */}
+        <FlexBox justifyContent="space-between" alignItems="baseline">
+          <Typography weight="bold" sx={{ fontSize: 크기.홈보조, color: 색.흐린글 }}>
+            모은 도장
+          </Typography>
+          {준비 && 출항기록.length > 0 && (
+            <Typography sx={{ fontSize: 크기.홈작게, color: 색.아주흐린글 }}>
+              {모은종수(출항기록)}종 / {도장가짓수}종
+            </Typography>
+          )}
+        </FlexBox>
         <도장들 목록={출항기록} 준비={준비} />
         </>
         )}
       </>
     </화면틀>
   );
+}
+
+/* 몇 가지 도장을 모았나 — 같은 도장을 여러 번 받아도 한 가지로 센다 */
+function 모은종수(목록) {
+  const 본것 = new Set();
+  for (const t of 목록) {
+    if (!t || !t.back) continue;
+    const 것 = 아이디로(t.도장) || 도장고르기(new Date(t.back));
+    본것.add(것.아이디);
+  }
+  return 본것.size;
 }
 
 function 도장들({ 목록, 준비 }) {
@@ -342,15 +373,16 @@ function 도장들({ 목록, 준비 }) {
               borderRadius: 14,
             }}
           >
-            <도장그림 날짜={d} 크기={52} />
+            {/* 기록에 적힌 도장을 먼저 쓰고, 없는 옛 기록은 날짜로 되찾는다 */}
+            <도장그림 날짜={d} 크기={52} 도장={아이디로(t.도장) || 도장고르기(d)} />
             <Typography sx={{ fontSize: 크기.홈도장이름, color: 색.흐린글, textAlign: 'center', lineHeight: 1.3 }}>
               {String(d.getFullYear()).slice(2)}.{d.getMonth() + 1}.{d.getDate()}
             </Typography>
-            {/* 그날 바다가 어땠는지 — 도장은 같아도 날은 다르다 */}
+            {/* 그날 바다가 어땠는지 + 도장 글자를 한글로 */}
             <Typography
               sx={{ fontSize: 크기.홈도장날짜, color: 색.아주흐린글, marginTop: -3, textAlign: 'center', lineHeight: 1.35 }}
             >
-              {이름과짧게(부적.물때(d).단계)}
+              {이름과짧게(부적.물때(d).단계)} · {(아이디로(t.도장) || 도장고르기(d)).읽기}
             </Typography>
           </FlexBox>
         );

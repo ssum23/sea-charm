@@ -223,7 +223,24 @@ function 그리기C(cv, 이미지, 정보, 재기) {
 
 /* B — 눈금자를 겹친다.
    ★ 이건 「재는 것」이 아니라 「눈금이 보이는 사진을 만드는 것」이다.
-      눈금 숫자를 판정에 넣지 않는다. */
+      눈금 숫자를 판정에 넣지 않는다.
+
+   🔴 2026-08-07 — 줄자처럼 다시 그렸다 (사장님 지시)
+     ① **10cm마다 빨간 선**. 줄자가 그렇게 생겼다. 5cm는 검정, 1cm는 가늘게.
+     ② **양 끝에 손잡이**를 그린다. 손잡이가 보여야 「잡아당길 수 있구나」를 안다.
+     ③ 두께를 조금 키웠다 — 빨간 눈금과 숫자가 같이 들어가야 한다. */
+
+/* 자의 양 끝이 사진 위 어디인지 — 화면과 그림이 같은 계산을 쓴다 */
+export function 자양끝(눈금, W, H) {
+  const 라디안 = (눈금.각도 * Math.PI) / 180;
+  const 반 = (눈금.길이 * W) / 2;
+  const cx = 눈금.x * W;
+  const cy = 눈금.y * H;
+  const dx = Math.cos(라디안) * 반;
+  const dy = Math.sin(라디안) * 반;
+  return { a: { x: cx - dx, y: cy - dy }, b: { x: cx + dx, y: cy + dy } };
+}
+
 function 그리기B(cv, 이미지, 정보, 눈금) {
   그리기A(cv, 이미지, 정보);
   const ctx = cv.getContext('2d');
@@ -231,11 +248,10 @@ function 그리기B(cv, 이미지, 정보, 눈금) {
   const H = cv.height;
   const 단 = W / 100;
 
-  const 길이 = 눈금.길이 * W; // 화면 가로 대비 비율
-  /* 🔴 2026-08-06 — 자를 더 얇고 더 투명하게 (사장님 지적).
-     자가 두꺼우면 물고기를 덮는다. 자는 「재는 도구」가 아니라
+  const 길이 = 눈금.길이 * W;
+  /* 자가 두꺼우면 물고기를 덮는다. 자는 「재는 도구」가 아니라
      「눈금이 같이 찍힌 사진」을 만드는 장치다 — 사진이 주인공이다 */
-  const 두께 = Math.max(단 * 3.4, 길이 * 0.052);
+  const 두께 = Math.max(단 * 3.8, 길이 * 0.058);
   const cx = 눈금.x * W;
   const cy = 눈금.y * H;
 
@@ -252,29 +268,44 @@ function 그리기B(cv, 이미지, 정보, 눈금) {
   ctx.lineWidth = Math.max(1, 단 * 0.1);
   ctx.stroke();
 
-  /* 눈금 — 0~60cm. 5cm마다 숫자 */
+  /* 눈금 — 0~60cm. 🔴 10cm마다 빨강, 5cm마다 숫자 */
   const 최대 = 60;
   const 칸 = 길이 / 최대;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
   for (let i = 0; i <= 최대; i++) {
     const x = -길이 / 2 + 칸 * i;
-    const 긴 = i % 10 === 0;
-    const 중 = i % 5 === 0;
-    const h = 긴 ? 두께 * 0.5 : 중 ? 두께 * 0.34 : 두께 * 0.2;
-    ctx.strokeStyle = 'rgba(28,32,40,0.8)';
-    ctx.lineWidth = Math.max(1, 두께 * (긴 ? 0.045 : 0.03));
+    const 열 = i % 10 === 0;
+    const 다섯 = i % 5 === 0;
+    const h = 열 ? 두께 * 0.56 : 다섯 ? 두께 * 0.36 : 두께 * 0.2;
+    ctx.strokeStyle = 열 ? 'rgba(200,42,34,0.95)' : 'rgba(28,32,40,0.8)';
+    ctx.lineWidth = Math.max(1, 두께 * (열 ? 0.06 : 0.03));
     ctx.beginPath();
     ctx.moveTo(x, -두께 / 2);
     ctx.lineTo(x, -두께 / 2 + h);
     ctx.stroke();
-    if (중) {
-      ctx.fillStyle = 'rgba(28,32,40,0.9)';
-      ctx.font = 글꼴(두께 * 0.28, 긴);
-      ctx.fillText(String(i), x, -두께 / 2 + h + 두께 * 0.04);
+    if (다섯) {
+      ctx.fillStyle = 열 ? 'rgba(200,42,34,0.95)' : 'rgba(28,32,40,0.9)';
+      ctx.font = 글꼴(두께 * (열 ? 0.32 : 0.26), 열);
+      ctx.fillText(String(i), x, -두께 / 2 + h + 두께 * 0.03);
     }
   }
   ctx.restore();
+
+  /* 🔴 양 끝 손잡이 — 「여기를 잡아당기면 된다」를 눈으로 알린다.
+     사진에도 같이 찍히지만 아주 흐리게 둬서 거슬리지 않는다 */
+  const 끝 = 자양끝(눈금, W, H);
+  const 알 = Math.max(단 * 2.2, 두께 * 0.42);
+  for (const p of [끝.a, 끝.b]) {
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 알, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(250,248,242,0.85)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(200,42,34,0.9)';
+    ctx.lineWidth = Math.max(1.2, 단 * 0.28);
+    ctx.stroke();
+  }
+
   ctx.textAlign = 'left';
   ctx.textBaseline = 'top';
   return cv;
@@ -294,7 +325,17 @@ export default function 도장찍기({ 닫기, 판정 }) {
   const [저장됨, 저장됨바꾸기] = useState('');
 
   /* C — 두 점 재기 */
-  const [기준cm, 기준cm바꾸기] = useState(10);
+  /* 🔴 2026-08-07 — 「기준물 지우기가 잘 안 된다」(사장님)
+   *   전에는 이 칸이 **숫자만** 담고 있었다. 그래서 지우려고 숫자를 다 지우면
+   *   `Number('')` 이 0 이 되어 칸에 **곧바로 「0」이 다시 나타났다.**
+   *   지워지지 않는 것처럼 보이고, 그 뒤로 「012」 같은 값이 만들어졌다.
+   *   이제 칸은 **사람이 친 글자 그대로** 담는다. 비우면 비어 있는다.
+   *   계산에 쓰는 숫자는 여기서 따로 뽑는다. */
+  const [기준칸, 기준칸바꾸기] = useState('10');
+  const 기준cm = (() => {
+    const v = Number(기준칸);
+    return Number.isFinite(v) && v > 0 ? v : 0;
+  })();
   const [기준이름, 기준이름바꾸기] = useState('손바닥 폭');
   const [기준점, 기준점바꾸기] = useState([]);
   const [물고기점, 물고기점바꾸기] = useState([]);
@@ -344,6 +385,8 @@ export default function 도장찍기({ 닫기, 판정 }) {
     };
     const 기준픽셀 = 길이(기준점);
     if (기준픽셀 < 4) return null;
+    /* 기준 길이 칸이 비어 있으면 계산하지 않는다 — 0cm 로 나누면 엉뚱한 값이 나온다 */
+    if (!(기준cm > 0)) return null;
     const cm = (길이(물고기점) / 기준픽셀) * 기준cm;
     /* 🔴 소수점을 쓰지 않는다. 어림수로 보여준다 — 실측이 아니기 때문이다 */
     return Math.round(cm);
@@ -479,24 +522,96 @@ export default function 도장찍기({ 닫기, 판정 }) {
     무엇을찍나바꾸기('기준');
   }
 
-  /* 🔴 B — 자를 손가락으로 끌어 옮긴다 (사장님 지시).
-     화살표 조절만으로는 물고기에 맞추기 어렵다. 끌어다 놓는 편이 빠르다.
-     ⚠️ 끄는 동안 화면이 같이 밀리지 않게 `touchAction: 'none'` 을 준다 */
-  const 끄는중 = useRef(false);
+  /* 🔴 B — 자를 손으로 다룬다 (2026-08-07 사장님 지시 전면 개편)
+   *
+   * 전에는 사진 아무 데나 누르면 자가 **그 자리로 순간이동**했다.
+   * 사장님 말 — 「바로 움직이는 거 불편하고 쓸모없어」. 맞다.
+   * 조금만 스치면 애써 맞춰둔 자리가 날아갔다.
+   *
+   * 이제 —
+   *   ① **자 몸통을 잡고 끌면** 잡은 지점을 그대로 유지한 채 따라온다(순간이동 없음).
+   *   ② **양 끝 손잡이를 잡고 끌면** 반대쪽 끝은 고정된 채로
+   *      **각도와 길이가 같이 바뀐다.** 줄자를 물고기 머리에서 꼬리로 늘이는 것과 같다.
+   *   ③ **자에서 벗어난 곳을 누르면 아무 일도 안 일어난다.**
+   */
+  const 끄는것 = useRef(null); // 'ㄱ끝' | 'ㄴ끝' | '몸통'
+  const 잡은자리 = useRef({ dx: 0, dy: 0 });
+
+  /* 사진 안의 실제 점(px)으로 바꾼다 — 각도 계산은 px 로 해야 맞다 */
+  function 점px(e) {
+    const cv = 캔버스.current;
+    const p = 자리계산(e);
+    if (!cv || !p) return null;
+    return { x: p.x * cv.width, y: p.y * cv.height, W: cv.width, H: cv.height };
+  }
+
+  function 거리(a, b) {
+    return Math.hypot(a.x - b.x, a.y - b.y);
+  }
+
   function 끌기시작(e) {
     if (고른종류 !== 'B') return;
-    끄는중.current = true;
-    const p = 자리계산(e);
-    if (p) 눈금바꾸기((전) => ({ ...전, x: p.x, y: p.y }));
+    const p = 점px(e);
+    if (!p) return;
+    const 끝 = 자양끝(눈금, p.W, p.H);
+    /* 🔴 손가락 크기로 잡는다. 사진의 픽셀 수는 폰마다 다르므로
+       「몇 픽셀」이 아니라 **사진 가로의 몇 퍼센트**로 잡아야 어느 폰에서나 같다.
+       (처음에 26픽셀로 뒀는데, 큰 사진에서는 손톱만 한 자리가 됐다) */
+    const 손잡이반경 = p.W * 0.08;
+
+    if (거리(p, 끝.a) <= 손잡이반경) 끄는것.current = 'ㄱ끝';
+    else if (거리(p, 끝.b) <= 손잡이반경) 끄는것.current = 'ㄴ끝';
+    else {
+      /* 몸통을 잡았나 — 자 가운데 선에서 얼마나 떨어져 있나로 본다 */
+      const 가운데 = { x: 눈금.x * p.W, y: 눈금.y * p.H };
+      const 라디안 = (눈금.각도 * Math.PI) / 180;
+      const 상대 = { x: p.x - 가운데.x, y: p.y - 가운데.y };
+      const 가로 = 상대.x * Math.cos(라디안) + 상대.y * Math.sin(라디안);
+      const 세로 = -상대.x * Math.sin(라디안) + 상대.y * Math.cos(라디안);
+      const 반길이 = (눈금.길이 * p.W) / 2;
+      const 반두께 = p.W * 0.075; // 자 몸통을 잡는 자리도 손가락 크기로
+      if (Math.abs(가로) > 반길이 || Math.abs(세로) > 반두께) return; // 자 바깥 — 아무 일 없음
+      끄는것.current = '몸통';
+      잡은자리.current = { dx: p.x - 가운데.x, dy: p.y - 가운데.y };
+    }
     try { e.currentTarget.setPointerCapture(e.pointerId); } catch (err) {}
   }
+
   function 끄는동안(e) {
-    if (!끄는중.current || 고른종류 !== 'B') return;
-    const p = 자리계산(e);
-    if (p) 눈금바꾸기((전) => ({ ...전, x: p.x, y: p.y }));
+    if (!끄는것.current || 고른종류 !== 'B') return;
+    const p = 점px(e);
+    if (!p) return;
+    const 모드 = 끄는것.current;
+
+    if (모드 === '몸통') {
+      /* 잡은 지점과 자 가운데의 거리를 그대로 유지한다 = 순간이동하지 않는다 */
+      눈금바꾸기((전) => ({
+        ...전,
+        x: Math.min(1, Math.max(0, (p.x - 잡은자리.current.dx) / p.W)),
+        y: Math.min(1, Math.max(0, (p.y - 잡은자리.current.dy) / p.H)),
+      }));
+      return;
+    }
+
+    /* 끝을 끄는 중 — 반대쪽 끝은 붙박이다 */
+    const 끝 = 자양끝(눈금, p.W, p.H);
+    const 붙박이 = 모드 === 'ㄱ끝' ? 끝.b : 끝.a;
+    const 길이px = Math.max(거리(붙박이, p), p.W * 0.12); // 너무 짧아져 사라지지 않게
+    let 각 = (Math.atan2(p.y - 붙박이.y, p.x - 붙박이.x) * 180) / Math.PI;
+    if (모드 === 'ㄱ끝') 각 += 180; // ㄱ끝을 끌면 자의 방향이 반대다
+    const 가운데x = (붙박이.x + p.x) / 2;
+    const 가운데y = (붙박이.y + p.y) / 2;
+    눈금바꾸기((전) => ({
+      ...전,
+      x: Math.min(1, Math.max(0, 가운데x / p.W)),
+      y: Math.min(1, Math.max(0, 가운데y / p.H)),
+      길이: Math.min(1.6, 길이px / p.W),
+      각도: Math.round(각),
+    }));
   }
+
   function 끌기끝() {
-    끄는중.current = false;
+    끄는것.current = null;
   }
 
   return (
@@ -616,11 +731,14 @@ export default function 도장찍기({ 닫기, 판정 }) {
                          고른 뒤 마음이 바뀌었을 때 빠져나갈 길이 없었다 */
                       onClick={() => {
                         if (켜짐) {
+                          /* 한 번 더 누르면 풀린다. 🔴 숫자도 같이 비운다 —
+                             풀었는데 숫자가 남아 있으면 「안 지워졌다」로 보인다 */
                           기준이름바꾸기('기준물');
+                          기준칸바꾸기('');
                           return;
                         }
                         기준이름바꾸기(k.이름);
-                        기준cm바꾸기(k.cm);
+                        기준칸바꾸기(String(k.cm));
                       }}
                       style={{
                         padding: '10px 6px',
@@ -643,16 +761,36 @@ export default function 도장찍기({ 닫기, 판정 }) {
               <FlexBox alignItems="center" gap={9}>
                 <Typography sx={{ fontSize: 크기.도장작게, color: 색.흐린글 }}>직접 넣기</Typography>
                 <TextField
-                  value={String(기준cm)}
+                  value={기준칸}
                   inputMode="decimal"
+                  placeholder="숫자"
                   onChange={(e) => {
-                    const v = Number(e.target.value);
-                    기준cm바꾸기(Number.isFinite(v) ? v : 0);
+                    /* 숫자·점만 받는다. 비우는 것도 그대로 둔다 */
+                    const 글 = e.target.value.replace(/[^0-9.]/g, '');
+                    기준칸바꾸기(글);
                     기준이름바꾸기('기준물');
                   }}
                   sx={{ flex: 1 }}
                 />
                 <Typography sx={{ fontSize: 크기.도장작게, color: 색.흐린글 }}>cm</Typography>
+                {기준칸 !== '' && (
+                  <button
+                    type="button"
+                    aria-label="기준 길이 지우기"
+                    onClick={() => {
+                      기준칸바꾸기('');
+                      기준이름바꾸기('기준물');
+                    }}
+                    style={{
+                      width: 34, height: 34, borderRadius: 17, flex: '0 0 auto',
+                      border: `1px solid ${색.선}`, background: 'transparent',
+                      color: 색.흐린글, fontFamily: 'inherit', fontSize: 16, cursor: 'pointer',
+                      lineHeight: 1,
+                    }}
+                  >
+                    ×
+                  </button>
+                )}
               </FlexBox>
 
               <FlexBox flexDirection="column" gap={4}>
@@ -729,17 +867,29 @@ export default function 도장찍기({ 닫기, 판정 }) {
                 눈금 자국
               </Typography>
               <Typography sx={{ fontSize: 크기.도장작게, color: 색.아주흐린글, lineHeight: 1.7 }}>
-                눈금을 물고기 머리~꼬리에 맞춰주세요. 이 눈금은{' '}
-                <b style={{ color: 색.흐린글 }}>사진에 남기는 표시일 뿐이고 판정에는 쓰지 않습니다.</b>
+                <b style={{ color: 색.흐린글 }}>빨간 동그라미 두 개를 물고기 머리와 꼬리로 끌어주세요.</b>{' '}
+                자 가운데를 잡으면 통째로 옮겨집니다. 이 눈금은 사진에 남기는 표시일 뿐이고
+                판정에는 쓰지 않습니다.
               </Typography>
-              <손잡이 이름="좌우" 값={눈금.x} 최소={0} 최대={1} 걸음={0.005}
-                바꾸기={(v) => 눈금바꾸기({ ...눈금, x: v })} />
-              <손잡이 이름="위아래" 값={눈금.y} 최소={0} 최대={1} 걸음={0.005}
-                바꾸기={(v) => 눈금바꾸기({ ...눈금, y: v })} />
-              <손잡이 이름="길이" 값={눈금.길이} 최소={0.2} 최대={1} 걸음={0.005}
+              {/* 🔴 손잡이(막대)는 「미세 조정」으로만 남긴다.
+                  좌우·위아래는 손으로 끄는 편이 훨씬 빠르므로 없앴다 —
+                  같은 일을 하는 길이 둘이면 눈이 헤맨다 */}
+              <손잡이 이름="길이" 값={눈금.길이} 최소={0.15} 최대={1.6} 걸음={0.005}
                 바꾸기={(v) => 눈금바꾸기({ ...눈금, 길이: v })} />
-              <손잡이 이름="기울기" 값={눈금.각도} 최소={-90} 최대={90} 걸음={1}
+              <손잡이 이름="기울기" 값={눈금.각도} 최소={-180} 최대={180} 걸음={1}
                 바꾸기={(v) => 눈금바꾸기({ ...눈금, 각도: v })} />
+              <button
+                type="button"
+                onClick={() => 눈금바꾸기({ x: 0.5, y: 0.55, 길이: 0.8, 각도: 0 })}
+                style={{
+                  alignSelf: 'flex-start', border: 'none', background: 'transparent',
+                  padding: '4px 0', fontFamily: 'inherit', fontSize: 크기.도장설명,
+                  color: 색.흐린글, textDecoration: 'underline', textUnderlineOffset: 3,
+                  cursor: 'pointer',
+                }}
+              >
+                자 자리 되돌리기
+              </button>
             </Card>
           )}
 
