@@ -227,9 +227,12 @@ export default function 부적화면() {
     뽑는중바꾸기(true);
     try { window.localStorage.setItem(뽑은것키, 표); } catch (e) {}
 
-    /* 통 흔들기 0.95초 + 막대가 다 나오는 데 1.15초 → 조금 뜸 들이고 넘어간다.
-       🔴 사람이 또 누르지 않는다 (사장님 지시) */
-    const 시계 = setTimeout(() => 뽑는중바꾸기(false), 1450);
+    /* 시간표 — 🔴 사람이 또 누르지 않는다. 저절로 넘어간다 (사장님 지시)
+         0.00s  육각통이 흔들리기 시작
+         0.60s  작은 구멍에서 막대가 솟기 시작
+         1.15s  막대가 다 나와 第○番 이 보인다
+         1.60s  부적 종이로 바뀐다 — 막대를 뽑는 데서 끝낸다 */
+    const 시계 = setTimeout(() => 뽑는중바꾸기(false), 1600);
     return () => clearTimeout(시계);
   }, [생년, 지금]);
 
@@ -269,7 +272,7 @@ export default function 부적화면() {
       ) : (
         결과 && (
           뽑는중 ? (
-            <뽑기통 물때이름={결과.물때} />
+            <뽑기통 번호={부적번호(결과.물때키)} />
           ) : (
           <>
             <부적종이 r={결과} 지금={지금} />
@@ -457,135 +460,164 @@ function 지난부적({ 목록, 펼침, 펼치기 }) {
  *    「지나가던 물고기 왈」이라는 꼬리표가 이게 농담임을 한 번 더 알린다.
  */
 /* ─────────────────────────────────────────────
-   뽑기통 — 오미쿠지 (2026-08-07 사장님이 시안 셋 중 ①을 고르심)
+   뽑기 — 오미쿠지 (御神籤)
 
-   왜 이걸 넣는가 —
-   부적은 「받는 물건」이다. 그냥 화면에 떠 있으면 **받은 느낌이 없다.**
-   흔들어서 뽑는 손동작이 한 번 들어가야 그때부터 내 것이 된다.
+   🔴 2026-08-07 (2) 다시 만듦 — 처음 것은 「나무 컵에서 막대 뽑기」였다 (사장님 지적)
 
-   🔴 두 번 누르게 하지 않는다 (사장님 지시).
-      막대가 나오면 **저절로** 부적으로 넘어간다. 배 나가기 전에 쓰는 화면이라
-      한 번이라도 덜 누르는 쪽이 맞다.
+   찾아보고 나서 안 것 — 진짜 오미쿠지에는 우리가 빠뜨린 것이 셋 있었다.
+   일본어 위키백과의 설명이 가장 정확하다:
+     「みくじ棒と呼ばれる細長い棒の入った角柱あるいは円柱形の筒状の箱(みくじ筒、御神籤箱)を振り、
+       棒を箱の**短辺の小さな穴**から一本取り出し」
+     — 각기둥(대개 육각) 통을 흔들어, **짧은 면에 뚫린 작은 구멍**으로 막대 하나를 뽑는다
 
+     ① **통은 위가 막혀 있고 구멍이 아주 작다.** 우리가 만든 건 입구가 뻥 뚫린 컵이었다.
+        구멍이 작아야 「한 개만 나온다」가 성립한다. 이게 오미쿠지의 생김새 그 자체다.
+     ② 통은 **육각기둥**이다. 원통이면 그냥 컵이다.
+     ③ 막대에는 **한자 번호(第○番)**가 적혀 있다. 막대가 곧 운세가 아니라 **번호표**다.
+
+   🔴 2026-08-07 (3) — **서랍 장면은 뺐다** (사장님 「과정이 너무 길어진다」).
+      진짜 오미쿠지는 번호로 서랍을 열지만, 우리는 **막대를 뽑는 데서 끝낸다.**
+      부적을 받으러 들어온 사람을 2.4초나 붙잡아 둘 이유가 없다.
+      대신 **막대의 번호를 부적 종이에 그대로 적어** 둘을 이어 둔다 —
+      서랍을 안 그려도 「내가 뽑은 그 번호의 종이」가 된다.
+
+   흐름은 한 장면이다 —
+     육각통을 흔든다 → 작은 구멍에서 막대가 솟는다 → 끝에 第○番 → 부적으로 바뀐다
+
+   🔴 우리가 **가져오지 않은 것** — 大吉·凶 같은 **길흉 등급**이다.
+      오미쿠지의 핵심이지만 우리 부적은 **좋고 나쁨을 점치지 않는다**(PRD §0-4).
+      「凶」이 뜨는 순간 이 앱은 나쁜 운세를 말하는 앱이 된다. 형식만 빌리고 내용은 안 빌린다.
+
+   🔴 사람이 두 번 누르지 않는다 (사장님 지시). 두 장면 다 저절로 넘어간다.
    그림은 코드다 — 그림 파일을 받아오면 「외부 통신 0건」이 깨진다(PRD §0-10).
    ───────────────────────────────────────────── */
 
-/* 나무 통 — 판자를 세로로 이어 붙이고 쇠테 두 줄로 조인 모양.
-   판자 이음선·나뭇결·쇠테의 못까지 그려야 「나무 통」으로 보인다.
-   네모 상자 하나에 갈색만 칠하면 종이상자로 보인다. */
-function 뽑기통({ 물때이름 }) {
-  const 나뭇결 = [46, 58, 70, 82, 94, 106];
+/* 부적마다 번호를 하나 준다 — 진짜 오미쿠지의 「第○番」이다.
+   물때가 같으면 번호도 같다(난수를 쓰면 볼 때마다 번호가 바뀐다).
+   1~48번 — 신사에서 흔히 쓰는 범위다 */
+export function 부적번호(물때키) {
+  const 글 = String(물때키 || '');
+  let h = 2166136261;
+  for (let i = 0; i < 글.length; i++) {
+    h = Math.imul(h ^ 글.charCodeAt(i), 16777619) >>> 0;
+  }
+  return (h % 48) + 1;
+}
+
+/* 1~48을 한자로 — 진짜 막대에는 아라비아 숫자가 아니라 한자가 적혀 있다 */
+const 한자낱자 = ['', '一', '二', '三', '四', '五', '六', '七', '八', '九'];
+export function 한자수(n) {
+  if (n < 10) return 한자낱자[n];
+  const 십 = Math.floor(n / 10);
+  const 일 = n % 10;
+  return (십 > 1 ? 한자낱자[십] : '') + '十' + (일 ? 한자낱자[일] : '');
+}
+
+/* ── 장면 1 — 육각통을 흔들어 막대를 뽑는다 ───────────────── */
+function 뽑기통({ 번호 }) {
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        minHeight: 330,
-      }}
-    >
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center',
+                  justifyContent: 'center', minHeight: 330 }}>
       <svg
         className="통흔들"
-        viewBox="0 0 152 250"
-        width="196"
-        height="322"
+        viewBox="0 0 160 260"
+        width="200"
+        height="325"
         role="img"
-        aria-label="부적을 뽑는 나무 통"
+        aria-label="오미쿠지 통을 흔들어 막대를 뽑는 중"
         style={{ overflow: 'visible' }}
       >
         <defs>
-          <linearGradient id="나무결" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stopColor="#a9702f" />
-            <stop offset="18%" stopColor="#c08a45" />
-            <stop offset="52%" stopColor="#96602a" />
-            <stop offset="82%" stopColor="#7d4d20" />
-            <stop offset="100%" stopColor="#6a3f19" />
+          {/* 육각기둥이라 앞면·옆면의 밝기가 다르다. 면마다 따로 칠한다 */}
+          <linearGradient id="면앞" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stopColor="#c08a45" />
+            <stop offset="55%" stopColor="#ae7738" />
+            <stop offset="100%" stopColor="#9c672e" />
           </linearGradient>
-          <linearGradient id="쇠테" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stopColor="#6b6f74" />
-            <stop offset="22%" stopColor="#b9bfc5" />
-            <stop offset="55%" stopColor="#7d838a" />
-            <stop offset="100%" stopColor="#565b60" />
+          <linearGradient id="면왼" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stopColor="#7d4d20" />
+            <stop offset="100%" stopColor="#96602a" />
           </linearGradient>
-          <linearGradient id="막대결" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stopColor="#efdcb8" />
-            <stop offset="45%" stopColor="#f7ecd6" />
-            <stop offset="100%" stopColor="#d8bf90" />
+          <linearGradient id="면오" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stopColor="#8a5527" />
+            <stop offset="100%" stopColor="#633a14" />
+          </linearGradient>
+          <linearGradient id="막대결2" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stopColor="#e8d2a8" />
+            <stop offset="45%" stopColor="#f9efdb" />
+            <stop offset="100%" stopColor="#d2b788" />
           </linearGradient>
         </defs>
 
-        {/* 바닥 그림자 — 통이 떠 있지 않게 */}
-        <ellipse cx="76" cy="238" rx="52" ry="8" fill="rgba(18,48,57,0.16)" />
+        <ellipse cx="80" cy="246" rx="48" ry="7" fill="rgba(18,48,57,0.16)" />
 
-        {/* 막대 — 통보다 먼저 그려서 통 뒤에서 솟아 나오게 보인다 */}
+        {/* 막대 — 통보다 먼저 그려 통 뒤에서 솟아 나오게 한다.
+            🔴 실제 오미쿠지의 막대는 **번호표**다. 운세가 아니라 번호가 적힌다 —
+            그 번호를 부적 종이에 그대로 옮겨 둘을 잇는다 */}
         <g className="막대나옴">
-          <rect x="66" y="18" width="20" height="112" rx="7" fill="url(#막대결)" />
-          {/* 붉은 머리 — 오미쿠지 막대의 표시 */}
-          <rect x="66" y="18" width="20" height="16" rx="7" fill="#9c3524" />
-          <text
-            x="76" y="52" textAnchor="middle" fontSize="13" fontWeight="700"
-            fill="#8a5527" writingMode="tb"
-          >
-            {물때이름 || '오늘'}
-          </text>
-        </g>
-
-        {/* 통 몸통 */}
-        <path
-          d="M30 66 L122 66 L118 226 C118 232 112 236 76 236 C40 236 34 232 34 226 Z"
-          fill="url(#나무결)"
-        />
-        {/* 판자 이음선 */}
-        <g stroke="rgba(60,32,10,0.38)" strokeWidth="1.4">
-          {나뭇결.map((x, i) => (
-            <line key={i} x1={30 + x * 0.62} y1="68" x2={34 + x * 0.6} y2="234" />
+          <rect x="71" y="2" width="18" height="112" rx="7" fill="url(#막대결2)" />
+          <rect x="71" y="2" width="18" height="14" rx="7" fill="#9c3524" />
+          {/* 🔴 세로쓰기(`writingMode`)로 두면 글자가 한자리에 뭉쳐 뭉개진다.
+              글자를 하나씩 따로 놓는다 — 어느 브라우저에서나 똑같이 나온다 */}
+          {('第' + 한자수(번호) + '番').split('').map((글, i) => (
+            <text
+              key={i}
+              x="80"
+              y={27 + i * 10.6}
+              textAnchor="middle"
+              fontSize="9"
+              fontWeight="700"
+              fill="#7d4d20"
+            >
+              {글}
+            </text>
           ))}
         </g>
-        {/* 나뭇결 — 아주 흐리게 */}
-        <g stroke="rgba(255,236,205,0.16)" strokeWidth="1" fill="none">
-          <path d="M48 84 C54 120 46 160 52 210" />
-          <path d="M92 78 C86 126 96 168 90 220" />
+
+        {/* ── 육각기둥 ── 앞면 하나 + 옆면 둘로 각을 만든다 */}
+        <path d="M52 74 L108 74 L106 232 C106 236 96 238 80 238 C64 238 54 236 54 232 Z" fill="url(#면앞)" />
+        <path d="M34 82 L52 74 L54 232 C48 231 38 228 36 224 Z" fill="url(#면왼)" />
+        <path d="M126 82 L108 74 L106 232 C112 231 122 228 124 224 Z" fill="url(#면오)" />
+        {/* 모서리 — 각이 서야 육각으로 보인다 */}
+        <g stroke="rgba(50,26,6,0.4)" strokeWidth="1.2" fill="none">
+          <path d="M52 74 L54 232" />
+          <path d="M108 74 L106 232" />
+        </g>
+        {/* 나뭇결 */}
+        <g stroke="rgba(255,236,205,0.15)" strokeWidth="1" fill="none">
+          <path d="M62 92 C68 130 60 172 66 226" />
+          <path d="M72 96 C77 134 70 178 75 228" />
+          <path d="M90 90 C85 136 94 178 88 228" />
+          <path d="M100 94 C96 132 103 174 98 226" />
+        </g>
+        <g stroke="rgba(60,32,10,0.18)" strokeWidth="1" fill="none">
+          <path d="M44 100 C48 140 42 182 46 220" />
+          <path d="M116 100 C112 140 118 182 114 220" />
         </g>
 
-        {/* 쇠테 두 줄 — 못까지 그린다 */}
-        {[96, 186].map((y, i) => (
-          <g key={i}>
-            <rect x={31 - i * 0.5} y={y} width={90 + i} height="14" fill="url(#쇠테)" rx="2" />
-            <rect x={31 - i * 0.5} y={y} width={90 + i} height="14" fill="none" rx="2"
-              stroke="rgba(30,32,35,0.45)" strokeWidth="1" />
-            <circle cx="42" cy={y + 7} r="1.8" fill="rgba(40,44,48,0.7)" />
-            <circle cx="110" cy={y + 7} r="1.8" fill="rgba(40,44,48,0.7)" />
-          </g>
-        ))}
+        {/* 🔴 2026-08-07 (3) — 쇠테 두 줄을 뺐다 (사장님 「저 두 줄은 정말 안 어울리고 별로」).
+            쇠로 조인 통은 술통·물통이지 오미쿠지 통이 아니다.
+            진짜 미쿠지 통은 **나무 그대로**다. 대신 판자 이음선과 나뭇결을 살려
+            「나무」로 읽히게 한다 — 테를 두르는 건 손쉬운 장식일 뿐이었다 */}
 
-        {/* 이름표 — 통 가운데에 붙인 나무 패 */}
+        {/* 이름패 */}
         <g>
-          <rect x="44" y="120" width="64" height="52" rx="7" fill="#f3e3c6"
-            stroke="rgba(90,58,22,0.55)" strokeWidth="1.6" />
-          <text x="76" y="140" textAnchor="middle" fontSize="14" fontWeight="800" fill="#7d4d20">
-            오늘의
-          </text>
-          <text x="76" y="160" textAnchor="middle" fontSize="14" fontWeight="800" fill="#7d4d20">
-            바 다
-          </text>
+          <rect x="55" y="126" width="50" height="56" rx="6" fill="#f3e3c6"
+                stroke="rgba(90,58,22,0.5)" strokeWidth="1.5" />
+          <text x="80" y="147" textAnchor="middle" fontSize="13.5" fontWeight="800" fill="#7d4d20">오늘의</text>
+          <text x="80" y="168" textAnchor="middle" fontSize="13.5" fontWeight="800" fill="#7d4d20">바 다</text>
         </g>
 
-        {/* 통 입구 — 안쪽이 어둡게 파여 있어야 「구멍」으로 보인다 */}
-        <ellipse cx="76" cy="66" rx="46" ry="12" fill="#4a2c10" />
-        <ellipse cx="76" cy="66" rx="46" ry="12" fill="none"
-          stroke="rgba(255,236,205,0.28)" strokeWidth="2" />
-        <ellipse cx="76" cy="64" rx="38" ry="8.5" fill="#311c09" />
+        {/* 🔴 윗면 — **막혀 있고 구멍이 아주 작다.** 여기가 오미쿠지의 얼굴이다.
+            컵처럼 뻥 뚫려 있으면 막대가 한 개만 나올 이유가 없다 */}
+        <path d="M34 82 L52 74 L108 74 L126 82 L108 90 L52 90 Z" fill="#b98446"
+              stroke="rgba(60,32,10,0.45)" strokeWidth="1.2" strokeLinejoin="round" />
+        <ellipse cx="80" cy="82" rx="10" ry="4.6" fill="#2f1b08" />
+        <ellipse cx="80" cy="81" rx="10" ry="4.6" fill="none"
+                 stroke="rgba(255,236,205,0.35)" strokeWidth="1.4" />
       </svg>
 
-      <div
-        style={{
-          marginTop: 10,
-          fontSize: 크기.부적잔글씨,
-          color: 색.아주흐린글,
-          letterSpacing: '.06em',
-        }}
-      >
+      <div style={{ marginTop: 10, fontSize: 크기.부적잔글씨, color: 색.아주흐린글, letterSpacing: '.06em' }}>
         통을 흔드는 중이에요
       </div>
     </div>
@@ -615,6 +647,12 @@ function 부적종이({ r, 지금 }) {
       {/* 머리 — 왼쪽에 이름, 오른쪽에 물때 */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 8 }}>
         <span style={{ fontSize: 크기.부적종이머리, letterSpacing: '.16em', color: 종이.강조 }}>오 늘 의 바 다</span>
+        {/* 🔴 뽑기에서 나온 막대의 번호와 **같은 번호**다.
+            진짜 오미쿠지도 막대 번호로 그 번호의 종이를 받는다.
+            번호가 이어져야 「내가 뽑은 그 종이」가 된다 */}
+        <span style={{ fontSize: 크기.부적유효, color: 종이.강조, opacity: .75, marginLeft: 'auto', marginRight: 6 }}>
+          {'第 ' + 한자수(부적번호(r.물때키)) + ' 番'}
+        </span>
         <span
           style={{
             fontSize: 크기.부적물때표,
