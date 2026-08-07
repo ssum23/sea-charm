@@ -14,6 +14,8 @@ import Link from 'next/link';
 import { Button, Card, FlexBox, Typography } from '@montage-ui/core';
 import { 크기, 색 } from './크기';
 import 부적 from '@/lib/부적엔진';
+import { judge } from '@/lib/판정엔진';
+import 어종그림, { 그림있음 } from '@/lib/어종그림';
 import 화면틀 from './화면틀';
 import { 풀이 as 물때풀이, 짧게 as 물때짧게 } from '@/lib/물때말';
 
@@ -77,18 +79,44 @@ function 이력남기기(r) {
  * 사리·중간·조금이 바뀔 때 새 부적이 나오고, 한 구간(보통 3~5일)은 같은 것이 나온다.
  * 그래서 `하루키`가 아니라 `물때키`로 저장한다 — 정적 화면(`부적.html`)과 같은 키다.
  */
+/* 🔴 2026-08-07 — 말을 거는 물고기를 **그때그때 제철인 어종 중에서** 고른다 (사장님 지시).
+ *
+ * 「지나가던 물고기」가 8월엔 갈치, 11월엔 대구가 된다. 그 달의 바다가 부적에 비친다.
+ * 어종 순서는 낚시어선 어획 통계 41개월 실측이 정한다(`judge.상단목록`).
+ *
+ * 고르는 기준 셋 —
+ *   ① 지금 제철일 것   ② 지금 금어기가 아닐 것   ③ 그림이 있을 것
+ * 셋을 다 만족하는 게 하나도 없으면 물고기 없이 그린다. 빈자리를 억지로 채우지 않는다.
+ */
+function 오늘물고기고르기(오늘) {
+  try {
+    const 목록 = judge
+      .상단목록(오늘, 12)
+      .filter((s) => s.제철 && !s.금어기중 && 그림있음(s.이름))
+      .map((s) => s.이름);
+    if (!목록.length) return null;
+    return 목록[Math.floor(Math.random() * 목록.length)];
+  } catch (e) {
+    return null;
+  }
+}
+
 function 이번물때행운(오늘) {
   const 날 = 부적.물때키(오늘);
   try {
     const v = JSON.parse(window.localStorage.getItem(행운키) || 'null');
     /* 🔴 2026-08-07 — 자리·한마디가 없는 **옛 저장값**이면 새로 뽑는다.
-       그게 없으면 열 때마다 한마디가 바뀌어 부적이 아니라 잡음이 된다 */
+       그게 없으면 열 때마다 한마디가 바뀌어 부적이 아니라 잡음이 된다.
+       `물고기` 는 없어도 그냥 둔다 — 제철이 아닐 때는 원래 없을 수 있다 */
     if (v && v.날 === 날 && v.색 && v.숫자 && v.자리 && v.한마디) return v;
   } catch (e) {
     /* 못 읽으면 새로 뽑는다 */
   }
   const 새것 = 부적.행운뽑기();
-  const 저장 = { 날, 색: 새것.색, 숫자: 새것.숫자, 자리: 새것.자리, 한마디: 새것.한마디 };
+  const 저장 = {
+    날, 색: 새것.색, 숫자: 새것.숫자, 자리: 새것.자리, 한마디: 새것.한마디,
+    물고기: 오늘물고기고르기(오늘),
+  };
   try {
     window.localStorage.setItem(행운키, JSON.stringify(저장));
   } catch (e) {}
@@ -163,7 +191,9 @@ export default function 부적화면() {
      렌더마다 발급하면 행운이 계속 바뀐다 */
   useEffect(() => {
     if (!지금) return;
-    const r = 부적.발급(생년 ? 생년 + '-01-01' : null, 지금, 이번물때행운(지금));
+    const 몫 = 이번물때행운(지금);
+    const r = 부적.발급(생년 ? 생년 + '-01-01' : null, 지금, 몫);
+    r.물고기 = 몫.물고기 || null;
     결과바꾸기(r);
     이력남기기(r);
     이력바꾸기(이력읽기());
@@ -391,6 +421,11 @@ function 지난부적({ 목록, 펼침, 펼치기 }) {
 function 부적종이({ r, 지금 }) {
   return (
     <div
+      /* 🔴 2026-08-07 — 「뽑기통에서 뽑는 듯한 흔들림」(사장님 지시).
+         부적을 받는 순간 카드가 한 번 흔들리고 멈춘다. 0.7초, 딱 한 번.
+         움직임을 싫어하는 설정(운영체제의 「동작 줄이기」)을 켠 사람에게는 안 흔들린다 —
+         멀미가 나는 사람이 있고, 배 위에서는 더 그렇다 */
+      className="부적뽑기"
       style={{
         position: 'relative',
         background: 종이.바탕,
@@ -433,7 +468,10 @@ function 부적종이({ r, 지금 }) {
         {r.제목}
       </div>
 
-      {/* 지나가던 물고기 왈 — 점선 말풍선 */}
+      {/* 지나가던 물고기 왈 — 점선 말풍선.
+          🔴 2026-08-07 (2) — 물고기는 **주인공이 아니라 요소**다 (사장님 지적).
+          큰 그림을 가운데 두던 것을 없애고, 말하는 사람 자리에 작게 붙였다.
+          어종은 **그때그때 제철인 것 중에서** 뽑는다 — 8월엔 갈치, 11월엔 대구가 말을 건다 */}
       {r.한마디 && (
         <div
           style={{
@@ -449,34 +487,23 @@ function 부적종이({ r, 지금 }) {
           }}
         >
           “{r.한마디}”
-          <span style={{ display: 'block', fontSize: 크기.부적말한이, fontWeight: 600, opacity: 0.7, marginTop: 3 }}>
-            — 지나가던 물고기 왈
+          <span
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 5,
+              fontSize: 크기.부적말한이,
+              fontWeight: 600,
+              opacity: 0.75,
+              marginTop: 4,
+            }}
+          >
+            —
+            {r.물고기 && <어종그림 이름={r.물고기} 크기={16} />}
+            지나가던 {r.물고기 || '물고기'} 왈
           </span>
         </div>
       )}
-
-      {/* 물고기 — 그림 파일이 아니라 코드로 그린다(외부 요청 0건) */}
-      <div style={{ position: 'relative', height: 116, marginTop: 4, overflow: 'hidden' }}>
-        <svg
-          viewBox="0 0 24 24"
-          aria-hidden="true"
-          style={{ position: 'absolute', left: '50%', top: -22, width: 172, height: 172, transform: 'translateX(-50%) rotate(-6deg)' }}
-        >
-          <path d="M19 12 L23.8 7.6 C22.8 10.4 22.8 13.6 23.8 16.4 Z" fill={종이.그림자} stroke={종이.테} strokeWidth="1" strokeLinejoin="round" />
-          <path d="M6.6 8.2 L8.2 5 L10 7.6 L12 4.8 L13.4 7.4 L15.6 5.4 L16.6 8.8 Z" fill={종이.그림자} stroke={종이.테} strokeWidth="1" strokeLinejoin="round" />
-          <path d="M9 16.4 L10.2 19.4 L12.4 17.2 L13.6 19.6 L15 16.8 Z" fill={종이.그림자} stroke={종이.테} strokeWidth="1" strokeLinejoin="round" />
-          <path
-            d="M1.4 12 C2.6 9 6.4 6.6 11.4 6.6 C15.4 6.6 18.6 8.4 19.8 10.6 C20.2 11.4 20.2 12.6 19.8 13.4 C18.6 15.6 15.4 17.4 11.4 17.4 C6.4 17.4 2.6 15 1.4 12 Z"
-            fill={종이.물고기} stroke={종이.테} strokeWidth="1.2" strokeLinejoin="round"
-          />
-          <path d="M2.6 13.8 C5.6 16.4 10.8 17.4 15.4 16.2 C11 17.6 5 16.8 2.6 13.8 Z" fill="#F0FAFD" />
-          <path d="M6 8 C4.6 9.8 4.6 14.2 6.2 16 C4.9 13.6 4.9 10.2 6 8 Z" fill={종이.테} opacity=".35" />
-          <circle cx="4" cy="10.8" r="2.2" fill="#fff" stroke={종이.테} strokeWidth=".8" />
-          <circle cx="4.1" cy="10.9" r="1.5" fill={종이.그림자} />
-          <circle cx="4.1" cy="10.9" r=".9" fill={종이.테} />
-          <circle cx="3.55" cy="10.35" r=".45" fill="#fff" />
-        </svg>
-      </div>
 
       {/* 오늘의 자리 · 행운의 색과 숫자 — 둘 다 재미로 보는 것이다 */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 7, marginTop: 10 }}>

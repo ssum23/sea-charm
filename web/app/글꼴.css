@@ -42,3 +42,30 @@ button {
   -webkit-user-select: none;
   user-select: none;
 }
+
+
+/* 🔴 2026-08-07 — 부적을 받을 때의 흔들림 (사장님 지시 「뽑기통에서 뽑는 듯한」)
+ *
+ * 종이 부적을 통에서 뽑아 흔들리는 모양을 흉내낸다. 0.7초, 딱 한 번.
+ * 좌우로 기울면서 조금씩 작아지다 멈춘다 — 흔들림이 잦아드는 모양이다.
+ *
+ * 🔴 「동작 줄이기」를 켠 사람에게는 흔들지 않는다.
+ *    움직이는 화면에 멀미가 나는 사람이 있고, **배 위에서는 더 그렇다.**
+ */
+@keyframes 부적뽑기 {
+  0%   { transform: translateY(-10px) rotate(-3.2deg); }
+  18%  { transform: translateY(0)     rotate(2.6deg); }
+  36%  { transform: translateY(-4px)  rotate(-2deg); }
+  54%  { transform: translateY(0)     rotate(1.4deg); }
+  72%  { transform: translateY(-2px)  rotate(-0.8deg); }
+  88%  { transform: translateY(0)     rotate(0.4deg); }
+  100% { transform: translateY(0)     rotate(0); }
+}
+
+.부적뽑기 {
+  animation: 부적뽑기 0.72s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .부적뽑기 { animation: none; }
+}
