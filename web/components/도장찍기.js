@@ -449,6 +449,19 @@ export default function 도장찍기({ 닫기, 판정 }) {
 
   /* B — 눈금자 */
   const [눈금, 눈금바꾸기] = useState({ x: 0.5, y: 0.55, 길이: 0.8, 각도: 0 });
+  /* 🔴 2026-08-10 (3) — 손으로 끄는 동안에는 화면 부품을 다시 만들지 않는다
+   *   (사장님 「슬라이더는 괜찮은데 두 손가락은 너무 버벅거린다」)
+   *
+   * 왜 슬라이더는 괜찮고 손가락은 느렸나 —
+   * 슬라이더는 알림이 드물게 오지만, **두 손가락은 손가락마다** 알림이 와서 초당 백 번이 넘는다.
+   * 그때마다 `눈금바꾸기`(리액트 상태 바꾸기)를 불렀고, 리액트는 그때마다
+   * **이 화면 부품 전체를 다시 만들었다.** 그림은 이미 한 장에 한 번으로 줄여놨지만
+   * **부품 다시 만들기는 그대로 초당 백 번**이었다. 남은 버벅거림은 여기였다.
+   *
+   * 고친 방법 — 끄는 동안에는 자 값을 **그릇(`눈금손`)에만** 담고 리액트를 안 건드린다.
+   * 그림은 그 그릇을 보고 그린다. **손을 떼는 순간 딱 한 번** 리액트에 알린다.
+   * 그래야 슬라이더 눈금도 자를 따라와 있다. */
+  const 눈금손 = useRef(눈금);
 
   const 캔버스 = useRef(null);
   const 파일칸 = useRef(null);
@@ -533,6 +546,7 @@ export default function 도장찍기({ 닫기, 판정 }) {
        두 손가락으로 자를 움직이면 손가락 둘 다 움직임을 알려 초당 백 번 넘게 들어온다.
        그때마다 그리면 폰이 못 버틴다. `requestAnimationFrame` 은 화면이 실제로 바뀌는
        때(보통 초당 60번)에 딱 한 번만 부른다 — 중간 것들은 저절로 버려진다. */
+    눈금손.current = 눈금;
     if (그릴차례.current) cancelAnimationFrame(그릴차례.current);
     그릴차례.current = requestAnimationFrame(() => {
       그릴차례.current = 0;
@@ -542,7 +556,7 @@ export default function 도장찍기({ 닫기, 판정 }) {
         if (고른종류 === 'A') 그리기A(cv, 사진.이미지, 정보);
         else if (고른종류 === 'C')
           그리기C(cv, 사진.이미지, 정보, { 기준점, 물고기점, 기준이름, 어림 });
-        else 그리기B(cv, 사진.이미지, 정보, 눈금, 끄는중.current);
+        else 그리기B(cv, 사진.이미지, 정보, 눈금손.current, 끄는중.current);
         그림오류바꾸기('');
       } catch (e) {
         그림오류바꾸기((e && e.message) || String(e));
@@ -697,6 +711,17 @@ export default function 도장찍기({ 닫기, 판정 }) {
     };
   }
 
+  /* 끄는 동안 쓰는 그리기 — 리액트를 안 거친다 */
+  function 손으로그리기() {
+    if (그릴차례.current) return;          // 이미 이번 장에 예약돼 있다
+    그릴차례.current = requestAnimationFrame(() => {
+      그릴차례.current = 0;
+      const cv = 캔버스.current;
+      if (!cv || !사진) return;
+      try { 그리기B(cv, 사진.이미지, 정보, 눈금손.current, true); } catch (err) {}
+    });
+  }
+
   function 끌기시작(e) {
     if (고른종류 !== 'B') return;
     const p = 점px(e);
@@ -707,11 +732,11 @@ export default function 도장찍기({ 닫기, 판정 }) {
 
     if (누른손가락.current.size === 1) {
       /* 잡은 지점과 자 가운데의 거리를 기억해 둔다 = 순간이동하지 않는다 */
-      한손기준.current = { dx: p.x - 눈금.x * p.W, dy: p.y - 눈금.y * p.H };
+      한손기준.current = { dx: p.x - 눈금손.current.x * p.W, dy: p.y - 눈금손.current.y * p.H };
       두손기준.current = null;
     } else if (누른손가락.current.size === 2) {
       const m = 두손재기();
-      두손기준.current = { ...m, 길이: 눈금.길이, 각도자: 눈금.각도, x: 눈금.x, y: 눈금.y };
+      두손기준.current = { ...m, 길이: 눈금손.current.길이, 각도자: 눈금손.current.각도, x: 눈금손.current.x, y: 눈금손.current.y };
       한손기준.current = null;
     }
   }
@@ -733,22 +758,24 @@ export default function 도장찍기({ 닫기, 판정 }) {
       /* 두 손가락 가운데가 움직인 만큼 자도 따라 옮긴다 — 손에 붙어 있는 느낌이 난다 */
       const 옮김x = 지금.가운데.x - 기준.가운데.x;
       const 옮김y = 지금.가운데.y - 기준.가운데.y;
-      눈금바꾸기({
+      눈금손.current = {
         x: Math.min(1, Math.max(0, 기준.x + 옮김x / p.W)),
         y: Math.min(1, Math.max(0, 기준.y + 옮김y / p.H)),
         길이: Math.min(1.8, Math.max(0.15, 기준.길이 * 배)),
         각도: Math.round(((기준.각도자 + 돈각 + 540) % 360) - 180),
-      });
+      };
+      손으로그리기();
       return;
     }
 
     /* ── 손가락 하나 — 옮기기 ── */
     if (누른손가락.current.size === 1 && 한손기준.current) {
-      눈금바꾸기((전) => ({
-        ...전,
+      눈금손.current = {
+        ...눈금손.current,
         x: Math.min(1, Math.max(0, (p.x - 한손기준.current.dx) / p.W)),
         y: Math.min(1, Math.max(0, (p.y - 한손기준.current.dy) / p.H)),
-      }));
+      };
+      손으로그리기();
     }
   }
 
@@ -760,17 +787,15 @@ export default function 도장찍기({ 닫기, 판정 }) {
     if (누른손가락.current.size === 1) {
       const cv = 캔버스.current;
       const [남은] = Array.from(누른손가락.current.values());
-      if (cv && 남은) 한손기준.current = { dx: 남은.x - 눈금.x * cv.width, dy: 남은.y - 눈금.y * cv.height };
+      if (cv && 남은) 한손기준.current = { dx: 남은.x - 눈금손.current.x * cv.width, dy: 남은.y - 눈금손.current.y * cv.height };
     } else {
       한손기준.current = null;
     }
-    /* 손이 다 떨어지면 숫자까지 채워 한 번 더 그린다 */
+    /* 손이 다 떨어지면 그때 한 번만 리액트에 알린다 —
+       그 한 번이 다시 그리기(숫자까지)와 슬라이더 눈금 맞추기를 같이 한다 */
     if (누른손가락.current.size === 0) {
       끄는중.current = false;
-      const cv = 캔버스.current;
-      if (cv && 사진 && 고른종류 === 'B') {
-        try { 그리기B(cv, 사진.이미지, 정보, 눈금, false); } catch (err) {}
-      }
+      눈금바꾸기(눈금손.current);
     }
   }
 
