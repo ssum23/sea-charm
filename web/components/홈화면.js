@@ -44,6 +44,20 @@ const 버튼모양 = {
 };
 
 export default function 홈화면() {
+  /* 🔴 2026-08-10 — 지금 폰에 들어와 있는 판을 화면 맨 아래에 찍는다.
+     고쳤는데 그대로일 때 **「안 고쳐진 것」과 「아직 안 들어온 것」**을 가르는 유일한 방법이다.
+     이 글자만 알려주시면 새 판이 들어왔는지 바로 안다. */
+  const [앱판, 앱판바꾸기] = useState('');
+  useEffect(() => {
+    try {
+      const sw = navigator.serviceWorker;
+      if (!sw || !sw.controller) { 앱판바꾸기('저장 안 함'); return; }
+      const 길 = new MessageChannel();
+      길.port1.onmessage = (e) => 앱판바꾸기((e.data && e.data.판) || '?');
+      sw.controller.postMessage({ 무엇: '판' }, [길.port2]);
+    } catch (e) { 앱판바꾸기('?'); }
+  }, []);
+
   /* 서버에서 미리 그릴 때와 브라우저에서 그릴 때가 달라지면 안 되므로
      기록은 브라우저에 올라온 뒤에 읽는다 */
   const [준비, 준비바꾸기] = useState(false);
@@ -135,6 +149,7 @@ export default function 홈화면() {
       날짜={준비 && 지금 ? 지금 : null}
       큰숫자={준비 ? 출항기록.length : 0}
       큰숫자말="번 다녀왔습니다"
+      바닥글={앱판 ? `판 ${앱판}` : ''}
       /* 여기가 홈이다 — 되돌아갈 곳이 없다 */
       홈으로={false}
     >

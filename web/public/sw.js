@@ -96,6 +96,17 @@ function 글꼴채우기() {
   });
 }
 
+/* 🔴 2026-08-10 — 화면이 「지금 폰에 든 판이 무엇인지」 물어볼 수 있게 한다.
+ *
+ * 왜 필요한가 — 고쳤는데 폰에서 그대로면 **「안 고쳐진 것」인지 「아직 안 들어온 것」인지**
+ * 알 길이 없었다. 그걸 몰라서 하루를 헤맸다. 이제 화면 맨 아래에 판이 찍힌다. */
+function 판알려주기(포트) {
+  try { 포트.postMessage({ 판: 판 }); } catch (e) {}
+}
+self.addEventListener('message', function (e) {
+  if (e.data && e.data.무엇 === '판' && e.ports && e.ports[0]) 판알려주기(e.ports[0]);
+});
+
 /* ── 요청 — 저장한 것을 먼저, 없으면 받아오고, 그것도 안 되면 첫 화면 ── */
 self.addEventListener('fetch', function (e) {
   var req = e.request;
