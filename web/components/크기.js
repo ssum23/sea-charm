@@ -152,6 +152,18 @@ export const 크기 = {
 
 /* 색 이름 모음 — 값을 직접 쓰지 않고 디자인 시스템이 정한 이름을 가리킨다.
    디자인 시스템이 색을 바꾸면 여기도 따라 바뀐다. */
+/* 🔴 2026-08-10 — 앱이 쓰는 글꼴 이름을 **한 곳에** 둔다 (사장님 「폰트 통일」)
+ *
+ * 화면 글자(제목·버튼·설명)는 디자인 시스템을 따라 **Pretendard** 로 나온다.
+ * 그런데 **도장 그림에 찍히는 글자만** 따로 `-apple-system…` 을 쓰고 있었다.
+ * 그래서 같은 화면 안에서 **앱 글자와 도장 글자의 모양이 달랐다.**
+ *
+ * 이제 둘 다 이 한 줄을 본다. 앞의 두 이름이 우리가 앱에 넣어둔 글꼴이고,
+ * 뒤는 그게 아직 안 왔을 때 쓸 폰 기본 글꼴이다. */
+export const 글꼴줄 =
+  "'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, " +
+  "'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif";
+
 export const 색 = {
   주: 'var(--semantic-primary-normal)',
   글: 'var(--semantic-label-normal)',
