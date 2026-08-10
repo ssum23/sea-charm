@@ -80,12 +80,46 @@ function 시각글(d) {
 /* 내보내는 그림의 가로 크기. 너무 크면 폰에서 합성이 느리다 */
 const 최대가로 = 1400;
 
-function 바탕그리기(cv, 이미지) {
+/* 🔴 2026-08-10 — 폰이 통째로 죽던 진짜 원인 (사장님 「This page couldn't load」)
+ *
+ * 무엇이 문제였나 —
+ * 자를 두 손가락으로 움직이면 손가락 **둘 다** 움직임을 알리므로 초당 백 번 넘게 다시 그린다.
+ * 그때마다 이 함수가
+ *   ① `cv.width = ...` 로 **캔버스를 새로 만들고**(크기를 넣는 순간 속이 통째로 새로 잡힌다)
+ *   ② 아이폰 사진 원본(1200만 화소)을 **매번 줄여서** 다시 그렸다.
+ * 이 둘은 한 번은 싼 일이지만 초당 백 번이면 아니다. 메모리가 쌓이다 **사파리가 화면을 죽인다.**
+ * 🔴 이건 자바스크립트 오류가 아니라 **화면 담당 프로그램이 통째로 꺼지는 것**이라
+ *    오류 울타리로는 못 막는다. 오류가 아니라 죽음이다.
+ *
+ * 고친 방법 —
+ *   · 사진을 **한 번만** 줄여 딴 곳에 담아두고(`줄인사진`), 그다음부터는 그것만 베낀다
+ *   · 캔버스 크기는 **달라질 때만** 손댄다. 같은 값을 다시 넣어도 속은 새로 잡힌다
+ */
+const 줄인사진들 = new WeakMap();
+
+function 줄여두기(이미지) {
+  const 있음 = 줄인사진들.get(이미지);
+  if (있음) return 있음;
   const 배율 = Math.min(1, 최대가로 / 이미지.naturalWidth);
-  cv.width = Math.round(이미지.naturalWidth * 배율);
-  cv.height = Math.round(이미지.naturalHeight * 배율);
+  const w = Math.max(1, Math.round(이미지.naturalWidth * 배율));
+  const h = Math.max(1, Math.round(이미지.naturalHeight * 배율));
+  const 작은 = document.createElement('canvas');
+  작은.width = w;
+  작은.height = h;
+  작은.getContext('2d').drawImage(이미지, 0, 0, w, h);
+  줄인사진들.set(이미지, 작은);
+  return 작은;
+}
+
+function 바탕그리기(cv, 이미지) {
+  const 작은 = 줄여두기(이미지);
+  /* 🔴 같은 값이라도 다시 넣으면 캔버스가 새로 잡힌다. 달라질 때만 넣는다 */
+  if (cv.width !== 작은.width) cv.width = 작은.width;
+  if (cv.height !== 작은.height) cv.height = 작은.height;
   const ctx = cv.getContext('2d');
-  ctx.drawImage(이미지, 0, 0, cv.width, cv.height);
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.clearRect(0, 0, cv.width, cv.height);
+  ctx.drawImage(작은, 0, 0);
   return ctx;
 }
 
@@ -456,19 +490,32 @@ export default function 도장찍기({ 닫기, 판정 }) {
      그림 한 장 못 그리는 것과 앱이 죽는 것은 무게가 다르다.
      오류가 나면 앞 그림이 그대로 남고, 무슨 오류였는지 아래에 글로 뜬다. */
   const [그림오류, 그림오류바꾸기] = useState('');
+  const 그릴차례 = useRef(0);
   useEffect(() => {
     if (!사진 || !캔버스.current) return;
-    const cv = 캔버스.current;
-    try {
-      if (고른종류 === 'A') 그리기A(cv, 사진.이미지, 정보);
-      else if (고른종류 === 'C')
-        그리기C(cv, 사진.이미지, 정보, { 기준점, 물고기점, 기준이름, 어림 });
-      else 그리기B(cv, 사진.이미지, 정보, 눈금);
-      그림오류바꾸기('');
-    } catch (e) {
-      그림오류바꾸기((e && e.message) || String(e));
-      try { console.error('[도장 그리기]', e); } catch (e2) {}
-    }
+    /* 🔴 2026-08-10 — 화면 한 장에 한 번만 그린다.
+       두 손가락으로 자를 움직이면 손가락 둘 다 움직임을 알려 초당 백 번 넘게 들어온다.
+       그때마다 그리면 폰이 못 버틴다. `requestAnimationFrame` 은 화면이 실제로 바뀌는
+       때(보통 초당 60번)에 딱 한 번만 부른다 — 중간 것들은 저절로 버려진다. */
+    if (그릴차례.current) cancelAnimationFrame(그릴차례.current);
+    그릴차례.current = requestAnimationFrame(() => {
+      그릴차례.current = 0;
+      const cv = 캔버스.current;
+      if (!cv) return;
+      try {
+        if (고른종류 === 'A') 그리기A(cv, 사진.이미지, 정보);
+        else if (고른종류 === 'C')
+          그리기C(cv, 사진.이미지, 정보, { 기준점, 물고기점, 기준이름, 어림 });
+        else 그리기B(cv, 사진.이미지, 정보, 눈금);
+        그림오류바꾸기('');
+      } catch (e) {
+        그림오류바꾸기((e && e.message) || String(e));
+        try { console.error('[도장 그리기]', e); } catch (e2) {}
+      }
+    });
+    return () => {
+      if (그릴차례.current) { cancelAnimationFrame(그릴차례.current); 그릴차례.current = 0; }
+    };
   }, [사진, 고른종류, 정보, 기준점, 물고기점, 기준이름, 어림, 눈금]);
 
   function 기억하기() {
