@@ -49,13 +49,39 @@ export default function 홈화면() {
      이 글자만 알려주시면 새 판이 들어왔는지 바로 안다. */
   const [앱판, 앱판바꾸기] = useState('');
   useEffect(() => {
+    let 살아있음 = true;
+    /* 🔴 2026-08-10 (2) — 「저장 안 함」이 뜨던 것을 고친다.
+     *
+     * 전에는 `controller` 만 봤다. 그런데 **앱을 처음 열거나 새 판이 막 들어온 직후에는
+     * 저장 장치가 아직 이 화면을 「맡기 전」이라 `controller` 가 비어 있다.**
+     * 장치는 멀쩡히 살아 있는데 화면만 모르는 상태였다.
+     *
+     * 이제 ① 준비될 때까지 기다렸다가 ② 맡고 있든 아니든 **살아 있는 장치**에게 묻고
+     * ③ 나중에 맡게 되면 그때 다시 묻는다. */
+    function 물어보기() {
+      try {
+        const sw = navigator.serviceWorker;
+        if (!sw) { 앱판바꾸기('저장 못 함'); return; }
+        sw.ready
+          .then((등록) => {
+            const 상대 = sw.controller || 등록.active;
+            if (!상대) { if (살아있음) 앱판바꾸기('아직'); return; }
+            const 길 = new MessageChannel();
+            길.port1.onmessage = (e) => {
+              if (살아있음) 앱판바꾸기((e.data && e.data.판) || '?');
+            };
+            상대.postMessage({ 무엇: '판' }, [길.port2]);
+          })
+          .catch(() => { if (살아있음) 앱판바꾸기('?'); });
+      } catch (e) { if (살아있음) 앱판바꾸기('?'); }
+    }
+    물어보기();
+    let 떼기 = null;
     try {
       const sw = navigator.serviceWorker;
-      if (!sw || !sw.controller) { 앱판바꾸기('저장 안 함'); return; }
-      const 길 = new MessageChannel();
-      길.port1.onmessage = (e) => 앱판바꾸기((e.data && e.data.판) || '?');
-      sw.controller.postMessage({ 무엇: '판' }, [길.port2]);
-    } catch (e) { 앱판바꾸기('?'); }
+      if (sw) { sw.addEventListener('controllerchange', 물어보기); 떼기 = () => sw.removeEventListener('controllerchange', 물어보기); }
+    } catch (e) {}
+    return () => { 살아있음 = false; if (떼기) 떼기(); };
   }, []);
 
   /* 서버에서 미리 그릴 때와 브라우저에서 그릴 때가 달라지면 안 되므로
