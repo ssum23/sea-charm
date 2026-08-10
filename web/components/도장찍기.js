@@ -769,11 +769,23 @@ export default function 도장찍기({ 닫기, 판정 }) {
     }
 
     /* ── 손가락 하나 — 옮기기 ── */
-    if (누른손가락.current.size === 1 && 한손기준.current) {
+    if (누른손가락.current.size === 1) {
+      /* 🔴 2026-08-10 — 그릇을 **먼저 꺼내 놓고** 쓴다 (`null is not an object` 사고)
+       *
+       * 52차에는 이 자리에서 `눈금바꾸기((전) => ... 한손기준.current.dx ...)` 를 썼다.
+       * 리액트는 그 안의 함수를 **바로 돌리지 않고 나중에** 돌린다. 그 「나중」 사이에
+       * **두 번째 손가락이 닿아 `한손기준.current` 를 비워버리면**, 리액트가 뒤늦게
+       * 그 함수를 돌릴 때 **없는 것에서 `dx` 를 꺼내다 넘어졌다.**
+       * 앞에서 `한손기준.current` 가 있는지 봤는데도 소용이 없었다 — **볼 때와 쓸 때가 달랐다.**
+       *
+       * 그래서 규칙을 하나 둔다 — **그릇(ref) 은 먼저 이름에 담아 놓고, 그 이름만 쓴다.**
+       * 담는 순간과 쓰는 순간 사이에 아무 일도 끼어들 수 없다. */
+      const 기준 = 한손기준.current;
+      if (!기준) return;
       눈금손.current = {
         ...눈금손.current,
-        x: Math.min(1, Math.max(0, (p.x - 한손기준.current.dx) / p.W)),
-        y: Math.min(1, Math.max(0, (p.y - 한손기준.current.dy) / p.H)),
+        x: Math.min(1, Math.max(0, (p.x - 기준.dx) / p.W)),
+        y: Math.min(1, Math.max(0, (p.y - 기준.dy) / p.H)),
       };
       손으로그리기();
     }
