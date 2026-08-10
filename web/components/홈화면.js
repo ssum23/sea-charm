@@ -47,41 +47,21 @@ export default function 홈화면() {
   /* 🔴 2026-08-10 — 지금 폰에 들어와 있는 판을 화면 맨 아래에 찍는다.
      고쳤는데 그대로일 때 **「안 고쳐진 것」과 「아직 안 들어온 것」**을 가르는 유일한 방법이다.
      이 글자만 알려주시면 새 판이 들어왔는지 바로 안다. */
+  /* 🔴 2026-08-10 (3) — 판을 **파일에서 읽는다.**
+   *
+   * 저장 장치에 말을 걸어 묻던 방식은 `판 ?` 이 떴다 — 아직 화면을 맡기 전이거나
+   * 옛 장치가 붙어 있으면 답이 안 온다. 이제 빌드가 `판.json` 을 만들고,
+   * 그 파일은 **미리 받아두는 목록에 같이 들어간다.** 그래서 이걸 읽으면
+   * **폰에 실제로 저장돼 있는 판**이 그대로 나온다. 말을 걸 필요가 없다. */
   const [앱판, 앱판바꾸기] = useState('');
   useEffect(() => {
     let 살아있음 = true;
-    /* 🔴 2026-08-10 (2) — 「저장 안 함」이 뜨던 것을 고친다.
-     *
-     * 전에는 `controller` 만 봤다. 그런데 **앱을 처음 열거나 새 판이 막 들어온 직후에는
-     * 저장 장치가 아직 이 화면을 「맡기 전」이라 `controller` 가 비어 있다.**
-     * 장치는 멀쩡히 살아 있는데 화면만 모르는 상태였다.
-     *
-     * 이제 ① 준비될 때까지 기다렸다가 ② 맡고 있든 아니든 **살아 있는 장치**에게 묻고
-     * ③ 나중에 맡게 되면 그때 다시 묻는다. */
-    function 물어보기() {
-      try {
-        const sw = navigator.serviceWorker;
-        if (!sw) { 앱판바꾸기('저장 못 함'); return; }
-        sw.ready
-          .then((등록) => {
-            const 상대 = sw.controller || 등록.active;
-            if (!상대) { if (살아있음) 앱판바꾸기('아직'); return; }
-            const 길 = new MessageChannel();
-            길.port1.onmessage = (e) => {
-              if (살아있음) 앱판바꾸기((e.data && e.data.판) || '?');
-            };
-            상대.postMessage({ 무엇: '판' }, [길.port2]);
-          })
-          .catch(() => { if (살아있음) 앱판바꾸기('?'); });
-      } catch (e) { if (살아있음) 앱판바꾸기('?'); }
-    }
-    물어보기();
-    let 떼기 = null;
-    try {
-      const sw = navigator.serviceWorker;
-      if (sw) { sw.addEventListener('controllerchange', 물어보기); 떼기 = () => sw.removeEventListener('controllerchange', 물어보기); }
-    } catch (e) {}
-    return () => { 살아있음 = false; if (떼기) 떼기(); };
+    const 밑 = process.env.NEXT_PUBLIC_BASE_PATH || '';
+    fetch(밑 + '/판.json')
+      .then((r) => (r.ok ? r.json() : Promise.reject()))
+      .then((v) => { if (살아있음) 앱판바꾸기(String((v && v.판) || '?').slice(0, 24)); })
+      .catch(() => { if (살아있음) 앱판바꾸기('못 읽음'); });
+    return () => { 살아있음 = false; };
   }, []);
 
   /* 서버에서 미리 그릴 때와 브라우저에서 그릴 때가 달라지면 안 되므로

@@ -460,16 +460,24 @@ function 자캔버스그리기(자cv, 사진cv, 눈금, 빠르게) {
 }
 
 /* 자를 어디에 어떻게 얹을지 — CSS 한 줄로 만든다 */
-function 자자리(자cv, 사진cv, 눈금) {
-  if (!자cv || !사진cv || !사진cv.width) return null;
-  const 보임너비 = 사진cv.getBoundingClientRect().width;
-  if (!보임너비) return null;
-  const 배 = 보임너비 / 사진cv.width;          // 화면에 보이는 크기와 그림 크기의 비
+/* 🔴 2026-08-10 (6) — 옮길 때마다 **브라우저에 화면 크기를 묻지 않는다**
+ *
+ * 58차에서 자를 딴 장으로 떼어놨는데도 조금 남아 있던 버벅거림의 정체 —
+ * 자리를 잡을 때마다 `getBoundingClientRect()` 로 **「지금 화면에서 이게 몇 픽셀이냐」를 물었다.**
+ * 🔴 이 물음은 브라우저가 **화면 계산을 그 자리에서 강제로 끝내게** 만든다.
+ * 손가락 알림마다 물었으니, 그림은 안 그려도 **화면 계산이 초당 백 번** 돌았다.
+ * 게다가 `width`·`height` 를 매번 다시 넣었는데, **그 둘은 자리를 바꿔도 안 변한다.**
+ * 값이 같아도 넣는 순간 브라우저는 「자리가 바뀔지 모른다」고 보고 다시 잰다.
+ *
+ * 이제 **비율은 한 번 재서 담아두고**, 옮기는 동안에는 `transform` **한 줄만** 바꾼다.
+ * 크기는 **정말 달라졌을 때만** 넣는다. 화면 크기가 바뀌면(가로세로 돌리기 등) 다시 잰다. */
+function 자자리(자cv, 사진cv, 눈금, 배) {
+  if (!자cv || !사진cv || !사진cv.width || !배) return null;
   const 왼 = 눈금.x * 사진cv.width * 배 - (자cv.width * 배) / 2;
   const 위 = 눈금.y * 사진cv.height * 배 - (자cv.height * 배) / 2;
   return {
-    width: 자cv.width * 배 + 'px',
-    height: 자cv.height * 배 + 'px',
+    width: 자cv.width * 배,
+    height: 자cv.height * 배,
     transform: `translate(${왼}px, ${위}px) rotate(${눈금.각도}deg)`,
   };
 }
@@ -752,10 +760,19 @@ export default function 도장찍기({ 닫기, 판정 }) {
    *
    * 그리고 화면 밖으로 벗어난 값은 0~1 안으로 잘라 넣는다.
    * 손가락이 가장자리에 살짝 걸치면 1.02 같은 값이 나와 사진 밖에 점이 찍혔다. */
-  function 자리계산(e) {
+  function 자리계산(e, 담아둔사각형) {
     const cv = 캔버스.current;
     if (!cv) return null;
-    const r = cv.getBoundingClientRect();
+    /* 🔴 2026-08-10 (7) — 끄는 동안에는 **화면을 다시 재지 않는다.**
+     *
+     * 이 줄이 마지막까지 남아 있던 버벅거림의 진짜 자리였다.
+     * `getBoundingClientRect()` 는 브라우저에게 **「지금 이게 화면 어디에 몇 픽셀로 있냐」**를
+     * 묻는 것이고, 브라우저는 답하려고 **하던 계산을 그 자리에서 다 끝내야 한다.**
+     * 손가락 알림마다 물었으니 600번 움직이면 **600번** 강제로 계산했다.
+     * 그림을 아무리 안 그려도 이건 그대로 남는다.
+     *
+     * 끄는 동안에는 화면이 안 움직인다(가로 넘김을 막아뒀다). **한 번 재서 쓰면 된다.** */
+    const r = 담아둔사각형 || cv.getBoundingClientRect();
     if (!r.width || !r.height) return null;
     const 자르기 = (v) => Math.min(1, Math.max(0, v));
     return {
@@ -822,10 +839,14 @@ export default function 도장찍기({ 닫기, 판정 }) {
   /* 사진 위에 뜬 딴 장 — 자만 여기 그린다 */
   const 자캔버스 = useRef(null);
   const 그린길이 = useRef(-1);
+  const 비율 = useRef(0);
+  const 넣어둔크기 = useRef({ w: 0, h: 0 });
+  /* 끌기 시작할 때 한 번 재두는 캔버스의 화면 자리 */
+  const 잰사각형 = useRef(null);
 
   function 점px(e) {
     const cv = 캔버스.current;
-    const p = 자리계산(e);
+    const p = 자리계산(e, 잰사각형.current);
     if (!cv || !p) return null;
     return { x: p.x * cv.width, y: p.y * cv.height, W: cv.width, H: cv.height };
   }
@@ -840,24 +861,50 @@ export default function 도장찍기({ 닫기, 판정 }) {
     };
   }
 
+  /* 화면이 바뀌면(가로세로 돌리기·글씨 크기 변경) 비율을 다시 잰다 */
+  useEffect(() => {
+    function 다시재기() { if (비율재기()) 자리잡기(); }
+    window.addEventListener('resize', 다시재기);
+    window.addEventListener('orientationchange', 다시재기);
+    return () => {
+      window.removeEventListener('resize', 다시재기);
+      window.removeEventListener('orientationchange', 다시재기);
+    };
+  }, []);
+
   /* 자를 그리고(필요할 때만) 자리를 잡는다 */
   function 자맞추기(빠르게) {
     const 자cv = 자캔버스.current;
     const 사진cv = 캔버스.current;
     if (!자cv || !사진cv || !사진cv.width) return;
     자캔버스그리기(자cv, 사진cv, 눈금손.current, 빠르게);
+    비율재기();
     자리잡기();
   }
 
   /* 🔴 여기가 이번 고침의 핵심 — 옮기기·돌리기는 **CSS 한 줄**로만 한다.
      그림을 다시 그리는 일이 **아예 없다.** 손가락이 아무리 빨라도 비용이 안 는다. */
+  /* 화면에 보이는 크기와 그림 크기의 비 — 한 번만 재서 담아둔다 */
+  function 비율재기() {
+    const 사진cv = 캔버스.current;
+    if (!사진cv || !사진cv.width) return 0;
+    const 보임 = 사진cv.getBoundingClientRect().width;
+    비율.current = 보임 ? 보임 / 사진cv.width : 0;
+    return 비율.current;
+  }
+
   function 자리잡기() {
     const 자cv = 자캔버스.current;
     const 사진cv = 캔버스.current;
-    const 자리 = 자자리(자cv, 사진cv, 눈금손.current);
+    const 자리 = 자자리(자cv, 사진cv, 눈금손.current, 비율.current);
     if (!자리) return;
-    자cv.style.width = 자리.width;
-    자cv.style.height = 자리.height;
+    /* 🔴 크기는 **정말 달라졌을 때만** 넣는다. 같은 값이라도 넣으면 브라우저가 다시 잰다 */
+    if (넣어둔크기.current.w !== 자리.width || 넣어둔크기.current.h !== 자리.height) {
+      넣어둔크기.current = { w: 자리.width, h: 자리.height };
+      자cv.style.width = 자리.width + 'px';
+      자cv.style.height = 자리.height + 'px';
+    }
+    /* 옮기는 동안 바뀌는 것은 이 한 줄뿐이다 */
     자cv.style.transform = 자리.transform;
   }
 
@@ -880,6 +927,9 @@ export default function 도장찍기({ 닫기, 판정 }) {
 
   function 끌기시작(e) {
     if (고른종류 !== 'B') return;
+    /* 🔴 여기서 **딱 한 번** 재둔다. 끄는 동안에는 이 값을 쓴다 */
+    const cv0 = 캔버스.current;
+    if (cv0) 잰사각형.current = cv0.getBoundingClientRect();
     const p = 점px(e);
     if (!p) return;
     누른손가락.current.set(e.pointerId, p);
@@ -963,6 +1013,7 @@ export default function 도장찍기({ 닫기, 판정 }) {
        그 한 번이 다시 그리기(숫자까지)와 슬라이더 눈금 맞추기를 같이 한다 */
     if (누른손가락.current.size === 0) {
       끄는중.current = false;
+      잰사각형.current = null;   // 손을 떼면 버린다. 다음에 다시 잰다
       눈금바꾸기(눈금손.current);
     }
   }
