@@ -90,6 +90,26 @@ function 바탕그리기(cv, 이미지) {
 }
 
 /* 폰에 있는 글꼴만 쓴다. 웹에서 받아오면 「외부 요청 0건」이 깨진다 */
+/* 🔴 2026-08-10 — 둥근 네모를 직접 그린다.
+ *
+ * 전에는 `ctx.roundRect` 를 썼다. 이건 사파리 16.4(2023년 3월)부터 되는 기능이라
+ * 그보다 오래된 아이폰에서는 **그 줄에서 오류가 나고 화면이 하얗게 된다.**
+ * 배 위에서 쓰는 앱이라 폰이 낡았을 수 있다. 직접 그리면 어디서나 똑같이 된다. */
+function 둥근네모(ctx, x, y, w, h, r) {
+  const 반 = Math.max(0, Math.min(r, Math.abs(w) / 2, Math.abs(h) / 2));
+  ctx.beginPath();
+  ctx.moveTo(x + 반, y);
+  ctx.lineTo(x + w - 반, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + 반);
+  ctx.lineTo(x + w, y + h - 반);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - 반, y + h);
+  ctx.lineTo(x + 반, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - 반);
+  ctx.lineTo(x, y + 반);
+  ctx.quadraticCurveTo(x, y, x + 반, y);
+  ctx.closePath();
+}
+
 function 글꼴(크기, 굵게) {
   return `${굵게 ? '700' : '400'} ${크기}px -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif`;
 }
@@ -158,7 +178,7 @@ function 도장찍기_그림(ctx, 우, 중심y, 크기) {
   ctx.lineWidth = s * 0.075;
   const r = s * 0.1;
   ctx.beginPath();
-  ctx.roundRect(-s / 2, -s / 2, s, s, r);
+  둥근네모(ctx, -s / 2, -s / 2, s, s, r);
   ctx.stroke();
   ctx.font = 글꼴(s * 0.34, true);
   ctx.textAlign = 'center';
@@ -225,7 +245,7 @@ function 그리기C(cv, 이미지, 정보, 재기) {
       const w = ctx.measureText(이름).width + 단 * 1.6;
       ctx.fillStyle = 'rgba(12,16,22,0.72)';
       ctx.beginPath();
-      ctx.roundRect(mx - w / 2, my - 단 * 4.4, w, 단 * 3.9, 단 * 0.8);
+      둥근네모(ctx, mx - w / 2, my - 단 * 4.4, w, 단 * 3.9, 단 * 0.8);
       ctx.fill();
       ctx.fillStyle = '#ffffff';
       ctx.fillText(이름, mx, my - 단 * 0.9);
@@ -282,7 +302,7 @@ function 그리기B(cv, 이미지, 정보, 눈금) {
   /* 자 몸통 */
   ctx.fillStyle = 'rgba(250,248,242,0.55)';
   ctx.beginPath();
-  ctx.roundRect(-길이 / 2, -두께 / 2, 길이, 두께, 두께 * 0.14);
+  둥근네모(ctx, -길이 / 2, -두께 / 2, 길이, 두께, 두께 * 0.14);
   ctx.fill();
   ctx.strokeStyle = 'rgba(40,44,52,0.22)';
   ctx.lineWidth = Math.max(1, 단 * 0.1);
@@ -432,13 +452,23 @@ export default function 도장찍기({ 닫기, 판정 }) {
   }, [시도, 배, 메모, 판정]);
 
   /* 미리보기 다시 그리기 */
+  /* 🔴 2026-08-10 — 그리다 넘어져도 화면이 하얘지지 않게 감싼다.
+     그림 한 장 못 그리는 것과 앱이 죽는 것은 무게가 다르다.
+     오류가 나면 앞 그림이 그대로 남고, 무슨 오류였는지 아래에 글로 뜬다. */
+  const [그림오류, 그림오류바꾸기] = useState('');
   useEffect(() => {
     if (!사진 || !캔버스.current) return;
     const cv = 캔버스.current;
-    if (고른종류 === 'A') 그리기A(cv, 사진.이미지, 정보);
-    else if (고른종류 === 'C')
-      그리기C(cv, 사진.이미지, 정보, { 기준점, 물고기점, 기준이름, 어림 });
-    else 그리기B(cv, 사진.이미지, 정보, 눈금);
+    try {
+      if (고른종류 === 'A') 그리기A(cv, 사진.이미지, 정보);
+      else if (고른종류 === 'C')
+        그리기C(cv, 사진.이미지, 정보, { 기준점, 물고기점, 기준이름, 어림 });
+      else 그리기B(cv, 사진.이미지, 정보, 눈금);
+      그림오류바꾸기('');
+    } catch (e) {
+      그림오류바꾸기((e && e.message) || String(e));
+      try { console.error('[도장 그리기]', e); } catch (e2) {}
+    }
   }, [사진, 고른종류, 정보, 기준점, 물고기점, 기준이름, 어림, 눈금]);
 
   function 기억하기() {
@@ -716,6 +746,14 @@ export default function 도장찍기({ 닫기, 판정 }) {
               <canvas ref={캔버스} style={{ width: '100%', height: 'auto', display: 'block' }} />
             </div>
 
+            {그림오류 && (
+              <div style={{ fontSize: 12, color: 색.안됨, lineHeight: 1.6, padding: '0 2px' }}>
+                그림을 그리다 걸렸어요. 아래 글자를 그대로 알려주시면 고칠 수 있습니다.
+                <br />
+                <b>{그림오류}</b>
+              </div>
+            )}
+
             {/* 종류 고르기 */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 7 }}>
               {종류.map((t) => {
@@ -815,6 +853,12 @@ export default function 도장찍기({ 닫기, 판정 }) {
                 <FlexBox flexDirection="column" gap={크기.사이}>
                   <Typography sx={{ fontSize: 크기.도장작게, color: 색.주의, lineHeight: 1.7 }}>
                     기준물과 물고기가 <b>같은 바닥에 놓여 있어야</b> 맞아요.
+                    {/* 🔴 2026-08-10 (사장님 물음 「기준물이 없으면?」)
+                        기준물을 안 찍으면 길이가 아예 안 나온다. 점 두 개만 남는다.
+                        그걸 다 찍고 나서 알면 늦다 — 미리 알려준다. */}
+                    <br />
+                    사진에 <b>기준물이 안 나왔으면 길이는 안 나옵니다.</b> 점만 남습니다.
+                    다음부터는 <b>손이나 지갑을 물고기 옆에 같이</b> 찍어주세요.
                   </Typography>
 
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 7 }}>
