@@ -59,7 +59,13 @@ export default function 홈화면() {
     const 밑 = process.env.NEXT_PUBLIC_BASE_PATH || '';
     fetch(밑 + '/판.json')
       .then((r) => (r.ok ? r.json() : Promise.reject()))
-      .then((v) => { if (살아있음) 앱판바꾸기(String((v && v.판) || '?').slice(0, 24)); })
+      .then((v) => {
+        if (!살아있음) return;
+        const 판 = String((v && v.판) || '?').slice(0, 24);
+        const 말 = String((v && v.말) || '').slice(0, 60);
+        /* 커밋 말이 있으면 그걸 앞에 둔다 — 사람이 알아보는 건 번호가 아니라 말이다 */
+        앱판바꾸기(말 ? 말 + ' · ' + 판 : 판);
+      })
       .catch(() => { if (살아있음) 앱판바꾸기('못 읽음'); });
     return () => { 살아있음 = false; };
   }, []);
@@ -155,7 +161,7 @@ export default function 홈화면() {
       날짜={준비 && 지금 ? 지금 : null}
       큰숫자={준비 ? 출항기록.length : 0}
       큰숫자말="번 다녀왔습니다"
-      바닥글={앱판 ? `판 ${앱판}` : ''}
+      바닥글={앱판 || ''}
       /* 여기가 홈이다 — 되돌아갈 곳이 없다 */
       홈으로={false}
     >

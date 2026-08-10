@@ -54,6 +54,11 @@ jobs:
           # 주소가 `이름.github.io/저장소이름/` 이라 앞에 한 칸이 붙는다.
           # 저장소 이름이 바뀌면 이 값도 저절로 따라간다.
           NEXT_PUBLIC_BASE_PATH: /${{ github.event.repository.name }}
+          # 🔴 2026-08-10 — 홈 맨 아래에 「이 판이 무슨 커밋인지」를 같이 찍는다.
+          #    판 번호만으로는 사람이 무엇이 들어왔는지 못 알아본다.
+          #    ⚠️ 환경값 이름은 영문이어야 한다 — 한글로 두면 셸이 못 읽는다.
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
+          COMMIT_SHA: ${{ github.sha }}
         run: npm run build
 
       # enablement: true — Pages 가 안 켜져 있으면 켜보려고 시도한다.

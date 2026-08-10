@@ -120,7 +120,14 @@ sw = sw
 
 fs.writeFileSync(원본길, sw);
 /* 판.txt 에 진짜 번호를 적는다 (목록을 센 뒤라야 번호를 안다) */
-fs.writeFileSync(판자리, JSON.stringify({ 판: 'seacharm-' + 판번호 }));
+/* 🔴 커밋 말도 같이 적는다 — 판 번호만으로는 무엇이 들어왔는지 사람이 못 알아본다.
+   깃허브가 넘겨준 값이고, 손으로 돌릴 때는 비어 있다. 첫 줄만 쓰고 길면 자른다. */
+const 커밋말 = String(process.env.COMMIT_MSG || '').split('\n')[0].trim().slice(0, 60);
+const 커밋조각 = String(process.env.COMMIT_SHA || '').slice(0, 7);
+fs.writeFileSync(
+  판자리,
+  JSON.stringify({ 판: 'seacharm-' + 판번호, 말: 커밋말, 조각: 커밋조각 }),
+);
 
 const 잰다 = (목록) =>
   목록.reduce((합, u) => {
@@ -132,5 +139,5 @@ const 메가 = (n) => (n / 1024 / 1024).toFixed(1) + 'MB';
 console.log(
   '[오프라인] 미리 받을 것 — 핵심 ' + 핵심.length + '개(' + 메가(잰다(핵심)) + ')' +
   ' · 글꼴 ' + 글꼴.length + '개(' + 메가(잰다(글꼴)) + ')' +
-  ' · 저장분 판 seacharm-' + 판번호
+  ' · 저장분 판 seacharm-' + 판번호 + (커밋말 ? ' · ' + 커밋말 : '')
 );
