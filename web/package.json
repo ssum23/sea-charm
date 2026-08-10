@@ -6,7 +6,7 @@
     "dev": "next dev -p 3000",
     "build": "next build && node scripts/오프라인목록.mjs",
     "start": "npx serve out -l 3000",
-    "test": "node ../app/judge.test.js && node ../app/부적.test.js && node ../app/해역.test.js",
+    "test": "node ../app/judge.test.js && node ../app/부적.test.js && node ../app/해역.test.js && node ../app/헷갈림.test.js",
     "postinstall": "node scripts/글꼴복사.mjs"
   },
   "dependencies": {

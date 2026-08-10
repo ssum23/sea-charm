@@ -11,7 +11,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Button, Card, Chip, FlexBox, TextField, Typography } from '@montage-ui/core';
 import { 크기, 색 } from './크기';
-import { judge, 메타 } from '@/lib/판정엔진';
+import { judge, 메타, 어종찾기 } from '@/lib/판정엔진';
+import { 헷갈림주의, 은는 } from '@/lib/헷갈림';
 import { 해역들, 이달몫, 해역제철, 해역에있나 } from '@/lib/해역';
 import { 키, 읽기, 쓰기, 날짜말, 즐겨찾기최대, 최근최대 } from '@/lib/저장소';
 import 어종그림 from '@/lib/어종그림';
@@ -938,6 +939,24 @@ function 지역고르기({ 결과, 목록, 고름, 처음부터 }) {
 
 /* ---------- 4. 결과 ---------- */
 function 결과보기({ 결과, 어종, 길이, 짜, 처음부터, 다시재기, 길이넣기, 잰단위 }) {
+  /* 🔴 2026-08-10 — 「혹시 다른 고기 아니세요?」 한 줄.
+   *
+   * 어종을 잘못 고르면 금어기와 금지체장이 통째로 바뀐다.
+   * 5월에 감성돔을 참돔으로 고르면 「가져가도 됩니다」가 뜨는데 **실제로는 위반이다.**
+   * 길이를 아무리 잘 재도 못 막는 오류라, **말로 한 번 짚어주는 것 말고 방법이 없다.**
+   *
+   * 🔴 판정은 바꾸지 않는다. 결과·단계·순서 그대로고 아래에 한 줄이 붙을 뿐이다.
+   * 🔴 「가져가도 됩니다」일 때만 띄운다 — 놓아주라고 나온 판정에는 덧붙일 이유가 없다.
+   * 🔴 그리고 **정말 뒤집힐 때만** 띄운다(오늘 금어기이거나, 잰 길이가 그 기준 이하일 때).
+   *    자주 뜨면 사람이 안 읽는다. */
+  const 헷갈림 = 결과 && 결과.단계 === 1
+    ? 헷갈림주의({
+        고른어종: 어종,
+        길이: 길이 === '' || 길이 == null ? null : Number(길이),
+        날짜: new Date(),
+        어종찾기,
+      })
+    : [];
   const r = 결과;
   const 색깔 = r.단계 === 1 ? 색.됨 : r.단계 === 2 ? 색.주의 : 색.안됨;
 
@@ -975,6 +994,31 @@ function 결과보기({ 결과, 어종, 길이, 짜, 처음부터, 다시재기,
         <Typography sx={{ fontSize: 크기.판정본문, color: 색.흐린글, lineHeight: 1.65 }}>
           {r.이유}
         </Typography>
+
+        {헷갈림.length > 0 && (
+          <FlexBox
+            flexDirection="column"
+            gap={4}
+            sx={{
+              backgroundColor: 'var(--semantic-fill-alternative)',
+              borderLeft: `3px solid ${색.주의}`,
+              borderRadius: 10,
+              padding: '11px 13px',
+            }}
+          >
+            {헷갈림.map((h) => (
+              <Typography
+                key={h.실제 + h.종류}
+                sx={{ fontSize: 크기.판정보조, color: 색.글, lineHeight: 1.6 }}
+              >
+                혹시 <b>{h.실제}</b>{은는(h.실제).slice(h.실제.length)} 아니시죠? {h.말}
+              </Typography>
+            ))}
+            <Typography sx={{ fontSize: 크기.판정작게, color: 색.아주흐린글, lineHeight: 1.55 }}>
+              생김새가 비슷해 자주 헷갈리는 것만 알려드립니다. 맞게 고르셨으면 그냥 넘기세요.
+            </Typography>
+          </FlexBox>
+        )}
 
         {물고기말[r.단계] && (
           <FlexBox

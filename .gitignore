@@ -18,6 +18,10 @@
 !/app/judge.test.js
 !/app/species.json
 !/app/해역시즌.json
+# 🔴 2026-08-10 — 헷갈림 표는 **웹이 직접 읽는다**(web/lib/헷갈림.js).
+#    올리지 않으면 배포 빌드가 「파일이 없다」로 깨진다. 검산 파일도 같이 올린다.
+!/app/헷갈림.json
+!/app/헷갈림.test.js
 !/app/해역.test.js
 !/app/부적.js
 !/app/부적.test.js
