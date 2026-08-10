@@ -148,6 +148,42 @@ function 글꼴(크기, 굵게) {
   return `${굵게 ? '700' : '400'} ${크기}px -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif`;
 }
 
+/* 🔴 2026-08-10 (2) — 배경을 담아둔다 (사장님 「자가 아직 버벅거린다」)
+ *
+ * 자를 움직일 때마다 **사진 + 도장 띠 + 날짜·장소 글자 + 歸港 인장**을 통째로 다시 그렸다.
+ * 그중 **글자 그리기가 제일 비싸다** — 폰에서는 글자 한 줄이 그림 한 장보다 무겁다.
+ * 그런데 자를 움직이는 동안 **그 배경은 하나도 안 바뀐다.**
+ *
+ * 그래서 배경을 딴 곳에 한 번 그려 담아두고, 자를 움직일 때는 **그것만 통째로 베낀다.**
+ * 사진이나 날짜·장소가 바뀔 때만 다시 만든다.
+ * 🔴 마지막에 나오는 그림은 전과 한 픽셀도 다르지 않다 — 그리는 차례만 바꾼 것이다. */
+const 배경담아둔곳 = new WeakMap();
+
+function 배경가져오기(이미지, 정보) {
+  const 열쇠 = JSON.stringify(정보);
+  const 있음 = 배경담아둔곳.get(이미지);
+  if (있음 && 있음.열쇠 === 열쇠) return 있음.판;
+  const 작은 = 줄여두기(이미지);
+  const 판 = document.createElement('canvas');
+  판.width = 작은.width;
+  판.height = 작은.height;
+  그리기A(판, 이미지, 정보);
+  배경담아둔곳.set(이미지, { 열쇠, 판 });
+  return 판;
+}
+
+/* 담아둔 배경을 화면 캔버스에 깔아준다 */
+function 배경깔기(cv, 이미지, 정보) {
+  const 판 = 배경가져오기(이미지, 정보);
+  if (cv.width !== 판.width) cv.width = 판.width;
+  if (cv.height !== 판.height) cv.height = 판.height;
+  const ctx = cv.getContext('2d');
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.clearRect(0, 0, cv.width, cv.height);
+  ctx.drawImage(판, 0, 0);
+  return ctx;
+}
+
 /* A — 사진 아래 띠 */
 function 그리기A(cv, 이미지, 정보) {
   const ctx = 바탕그리기(cv, 이미지);
@@ -226,8 +262,7 @@ function 도장찍기_그림(ctx, 우, 중심y, 크기) {
 
 /* C — 두 점 재기. 누른 자리에 표시를 남기고 어림한 길이를 적는다 */
 function 그리기C(cv, 이미지, 정보, 재기) {
-  그리기A(cv, 이미지, 정보);
-  const ctx = cv.getContext('2d');
+  const ctx = 배경깔기(cv, 이미지, 정보);
   const W = cv.width;
   const H = cv.height;
   const 단 = W / 100;
@@ -315,9 +350,8 @@ export function 자양끝(눈금, W, H) {
   return { a: { x: cx - dx, y: cy - dy }, b: { x: cx + dx, y: cy + dy } };
 }
 
-function 그리기B(cv, 이미지, 정보, 눈금) {
-  그리기A(cv, 이미지, 정보);
-  const ctx = cv.getContext('2d');
+function 그리기B(cv, 이미지, 정보, 눈금, 빠르게) {
+  const ctx = 배경깔기(cv, 이미지, 정보);
   const W = cv.width;
   const H = cv.height;
   const 단 = W / 100;
@@ -358,7 +392,9 @@ function 그리기B(cv, 이미지, 정보, 눈금) {
     ctx.moveTo(x, -두께 / 2);
     ctx.lineTo(x, -두께 / 2 + h);
     ctx.stroke();
-    if (다섯) {
+    /* 🔴 끄는 동안에는 숫자를 안 쓴다 — 글자가 제일 비싸다.
+       손을 떼면 곧바로 다시 그려서 숫자가 채워진다. 눈금 금은 그대로 보인다 */
+    if (다섯 && !빠르게) {
       ctx.fillStyle = 열 ? 'rgba(200,42,34,0.95)' : 'rgba(28,32,40,0.9)';
       ctx.font = 글꼴(두께 * (열 ? 0.32 : 0.26), 열);
       ctx.fillText(String(i), x, -두께 / 2 + h + 두께 * 0.03);
@@ -506,7 +542,7 @@ export default function 도장찍기({ 닫기, 판정 }) {
         if (고른종류 === 'A') 그리기A(cv, 사진.이미지, 정보);
         else if (고른종류 === 'C')
           그리기C(cv, 사진.이미지, 정보, { 기준점, 물고기점, 기준이름, 어림 });
-        else 그리기B(cv, 사진.이미지, 정보, 눈금);
+        else 그리기B(cv, 사진.이미지, 정보, 눈금, 끄는중.current);
         그림오류바꾸기('');
       } catch (e) {
         그림오류바꾸기((e && e.message) || String(e));
@@ -641,6 +677,8 @@ export default function 도장찍기({ 닫기, 판정 }) {
   const 누른손가락 = useRef(new Map());
   const 한손기준 = useRef(null);
   const 두손기준 = useRef(null);
+  /* 손이 자에 닿아 있는 동안인가 — 그동안은 숫자를 건너뛰어 가볍게 그린다 */
+  const 끄는중 = useRef(false);
 
   function 점px(e) {
     const cv = 캔버스.current;
@@ -664,6 +702,7 @@ export default function 도장찍기({ 닫기, 판정 }) {
     const p = 점px(e);
     if (!p) return;
     누른손가락.current.set(e.pointerId, p);
+    끄는중.current = true;
     try { e.currentTarget.setPointerCapture(e.pointerId); } catch (err) {}
 
     if (누른손가락.current.size === 1) {
@@ -724,6 +763,14 @@ export default function 도장찍기({ 닫기, 판정 }) {
       if (cv && 남은) 한손기준.current = { dx: 남은.x - 눈금.x * cv.width, dy: 남은.y - 눈금.y * cv.height };
     } else {
       한손기준.current = null;
+    }
+    /* 손이 다 떨어지면 숫자까지 채워 한 번 더 그린다 */
+    if (누른손가락.current.size === 0) {
+      끄는중.current = false;
+      const cv = 캔버스.current;
+      if (cv && 사진 && 고른종류 === 'B') {
+        try { 그리기B(cv, 사진.이미지, 정보, 눈금, false); } catch (err) {}
+      }
     }
   }
 
