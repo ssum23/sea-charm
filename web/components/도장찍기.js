@@ -471,14 +471,27 @@ function 자캔버스그리기(자cv, 사진cv, 눈금, 빠르게) {
  *
  * 이제 **비율은 한 번 재서 담아두고**, 옮기는 동안에는 `transform` **한 줄만** 바꾼다.
  * 크기는 **정말 달라졌을 때만** 넣는다. 화면 크기가 바뀌면(가로세로 돌리기 등) 다시 잰다. */
-function 자자리(자cv, 사진cv, 눈금, 배) {
+function 자자리(자cv, 사진cv, 눈금, 배, 그린길이) {
   if (!자cv || !사진cv || !사진cv.width || !배) return null;
+  /* 🔵 2026-08-13 — 끄는 동안에는 자를 **다시 만들지 않는다. 늘였다 줄인다.**
+   *
+   * 폰에 숫자를 찍어보니 「자 다시 만든 횟수」만 유난히 높았다(사장님 확인).
+   * 그럴 만했다 — 두 손가락으로 크기를 바꾸면 길이가 8픽셀 달라질 때마다
+   * **캔버스를 새로 만들고 · 눈금을 다시 긋고 · 보이는 캔버스 크기까지 다시 잡고 ·
+   * 화면 계산까지 강제로 시켰다.** 초당 수십 번이면 폰이 못 버틴다.
+   *
+   * 🟢 그런데 우리 자는 **눈금이 늘 60칸으로 고정**이다.
+   * 길이가 2배가 되면 눈금 간격도 정확히 2배다 — 즉 **가로로 늘인 그림과 똑같다.**
+   * 그래서 끄는 동안에는 **그려둔 자를 그대로 늘이기만** 하면 된다. 다시 그릴 일이 없다.
+   * 손을 떼면 그때 한 번 제 크기로 또렷하게 다시 그린다(숫자까지). */
+  const 늘임배 = 그린길이 > 0 ? (눈금.길이 * 사진cv.width) / 그린길이 : 1;
   const 왼 = 눈금.x * 사진cv.width * 배 - (자cv.width * 배) / 2;
   const 위 = 눈금.y * 사진cv.height * 배 - (자cv.height * 배) / 2;
+  const 늘임 = Math.abs(늘임배 - 1) < 0.0005 ? '' : ` scale(${늘임배})`;
   return {
     width: 자cv.width * 배,
     height: 자cv.height * 배,
-    transform: `translate(${왼}px, ${위}px) rotate(${눈금.각도}deg)`,
+    transform: `translate(${왼}px, ${위}px) rotate(${눈금.각도}deg)${늘임}`,
   };
 }
 
@@ -906,8 +919,11 @@ export default function 도장찍기({ 닫기, 판정 }) {
     const 사진cv = 캔버스.current;
     if (!자cv || !사진cv || !사진cv.width) return;
     셈.current.자다시 += 1;
-    자캔버스그리기(자cv, 사진cv, 눈금손.current, 빠르게);
-    비율재기();
+    const 잰것 = 자캔버스그리기(자cv, 사진cv, 눈금손.current, 빠르게);
+    그린길이.current = (잰것 && 잰것.길이) || 0;
+    /* 🔴 끄는 동안에는 비율을 다시 재지 않는다 — 재는 순간 브라우저가
+       화면 계산을 그 자리에서 끝내야 한다(62차와 같은 이유). 끌기 시작할 때 이미 쟀다 */
+    if (!끄는중.current) 비율재기();
     자리잡기();
   }
 
@@ -925,7 +941,7 @@ export default function 도장찍기({ 닫기, 판정 }) {
   function 자리잡기() {
     const 자cv = 자캔버스.current;
     const 사진cv = 캔버스.current;
-    const 자리 = 자자리(자cv, 사진cv, 눈금손.current, 비율.current);
+    const 자리 = 자자리(자cv, 사진cv, 눈금손.current, 비율.current, 그린길이.current);
     if (!자리) return;
     /* 🔴 크기는 **정말 달라졌을 때만** 넣는다. 같은 값이라도 넣으면 브라우저가 다시 잰다 */
     if (넣어둔크기.current.w !== 자리.width || 넣어둔크기.current.h !== 자리.height) {
@@ -942,14 +958,8 @@ export default function 도장찍기({ 닫기, 판정 }) {
     if (그릴차례.current) return;
     그릴차례.current = requestAnimationFrame(() => {
       그릴차례.current = 0;
-      /* 길이가 눈에 띄게 바뀌었을 때만 자를 다시 그린다. 그 밖에는 자리만 */
-      const 사진cv = 캔버스.current;
-      if (!사진cv || !사진cv.width) return;
-      const 이번길이 = Math.round((눈금손.current.길이 * 사진cv.width) / 8) * 8;
-      if (이번길이 !== 그린길이.current) {
-        그린길이.current = 이번길이;
-        try { 자맞추기(true); return; } catch (e) {}
-      }
+      /* 🟢 끄는 동안에는 자를 **다시 만들지 않는다.** 자리와 늘임만 바꾼다.
+         손을 떼면 그때 한 번 제 크기로 또렷하게 다시 그린다 */
       자리잡기();
     });
   }
