@@ -317,6 +317,7 @@ export default function 기록화면() {
   return (
     <화면틀
       제목="조과 기록"
+      탭="기록"
       날짜={지금}
       /* 🔴 2026-08-07 — 전에는 무엇을 눌러도 **전체 마릿수**가 떴다.
          기간을 골라도 숫자가 안 바뀌니 기간 고르기가 뜻이 없었다.
@@ -434,8 +435,9 @@ export default function 기록화면() {
                               marginLeft: 7,
                               fontSize: 크기.기록꼬리표,
                               fontWeight: 700,
-                              color: 색.주,
-                              border: `1px solid ${색.주}`,
+                              /* 🔴 11px 딱지라 진한 쪽을 쓴다 — 대비 5.3:1 */
+                              color: 색.주글,
+                              border: `1px solid ${색.주글}`,
                               borderRadius: 999,
                               padding: '2px 7px',
                               whiteSpace: 'nowrap',

@@ -135,3 +135,37 @@ button {
 @media (prefers-reduced-motion: reduce) {
   .통흔들, .막대나옴 { animation: none; }
 }
+
+/* ══════════════════════════════════════════════════════════════
+   앱의 주색 — 「녹색 섞인 파랑」(청록)
+   🔴 2026-08-13 사장님 선택. 진하기도 사장님이 「좀 더 밝게」로 고르셨다.
+
+   쓰고 있는 디자인 시스템(Montage)의 기본 주색은 파랑(#3385FF)이다.
+   여기서 그 이름표만 청록으로 갈아끼운다. 그러면
+   **버튼·탭바·큰 숫자·고른 칩이 한꺼번에** 바뀐다 — 고칠 곳이 여기 한 곳뿐이다.
+   값은 Montage 팔레트 그대로다 (원티드 · MIT). 토스 값은 안 쓴다.
+
+   🔴 왜 세 단계로 나눠 두나 — **흰 글씨 대비 때문이다**
+     normal #0098B2 (cyan-40) … 버튼 **바탕**. 흰 글씨 대비 3.4:1.
+                                 버튼 글씨가 30px 굵은 글씨(큰 글씨)라 이 대비면 통과한다.
+     heavy  #006F82 (cyan-30) … 이 색을 **글씨로 쓸 때**. 대비 5.3:1.
+                                 탭바 라벨(12px)·「최고 기록」 딱지(11px)처럼 작은 글씨는
+                                 3.4:1 로는 못 읽는다. 배 위·노안이 기준이다.
+     strong #00849A           … 눌렀을 때
+   ══════════════════════════════════════════════════════════════ */
+:root {
+  --semantic-primary-normal: #0098B2;
+  --semantic-primary-normal-rgb: 0, 152, 178;
+  --semantic-primary-strong: #00849A;
+  --semantic-primary-strong-rgb: 0, 132, 154;
+  --semantic-primary-heavy: #006F82;
+  --semantic-primary-heavy-rgb: 0, 111, 130;
+}
+html[data-theme='dark'] {
+  --semantic-primary-normal: #00BDDE;
+  --semantic-primary-normal-rgb: 0, 189, 222;
+  --semantic-primary-strong: #28D0ED;
+  --semantic-primary-strong-rgb: 40, 208, 237;
+  --semantic-primary-heavy: #57DFF7;
+  --semantic-primary-heavy-rgb: 87, 223, 247;
+}

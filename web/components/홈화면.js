@@ -6,7 +6,7 @@
  */
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
+/* 🔵 2026-08-13 — 홈에서 다른 화면으로 가는 큰 버튼이 탭바로 옮겨가 Link 가 필요 없어졌다 */
 import { Button, Card, Divider, FlexBox, Typography } from '@montage-ui/core';
 import { 크기, 색 } from './크기';
 import { 키, 읽기, 쓰기, 날짜말, 시각말, 걸린시간 } from '@/lib/저장소';
@@ -14,6 +14,7 @@ import 도장그림, { 도장고르기, 아이디로, 도장가짓수 } from './
 import 부적 from '@/lib/부적엔진';
 import { 이름과짧게 } from '@/lib/물때말';
 import 화면틀 from './화면틀';
+import 아이콘 from './아이콘';
 import 도장찍기, { 넘김키 } from './도장찍기';
 import 준비물 from './준비물';
 import { 기준표확인, 바다모두, 잰때말, 쓸만한가 } from '@/lib/바깥층';
@@ -183,7 +184,10 @@ export default function 홈화면() {
 
   return (
     <화면틀
-      제목="홈"
+      /* 🔴 2026-08-13 — 제목이 「홈」이었다. 탭바에 「홈」이 이미 있어 두 번 말하는 셈이고,
+         제목 자리는 「여기가 무엇을 하는 곳인가」를 말해야 한다. 앱 이름을 쓴다 */
+      제목="귀항 도장"
+      탭="홈"
       날짜={준비 && 지금 ? 지금 : null}
       큰숫자={준비 ? 출항기록.length : 0}
       큰숫자말="번 다녀왔습니다"
@@ -412,70 +416,15 @@ export default function 홈화면() {
           </FlexBox>
         </Card>
 
-        {/* 하루 순서대로 — 출항 전에 부적 한 장, 잡으면 판정 */}
-        <Button
-          as={Link}
-          href="/charm"
-          variant="solid"
-          size="large"
-          fullWidth
-          /* 🔴 2026-08-07 — 갈색(#8b5a2b)이 앱 안에서 혼자 튀었다(사장님 「너무 똥색」).
-              부적 종이의 노란 그림자와 같은 색으로 바꿔 한 가족으로 묶는다 */
-          sx={{ ...버튼모양, backgroundColor: '#F2C14E', color: '#123039', textDecoration: 'none' }}
-        >
-          🧿 오늘의 바다 부적
-        </Button>
-        <Button
-          as={Link}
-          href="/catch"
-          variant="solid"
-          size="large"
-          fullWidth
-          sx={{ ...버튼모양, backgroundColor: 색.반전바탕, color: 색.반전글, textDecoration: 'none', marginTop: -4 }}
-        >
-          🎣 이거 가져가도 되나요
-        </Button>
-        <Button
-          variant="outlined"
-          color="assistive"
-          size="large"
-          fullWidth
-          onClick={() => {
-            도장판정바꾸기(null);
-            도장열림바꾸기(true);
-          }}
-          sx={{ ...버튼모양, fontSize: 크기.홈본문, marginTop: -4 }}
-        >
-          📸 사진 찍기
-        </Button>
-
-        {/* 🔴 2026-08-06 — 조과 기록을 큰 버튼으로 올렸다 (사장님 지시).
-            전에는 「모은 도장」 옆의 작은 글자였다.
-            **배에서 내려 집에 가서 볼 수도 있는 화면**이라, 홈에서 바로 갈 수 있어야 한다.
-            작은 링크는 없앴다 — 같은 곳으로 가는 길이 둘이면 눈이 헤맨다 */}
-        <Button
-          as={Link}
-          href="/log"
-          variant="outlined"
-          color="assistive"
-          size="large"
-          fullWidth
-          sx={{ ...버튼모양, fontSize: 크기.홈본문, marginTop: -4, textDecoration: 'none' }}
-        >
-          📋 조과 기록
-        </Button>
-        {/* 🔴 준비물은 「나가기 전」에 쓰는 것이라 출항 가까이 두고 싶지만,
-            홈 위쪽은 출항·귀항이 차지해야 한다(배 위에서 급하게 누르는 것). 그래서 여기다 */}
-        <Button
-          variant="outlined"
-          color="assistive"
-          size="large"
-          fullWidth
-          onClick={() => 준비물열림바꾸기(true)}
-          sx={{ ...버튼모양, fontSize: 크기.홈본문, marginTop: -4 }}
-        >
-          🎒 준비물
-        </Button>
+        {/* ── 빠른 동작 둘 ──────────────────────────────────
+            🔴 2026-08-13 — 큰 버튼 다섯 줄을 걷어냈다 (사장님 「버튼이 줄줄이 쌓인 것」).
+            부적·판정·기록은 **아래 탭바**로 갔다 — 홈을 거칠 필요가 없어졌다.
+            여기 남는 둘은 탭바에 없는 것이고, 둘 다 **이 화면 안에서 열리는 칸**이다.
+            🔵 사진은 잡은 뒤에, 준비물은 나가기 전에 쓴다. 둘 다 홈에서 시작한다 */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+          <빠른칸 그림="사진" 이름="사진 찍기" 누르기={() => { 도장판정바꾸기(null); 도장열림바꾸기(true); }} />
+          <빠른칸 그림="준비물" 이름="준비물" 누르기={() => 준비물열림바꾸기(true)} />
+        </div>
 
         <Divider sx={{ marginTop: 6 }} />
 
@@ -496,6 +445,40 @@ export default function 홈화면() {
         )}
       </>
     </화면틀>
+  );
+}
+
+/* 홈의 빠른 동작 한 칸 — 그림 하나에 이름 하나.
+   🔴 이모지를 안 쓴다. 폰마다 모양이 달라지고 색을 우리가 못 정한다 */
+function 빠른칸({ 그림, 이름, 누르기 }) {
+  return (
+    <button
+      type="button"
+      onClick={누르기}
+      style={{
+        appearance: 'none',
+        cursor: 'pointer',
+        fontFamily: 'inherit',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 7,
+        padding: '15px 8px',
+        borderRadius: 16,
+        border: `1px solid ${색.선}`,
+        backgroundColor: 색.바탕,
+        color: 색.글,
+        fontSize: 크기.홈본문,
+        fontWeight: 600,
+        letterSpacing: '-0.01em',
+      }}
+    >
+      <span style={{ color: 색.흐린글 }}>
+        <아이콘 이름={그림} 크기={24} />
+      </span>
+      {이름}
+    </button>
   );
 }
 

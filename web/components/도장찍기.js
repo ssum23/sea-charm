@@ -7,7 +7,8 @@
  * 그래서 셋을 넣는 것은 기능이 아니라 **실험**이다. 사용자가 고른 결과가 답이 된다.
  *
  *   A 인증 배지 — 사진 아래에 띠를 깔고 정보를 얹는다. 자를 요구하지 않는다
- *   ~~B 눈금 자국~~ — 🔴 **2026-08-13 내렸다(사장님 결정).**
+ *   ~~B 눈금 자국~~ — 🔴 **2026-08-13 내렸다(사장님 결정). 코드도 지웠다.**
+ *       🔵 되살리려면 `git show 5c5e104:web/components/도장찍기.js` — 거기 다 있다.
  *       폰에서 손을 따라오지 않고 버벅거리는 것을 **여덟 번 고쳤는데 여덟 번 다 부족했다.**
  *       컴퓨터에서는 22ms 로 빨랐고 숫자로 재봐도 셈은 맞았다(따라옴 0.241 · 늘임 1.00).
  *       🔵 **고치는 데 쓴 시간이 이 기능이 주는 값보다 커졌다.** 그래서 뺀다.
@@ -335,196 +336,6 @@ function 그리기C(cv, 이미지, 정보, 재기) {
   return cv;
 }
 
-/* B — 눈금자를 겹친다.
-   ★ 이건 「재는 것」이 아니라 「눈금이 보이는 사진을 만드는 것」이다.
-      눈금 숫자를 판정에 넣지 않는다.
-
-   🔴 2026-08-07 — 줄자처럼 다시 그렸다 (사장님 지시)
-     ① **10cm마다 빨간 선**. 줄자가 그렇게 생겼다. 5cm는 검정, 1cm는 가늘게.
-     ② 두께를 조금 키웠다 — 빨간 눈금과 숫자가 같이 들어가야 한다.
-     ③ (2차) 양 끝 손잡이는 **뺐다** — 아래를 보라. */
-
-/* 자의 양 끝이 사진 위 어디인지 — 화면과 그림이 같은 계산을 쓴다 */
-export function 자양끝(눈금, W, H) {
-  const 라디안 = (눈금.각도 * Math.PI) / 180;
-  const 반 = (눈금.길이 * W) / 2;
-  const cx = 눈금.x * W;
-  const cy = 눈금.y * H;
-  const dx = Math.cos(라디안) * 반;
-  const dy = Math.sin(라디안) * 반;
-  return { a: { x: cx - dx, y: cy - dy }, b: { x: cx + dx, y: cy + dy } };
-}
-
-/* 🔴 2026-08-10 (4) — 자를 **미리 그려두고 통째로 얹는다** (사장님 「아직도 많이 버벅거린다」)
- *
- * 그때까지 남아 있던 것 —
- * 자 하나를 그리는 데 **선을 61번 따로 그었다**(0~60cm 눈금). 여기에 글자까지 얹었다.
- * 컴퓨터에서는 이게 22ms 였지만 **폰은 선 하나하나가 다 비용**이다.
- * 그리고 자를 옮기거나 돌리는 동안 **자 그림 자체는 하나도 안 바뀐다** — 자리만 바뀐다.
- *
- * 그래서 자를 딴 곳에 **한 번 그려두고**, 화면에는 **통째로 한 번 얹는다.**
- * 옮기기·돌리기는 얹는 자리만 바꾸면 되므로 **선을 다시 그을 일이 없다.**
- * 길이가 바뀔 때만 다시 그리되, 8칸 단위로 끊어 자잘한 다시 그리기를 막는다.
- *
- * 손을 떼면 `빠르게` 가 꺼지고 **숫자까지 넣어 또렷하게** 다시 그린다 — 저장되는 그림은 그것이다.
- */
-const 자그려둔곳 = { 열쇠: null, 판: null };
-
-function 자만들기(길이, 두께, 빠르게) {
-  const 열쇠 = Math.round(길이 / 8) * 8 + '|' + Math.round(두께) + '|' + (빠르게 ? 'ㅃ' : 'ㄲ');
-  if (자그려둔곳.열쇠 === 열쇠 && 자그려둔곳.판) return 자그려둔곳.판;
-
-  const 여백 = Math.ceil(두께 * 1.2);
-  const 판 = document.createElement('canvas');
-  판.width = Math.max(1, Math.ceil(길이) + 여백 * 2);
-  판.height = Math.max(1, Math.ceil(두께) + 여백 * 2);
-  const g = 판.getContext('2d');
-  const ox = 여백;
-  const oy = 여백;
-
-  /* 자 몸통 */
-  g.fillStyle = 'rgba(250,248,242,0.55)';
-  둥근네모(g, ox, oy, 길이, 두께, 두께 * 0.14);
-  g.fill();
-  g.strokeStyle = 'rgba(40,44,52,0.22)';
-  g.lineWidth = Math.max(1, 두께 * 0.03);
-  g.stroke();
-
-  /* 🔴 눈금 — 전에는 61번 따로 그었다. 이제 **빨간 것과 검은 것 두 뭉치**로 모아
-     각각 한 번에 긋는다. 그리는 횟수가 61 → 2 로 준다. 모양은 똑같다 */
-  const 최대 = 60;
-  const 칸 = 길이 / 최대;
-  const 빨강 = [];
-  const 검정 = [];
-  for (let i = 0; i <= 최대; i++) {
-    const x = ox + 칸 * i;
-    const 열 = i % 10 === 0;
-    const 다섯 = i % 5 === 0;
-    const h = 열 ? 두께 * 0.56 : 다섯 ? 두께 * 0.36 : 두께 * 0.2;
-    (열 ? 빨강 : 검정).push([x, oy, oy + h]);
-  }
-  const 뭉치긋기 = (칸들, 색, 굵기) => {
-    if (!칸들.length) return;
-    g.strokeStyle = 색;
-    g.lineWidth = Math.max(1, 굵기);
-    g.beginPath();
-    for (const [x, y0, y1] of 칸들) { g.moveTo(x, y0); g.lineTo(x, y1); }
-    g.stroke();
-  };
-  뭉치긋기(검정, 'rgba(28,32,40,0.8)', 두께 * 0.03);
-  뭉치긋기(빨강, 'rgba(200,42,34,0.95)', 두께 * 0.06);
-
-  /* 숫자는 손을 뗐을 때만 — 글자가 제일 비싸다 */
-  if (!빠르게) {
-    g.textAlign = 'center';
-    g.textBaseline = 'top';
-    for (let i = 0; i <= 최대; i += 5) {
-      const x = ox + 칸 * i;
-      const 열 = i % 10 === 0;
-      const h = 열 ? 두께 * 0.56 : 두께 * 0.36;
-      g.fillStyle = 열 ? 'rgba(200,42,34,0.95)' : 'rgba(28,32,40,0.9)';
-      g.font = 글꼴(두께 * (열 ? 0.32 : 0.26), 열);
-      g.fillText(String(i), x, oy + h + 두께 * 0.03);
-    }
-  }
-
-  자그려둔곳.열쇠 = 열쇠;
-  자그려둔곳.판 = 판;
-  자그려둔곳.여백 = 여백;
-  return 판;
-}
-
-/* 🔴 2026-08-10 (5) — **사진과 자를 아예 떼어놓는다** (사장님 제안)
- *
- * 여기까지 온 길 — 캔버스 새로 잡기를 없애고(51차), 배경을 담아두고(52차),
- * 리액트를 비켜가고(53차), 자를 미리 그려뒀다(56차). **그래도 폰에서는 버벅였다.**
- * 남아 있던 것은 하나다 — **자가 1픽셀 움직일 때마다 사진 위에 다시 얹고 있었다.**
- * 사진이 1400×1050 이면 그것만으로 한 장에 147만 화소를 매번 새로 칠한 셈이다.
- *
- * 이제 자를 **사진 위에 뜬 딴 장**에 그린다. 그리고 옮기기·돌리기·크기는
- * **그림이 아니라 CSS 로** 한다(`transform`). 브라우저는 이걸 화면 담당 장치가 처리해서
- * **다시 칠하는 일이 아예 없다.** 손가락을 아무리 빨리 움직여도 그리는 일은 0이다.
- *
- * 🔴 저장할 때는 원래대로 **한 장에 정확히 다시 그려서** 내보낸다 — 나오는 그림은 전과 같다.
- */
-function 자캔버스그리기(자cv, 사진cv, 눈금, 빠르게) {
-  const W = 사진cv.width;
-  const 단 = W / 100;
-  const 길이 = 눈금.길이 * W;
-  const 두께 = Math.max(단 * 3.8, 길이 * 0.058);
-  const 판 = 자만들기(길이, 두께, !!빠르게);
-  if (자cv.width !== 판.width) 자cv.width = 판.width;
-  if (자cv.height !== 판.height) 자cv.height = 판.height;
-  const g = 자cv.getContext('2d');
-  g.setTransform(1, 0, 0, 1, 0, 0);
-  g.clearRect(0, 0, 자cv.width, 자cv.height);
-  g.drawImage(판, 0, 0);
-  return { 길이, 두께, 판너비: 판.width, 판높이: 판.height };
-}
-
-/* 자를 어디에 어떻게 얹을지 — CSS 한 줄로 만든다 */
-/* 🔴 2026-08-10 (6) — 옮길 때마다 **브라우저에 화면 크기를 묻지 않는다**
- *
- * 58차에서 자를 딴 장으로 떼어놨는데도 조금 남아 있던 버벅거림의 정체 —
- * 자리를 잡을 때마다 `getBoundingClientRect()` 로 **「지금 화면에서 이게 몇 픽셀이냐」를 물었다.**
- * 🔴 이 물음은 브라우저가 **화면 계산을 그 자리에서 강제로 끝내게** 만든다.
- * 손가락 알림마다 물었으니, 그림은 안 그려도 **화면 계산이 초당 백 번** 돌았다.
- * 게다가 `width`·`height` 를 매번 다시 넣었는데, **그 둘은 자리를 바꿔도 안 변한다.**
- * 값이 같아도 넣는 순간 브라우저는 「자리가 바뀔지 모른다」고 보고 다시 잰다.
- *
- * 이제 **비율은 한 번 재서 담아두고**, 옮기는 동안에는 `transform` **한 줄만** 바꾼다.
- * 크기는 **정말 달라졌을 때만** 넣는다. 화면 크기가 바뀌면(가로세로 돌리기 등) 다시 잰다. */
-function 자자리(자cv, 사진cv, 눈금, 배, 그린길이) {
-  if (!자cv || !사진cv || !사진cv.width || !배) return null;
-  /* 🔵 2026-08-13 — 끄는 동안에는 자를 **다시 만들지 않는다. 늘였다 줄인다.**
-   *
-   * 폰에 숫자를 찍어보니 「자 다시 만든 횟수」만 유난히 높았다(사장님 확인).
-   * 그럴 만했다 — 두 손가락으로 크기를 바꾸면 길이가 8픽셀 달라질 때마다
-   * **캔버스를 새로 만들고 · 눈금을 다시 긋고 · 보이는 캔버스 크기까지 다시 잡고 ·
-   * 화면 계산까지 강제로 시켰다.** 초당 수십 번이면 폰이 못 버틴다.
-   *
-   * 🟢 그런데 우리 자는 **눈금이 늘 60칸으로 고정**이다.
-   * 길이가 2배가 되면 눈금 간격도 정확히 2배다 — 즉 **가로로 늘인 그림과 똑같다.**
-   * 그래서 끄는 동안에는 **그려둔 자를 그대로 늘이기만** 하면 된다. 다시 그릴 일이 없다.
-   * 손을 떼면 그때 한 번 제 크기로 또렷하게 다시 그린다(숫자까지). */
-  const 늘임배 = 그린길이 > 0 ? (눈금.길이 * 사진cv.width) / 그린길이 : 1;
-  const 왼 = 눈금.x * 사진cv.width * 배 - (자cv.width * 배) / 2;
-  const 위 = 눈금.y * 사진cv.height * 배 - (자cv.height * 배) / 2;
-  const 늘임 = Math.abs(늘임배 - 1) < 0.0005 ? '' : ` scale(${늘임배})`;
-  return {
-    width: 자cv.width * 배,
-    height: 자cv.height * 배,
-    늘임배,
-    transform: `translate(${왼}px, ${위}px) rotate(${눈금.각도}deg)${늘임}`,
-  };
-}
-
-function 그리기B(cv, 이미지, 정보, 눈금, 빠르게) {
-  const ctx = 배경깔기(cv, 이미지, 정보);
-  const W = cv.width;
-  const H = cv.height;
-  const 단 = W / 100;
-
-  const 길이 = 눈금.길이 * W;
-  /* 자가 두꺼우면 물고기를 덮는다. 자는 「재는 도구」가 아니라
-     「눈금이 같이 찍힌 사진」을 만드는 장치다 — 사진이 주인공이다 */
-  const 두께 = Math.max(단 * 3.8, 길이 * 0.058);
-
-  const 판 = 자만들기(길이, 두께, !!빠르게);
-  const 여백 = 자그려둔곳.여백;
-
-  ctx.save();
-  ctx.translate(눈금.x * W, 눈금.y * H);
-  ctx.rotate((눈금.각도 * Math.PI) / 180);
-  /* 미리 그려둔 자를 통째로 한 번 얹는다 — 이 한 줄이 전부다 */
-  ctx.drawImage(판, -길이 / 2 - 여백, -두께 / 2 - 여백);
-  ctx.restore();
-
-  ctx.textAlign = 'left';
-  ctx.textBaseline = 'top';
-  return cv;
-}
-
 /* ─────────────────────────────────────────────
    화면
    ───────────────────────────────────────────── */
@@ -532,6 +343,11 @@ function 그리기B(cv, 이미지, 정보, 눈금, 빠르게) {
 export default function 도장찍기({ 닫기, 판정 }) {
   const 길잡이 = useRouter();
   const [사진, 사진바꾸기] = useState(null); // { url, 이미지 }
+  /* 🔴 2026-08-13 고침 — 사진에 찍히는 시각이 「사진을 고른 때」가 아니라
+     「정보 칸을 마지막으로 고친 때」였다. `정보` 안에서 그때그때 `new Date()` 를
+     불렀기 때문이다. 사진을 넣고 한참 뒤에 배 이름을 고치면 시각이 그때로 밀렸다.
+     이제 사진을 고르는 순간의 시각을 여기 붙잡아 두고, 그것만 쓴다. */
+  const [찍은때, 찍은때바꾸기] = useState(null);
   const [고른종류, 고른종류바꾸기] = useState('A');
   const [시도, 시도바꾸기] = useState('');
   const [배, 배바꾸기] = useState('');
@@ -560,21 +376,6 @@ export default function 도장찍기({ 닫기, 판정 }) {
   /* 기준물 칸은 접혀 있다가 물고기 두 점을 다 찍으면 저절로 펼쳐진다 */
   const [기준칸열림, 기준칸열림바꾸기] = useState(false);
 
-  /* B — 눈금자 */
-  const [눈금, 눈금바꾸기] = useState({ x: 0.5, y: 0.55, 길이: 0.8, 각도: 0 });
-  /* 🔴 2026-08-10 (3) — 손으로 끄는 동안에는 화면 부품을 다시 만들지 않는다
-   *   (사장님 「슬라이더는 괜찮은데 두 손가락은 너무 버벅거린다」)
-   *
-   * 왜 슬라이더는 괜찮고 손가락은 느렸나 —
-   * 슬라이더는 알림이 드물게 오지만, **두 손가락은 손가락마다** 알림이 와서 초당 백 번이 넘는다.
-   * 그때마다 `눈금바꾸기`(리액트 상태 바꾸기)를 불렀고, 리액트는 그때마다
-   * **이 화면 부품 전체를 다시 만들었다.** 그림은 이미 한 장에 한 번으로 줄여놨지만
-   * **부품 다시 만들기는 그대로 초당 백 번**이었다. 남은 버벅거림은 여기였다.
-   *
-   * 고친 방법 — 끄는 동안에는 자 값을 **그릇(`눈금손`)에만** 담고 리액트를 안 건드린다.
-   * 그림은 그 그릇을 보고 그린다. **손을 떼는 순간 딱 한 번** 리액트에 알린다.
-   * 그래야 슬라이더 눈금도 자를 따라와 있다. */
-  const 눈금손 = useRef(눈금);
 
   const 캔버스 = useRef(null);
   const 파일칸 = useRef(null);
@@ -600,6 +401,7 @@ export default function 도장찍기({ 닫기, 판정 }) {
     const 이미지 = new Image();
     이미지.onload = () => 사진바꾸기({ url, 이미지 });
     이미지.src = url;
+    찍은때바꾸기(new Date());
     기준점바꾸기([]);
     물고기점바꾸기([]);
     무엇을찍나바꾸기('물고기');
@@ -626,7 +428,8 @@ export default function 도장찍기({ 닫기, 판정 }) {
   }, [기준점, 물고기점, 기준cm, 사진]);
 
   const 정보 = useMemo(() => {
-    const 이제 = new Date();
+    /* 🔴 사진을 고른 때. 아직 사진이 없으면(첫 그림) 지금 시각을 쓴다 */
+    const 이제 = 찍은때 || new Date();
     return {
       날짜: 날짜글(이제),
       시각: 시각글(이제),
@@ -645,7 +448,7 @@ export default function 도장찍기({ 닫기, 판정 }) {
           }
         : null,
     };
-  }, [시도, 배, 메모, 판정]);
+  }, [시도, 배, 메모, 판정, 찍은때]);
 
   /* 미리보기 다시 그리기 */
   /* 🔴 2026-08-10 — 그리다 넘어져도 화면이 하얘지지 않게 감싼다.
@@ -672,25 +475,17 @@ export default function 도장찍기({ 닫기, 판정 }) {
        두 손가락으로 자를 움직이면 손가락 둘 다 움직임을 알려 초당 백 번 넘게 들어온다.
        그때마다 그리면 폰이 못 버틴다. `requestAnimationFrame` 은 화면이 실제로 바뀌는
        때(보통 초당 60번)에 딱 한 번만 부른다 — 중간 것들은 저절로 버려진다. */
-    눈금손.current = 눈금;
     /* 글꼴이 새로 왔으면 미리 그려둔 것들을 버린다 — 옛 글꼴로 그려져 있다 */
-    if (글꼴왔나) { 자그려둔곳.열쇠 = null; 배경담아둔곳.delete(사진.이미지); }
+    if (글꼴왔나) 배경담아둔곳.delete(사진.이미지);
     if (그릴차례.current) cancelAnimationFrame(그릴차례.current);
     그릴차례.current = requestAnimationFrame(() => {
       그릴차례.current = 0;
-      셈.current.그린장수 += 1;
       const cv = 캔버스.current;
       if (!cv) return;
       try {
-        if (고른종류 === 'A') 그리기A(cv, 사진.이미지, 정보);
-        else if (고른종류 === 'C')
+        if (고른종류 === 'C')
           그리기C(cv, 사진.이미지, 정보, { 기준점, 물고기점, 기준이름, 어림 });
-        else {
-          /* 🔴 B — 사진에는 **자를 안 얹는다.** 사진은 배경만 깔고 끝.
-             자는 위에 뜬 딴 장에 그리고, 자리는 CSS 로 맞춘다 */
-          배경깔기(cv, 사진.이미지, 정보);
-          자맞추기(끄는중.current);
-        }
+        else 그리기A(cv, 사진.이미지, 정보);
         그림오류바꾸기('');
       } catch (e) {
         그림오류바꾸기((e && e.message) || String(e));
@@ -700,7 +495,7 @@ export default function 도장찍기({ 닫기, 판정 }) {
     return () => {
       if (그릴차례.current) { cancelAnimationFrame(그릴차례.current); 그릴차례.current = 0; }
     };
-  }, [사진, 고른종류, 정보, 기준점, 물고기점, 기준이름, 어림, 눈금, 글꼴왔나]);
+  }, [사진, 고른종류, 정보, 기준점, 물고기점, 기준이름, 어림, 글꼴왔나]);
 
   function 기억하기() {
     쓰기(시도키, 시도);
@@ -708,24 +503,10 @@ export default function 도장찍기({ 닫기, 판정 }) {
     쓰기(메모키, 메모);
   }
 
-  /* 🔴 저장·보내기 직전에 자를 사진에 **정확히** 한 번 얹는다.
-     화면에서는 떼어놨지만 나가는 그림은 전과 똑같아야 한다.
-     (끝나면 다시 떼어놓는다 — 안 그러면 자가 두 겹으로 보인다) */
-  function 합쳐두기() {
-    const cv = 캔버스.current;
-    if (!cv || !사진 || 고른종류 !== 'B') return;
-    try { 그리기B(cv, 사진.이미지, 정보, 눈금손.current, false); } catch (e) {}
-  }
-  function 다시떼기() {
-    const cv = 캔버스.current;
-    if (!cv || !사진 || 고른종류 !== 'B') return;
-    try { 배경깔기(cv, 사진.이미지, 정보); 자맞추기(false); } catch (e) {}
-  }
 
   function 내려받기() {
     if (!캔버스.current) return;
     기억하기();
-    합쳐두기();
     캔버스.current.toBlob(
       (blob) => {
         if (!blob) return;
@@ -738,8 +519,7 @@ export default function 도장찍기({ 닫기, 판정 }) {
         a.click();
         setTimeout(() => URL.revokeObjectURL(a.href), 4000);
         저장됨바꾸기('저장했습니다');
-        다시떼기();
-      },
+          },
       'image/jpeg',
       0.92,
     );
@@ -748,7 +528,6 @@ export default function 도장찍기({ 닫기, 판정 }) {
   async function 공유() {
     if (!캔버스.current) return;
     기억하기();
-    합쳐두기();
     캔버스.current.toBlob(
       async (blob) => {
         if (!blob) return;
@@ -760,8 +539,7 @@ export default function 도장찍기({ 닫기, 판정 }) {
           } catch (e) {
             /* 사용자가 그만둔 것 — 아무 말도 하지 않는다 */
           }
-          다시떼기();
-        } else {
+              } else {
           내려받기();
         }
       },
@@ -833,241 +611,22 @@ export default function 도장찍기({ 닫기, 판정 }) {
     무엇을찍나바꾸기('물고기');
   }
 
-  /* 🔴 B — 자를 손으로 다룬다 (2026-08-07 두 번째 개편, 사장님 지시)
-   *
-   * 지금까지 두 번 틀렸다 —
-   *   ① 처음엔 **아무 데나 누르면 자가 그 자리로 순간이동**했다. 스치기만 해도 날아갔다.
-   *   ② 그래서 **양 끝에 손잡이**를 달아 끌게 했더니, 사장님 말 — 「끝을 잡고 늘리는
-   *      형식은 이상하다」. 맞다. 자를 그렇게 쓰는 앱은 없다.
-   *
-   * 이제 **지도 앱과 같은 방식**이다. 사람들이 이미 손에 익힌 방식이라 배울 게 없다.
-   *   - **손가락 하나** → 자를 끌어 옮긴다 (잡은 지점 그대로. 순간이동 없음)
-   *   - **손가락 둘** → 벌리면 길어지고, 오므리면 짧아지고, 비틀면 기울어진다
-   *   - 손잡이는 없앴다. 손잡이가 있으면 「저기만 잡아야 하나」로 읽힌다
-   *
-   * 어떻게 아나 — 화면에 닿아 있는 손가락을 `누른손가락` 에 모아두고 그 수로 가른다.
-   * 두 번째 손가락이 닿는 순간의 **거리·각도·자 상태**를 기준점으로 저장해두고,
-   * 그 뒤로는 「기준점 대비 얼마나 벌어졌나/돌았나」만 본다.
-   */
-  const 누른손가락 = useRef(new Map());
-  const 한손기준 = useRef(null);
-  const 두손기준 = useRef(null);
-  /* 손이 자에 닿아 있는 동안인가 — 그동안은 숫자를 건너뛰어 가볍게 그린다 */
-  const 끄는중 = useRef(false);
-  /* 사진 위에 뜬 딴 장 — 자만 여기 그린다 */
-  const 자캔버스 = useRef(null);
-  const 그린길이 = useRef(-1);
-  const 비율 = useRef(0);
-  const 넣어둔크기 = useRef({ w: 0, h: 0 });
-  /* 끌기 시작할 때 한 번 재두는 캔버스의 화면 자리 */
-  const 잰사각형 = useRef(null);
 
-  /* 🔵 2026-08-13 — 폰에서 왜 버벅거리는지 **재본다**
-   *
-   * 자 버벅거림을 여섯 번 고쳤는데 여섯 번 다 부족했다. 컴퓨터에서는 22ms 로 빠르다.
-   * 🔴 못 고친 이유는 하나다 — **폰에서 무슨 일이 벌어지는지 볼 수가 없었다.**
-   * 월요일에 「폰에 새 판이 들어왔나」를 하루 종일 못 풀다가 **화면에 판 번호를 찍자 바로 풀렸다.**
-   * 같은 방법을 쓴다. 추측 대신 **숫자를 화면에 찍고 사람이 읽는다.**
-   *
-   * 세는 것 셋 —
-   *   그린장수 : 화면 한 장을 실제로 그린 횟수 (초당 몇 장인가)
-   *   알림수   : 손가락이 움직였다고 알려온 횟수 (초당 몇 번인가)
-   *   자다시   : 자 그림을 통째로 다시 만든 횟수 (적어야 좋다)
-   * 이 셋만 있으면 원인이 갈린다. */
-  const 셈 = useRef({ 그린장수: 0, 알림수: 0, 자다시: 0, 비율: 0, 늘임: 1 });
-  const [재는판, 재는판넣기] = useState(null);
-
-  function 점px(e) {
-    const cv = 캔버스.current;
-    const p = 자리계산(e, 잰사각형.current);
-    if (!cv || !p) return null;
-    return { x: p.x * cv.width, y: p.y * cv.height, W: cv.width, H: cv.height };
-  }
-
-  /* 두 손가락 사이의 거리와 각도 */
-  function 두손재기() {
-    const [a, b] = Array.from(누른손가락.current.values());
-    return {
-      거리: Math.hypot(a.x - b.x, a.y - b.y),
-      각도: (Math.atan2(b.y - a.y, b.x - a.x) * 180) / Math.PI,
-      가운데: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 },
-    };
-  }
-
-  /* 🔵 1초에 한 번만 숫자를 화면에 올린다 — 재는 일이 무거우면 재는 뜻이 없다 */
-  useEffect(() => {
-    if (고른종류 !== 'B') return undefined;
-    const 아이디 = setInterval(() => {
-      const c = 셈.current;
-      재는판넣기({ 장: c.그린장수, 알림: c.알림수, 자: c.자다시, 비율: c.비율, 늘임: c.늘임 });
-      c.그린장수 = 0;
-      c.알림수 = 0;
-    }, 1000);
-    return () => clearInterval(아이디);
-  }, [고른종류]);
-
-  /* 화면이 바뀌면(가로세로 돌리기·글씨 크기 변경) 비율을 다시 잰다 */
-  useEffect(() => {
-    function 다시재기() { if (비율재기()) 자리잡기(); }
-    window.addEventListener('resize', 다시재기);
-    window.addEventListener('orientationchange', 다시재기);
-    return () => {
-      window.removeEventListener('resize', 다시재기);
-      window.removeEventListener('orientationchange', 다시재기);
-    };
-  }, []);
-
-  /* 자를 그리고(필요할 때만) 자리를 잡는다 */
-  function 자맞추기(빠르게) {
-    const 자cv = 자캔버스.current;
-    const 사진cv = 캔버스.current;
-    if (!자cv || !사진cv || !사진cv.width) return;
-    셈.current.자다시 += 1;
-    const 잰것 = 자캔버스그리기(자cv, 사진cv, 눈금손.current, 빠르게);
-    그린길이.current = (잰것 && 잰것.길이) || 0;
-    /* 🔴 끄는 동안에는 비율을 다시 재지 않는다 — 재는 순간 브라우저가
-       화면 계산을 그 자리에서 끝내야 한다(62차와 같은 이유). 끌기 시작할 때 이미 쟀다 */
-    if (!끄는중.current) 비율재기();
-    자리잡기();
-  }
-
-  /* 🔴 여기가 이번 고침의 핵심 — 옮기기·돌리기는 **CSS 한 줄**로만 한다.
-     그림을 다시 그리는 일이 **아예 없다.** 손가락이 아무리 빨라도 비용이 안 는다. */
-  /* 화면에 보이는 크기와 그림 크기의 비 — 한 번만 재서 담아둔다 */
-  function 비율재기() {
-    const 사진cv = 캔버스.current;
-    if (!사진cv || !사진cv.width) return 0;
-    const 보임 = 사진cv.getBoundingClientRect().width;
-    비율.current = 보임 ? 보임 / 사진cv.width : 0;
-    return 비율.current;
-  }
-
-  function 자리잡기() {
-    const 자cv = 자캔버스.current;
-    const 사진cv = 캔버스.current;
-    const 자리 = 자자리(자cv, 사진cv, 눈금손.current, 비율.current, 그린길이.current);
-    if (!자리) return;
-    /* 🔵 2026-08-13 — 「손만큼 안 따라온다」를 재기 위한 숫자.
-       비율 = 화면에 보이는 크기 ÷ 그림 크기. 이게 틀리면 자가 손보다 덜/더 움직인다 */
-    셈.current.비율 = 비율.current;
-    셈.current.늘임 = 자리.늘임배;
-    /* 🔴 크기는 **정말 달라졌을 때만** 넣는다. 같은 값이라도 넣으면 브라우저가 다시 잰다 */
-    if (넣어둔크기.current.w !== 자리.width || 넣어둔크기.current.h !== 자리.height) {
-      넣어둔크기.current = { w: 자리.width, h: 자리.height };
-      자cv.style.width = 자리.width + 'px';
-      자cv.style.height = 자리.height + 'px';
-    }
-    /* 옮기는 동안 바뀌는 것은 이 한 줄뿐이다 */
-    자cv.style.transform = 자리.transform;
-  }
-
-  /* 끄는 동안 — 자리만 바꾼다. 그리기는 안 한다 */
-  function 손으로그리기() {
-    if (그릴차례.current) return;
-    그릴차례.current = requestAnimationFrame(() => {
-      그릴차례.current = 0;
-      /* 🟢 끄는 동안에는 자를 **다시 만들지 않는다.** 자리와 늘임만 바꾼다.
-         손을 떼면 그때 한 번 제 크기로 또렷하게 다시 그린다 */
-      자리잡기();
-    });
-  }
-
-  function 끌기시작(e) {
-    if (고른종류 !== 'B') return;
-    /* 🔴 여기서 **딱 한 번** 재둔다. 끄는 동안에는 이 값을 쓴다 */
-    const cv0 = 캔버스.current;
-    if (cv0) 잰사각형.current = cv0.getBoundingClientRect();
-    const p = 점px(e);
-    if (!p) return;
-    누른손가락.current.set(e.pointerId, p);
-    끄는중.current = true;
-    try { e.currentTarget.setPointerCapture(e.pointerId); } catch (err) {}
-
-    if (누른손가락.current.size === 1) {
-      /* 잡은 지점과 자 가운데의 거리를 기억해 둔다 = 순간이동하지 않는다 */
-      한손기준.current = { dx: p.x - 눈금손.current.x * p.W, dy: p.y - 눈금손.current.y * p.H };
-      두손기준.current = null;
-    } else if (누른손가락.current.size === 2) {
-      const m = 두손재기();
-      두손기준.current = { ...m, 길이: 눈금손.current.길이, 각도자: 눈금손.current.각도, x: 눈금손.current.x, y: 눈금손.current.y };
-      한손기준.current = null;
-    }
-  }
-
-  function 끄는동안(e) {
-    if (고른종류 !== 'B') return;
-    if (!누른손가락.current.has(e.pointerId)) return;
-    셈.current.알림수 += 1;
-    const p = 점px(e);
-    if (!p) return;
-    누른손가락.current.set(e.pointerId, p);
-
-    /* ── 손가락 둘 — 크기와 기울기 ── */
-    if (누른손가락.current.size >= 2 && 두손기준.current) {
-      const 지금 = 두손재기();
-      const 기준 = 두손기준.current;
-      if (기준.거리 < 1) return;
-      const 배 = 지금.거리 / 기준.거리;
-      const 돈각 = 지금.각도 - 기준.각도;
-      /* 두 손가락 가운데가 움직인 만큼 자도 따라 옮긴다 — 손에 붙어 있는 느낌이 난다 */
-      const 옮김x = 지금.가운데.x - 기준.가운데.x;
-      const 옮김y = 지금.가운데.y - 기준.가운데.y;
-      눈금손.current = {
-        x: Math.min(1, Math.max(0, 기준.x + 옮김x / p.W)),
-        y: Math.min(1, Math.max(0, 기준.y + 옮김y / p.H)),
-        길이: Math.min(1.8, Math.max(0.15, 기준.길이 * 배)),
-        각도: Math.round(((기준.각도자 + 돈각 + 540) % 360) - 180),
-      };
-      손으로그리기();
-      return;
-    }
-
-    /* ── 손가락 하나 — 옮기기 ── */
-    if (누른손가락.current.size === 1) {
-      /* 🔴 2026-08-10 — 그릇을 **먼저 꺼내 놓고** 쓴다 (`null is not an object` 사고)
-       *
-       * 52차에는 이 자리에서 `눈금바꾸기((전) => ... 한손기준.current.dx ...)` 를 썼다.
-       * 리액트는 그 안의 함수를 **바로 돌리지 않고 나중에** 돌린다. 그 「나중」 사이에
-       * **두 번째 손가락이 닿아 `한손기준.current` 를 비워버리면**, 리액트가 뒤늦게
-       * 그 함수를 돌릴 때 **없는 것에서 `dx` 를 꺼내다 넘어졌다.**
-       * 앞에서 `한손기준.current` 가 있는지 봤는데도 소용이 없었다 — **볼 때와 쓸 때가 달랐다.**
-       *
-       * 그래서 규칙을 하나 둔다 — **그릇(ref) 은 먼저 이름에 담아 놓고, 그 이름만 쓴다.**
-       * 담는 순간과 쓰는 순간 사이에 아무 일도 끼어들 수 없다. */
-      const 기준 = 한손기준.current;
-      if (!기준) return;
-      눈금손.current = {
-        ...눈금손.current,
-        x: Math.min(1, Math.max(0, (p.x - 기준.dx) / p.W)),
-        y: Math.min(1, Math.max(0, (p.y - 기준.dy) / p.H)),
-      };
-      손으로그리기();
-    }
-  }
-
-  function 끌기끝(e) {
-    if (e && e.pointerId != null) 누른손가락.current.delete(e.pointerId);
-    else 누른손가락.current.clear();
-    두손기준.current = null;
-    /* 두 손가락 중 하나만 떼면 남은 하나로 계속 옮길 수 있게 기준을 다시 잡는다 */
-    if (누른손가락.current.size === 1) {
-      const cv = 캔버스.current;
-      const [남은] = Array.from(누른손가락.current.values());
-      if (cv && 남은) 한손기준.current = { dx: 남은.x - 눈금손.current.x * cv.width, dy: 남은.y - 눈금손.current.y * cv.height };
-    } else {
-      한손기준.current = null;
-    }
-    /* 손이 다 떨어지면 그때 한 번만 리액트에 알린다 —
-       그 한 번이 다시 그리기(숫자까지)와 슬라이더 눈금 맞추기를 같이 한다 */
-    if (누른손가락.current.size === 0) {
-      끄는중.current = false;
-      잰사각형.current = null;   // 손을 떼면 버린다. 다음에 다시 잰다
-      눈금바꾸기(눈금손.current);
-    }
-  }
 
   return (
     <FlexBox flexDirection="column" gap={크기.사이}>
+      {/* 🔴 2026-08-13 고침 — 숨은 파일칸은 **여기 한 곳에만** 둔다.
+          전에는 첫 카드와 내보내기 카드에 각각 하나씩, **같은 `파일칸` 이름표**를 달고
+          있었다. 지금은 둘 중 하나만 그려져서 굴러갔지만, 언젠가 둘이 같이 그려지면
+          나중 것이 이름표를 덮어써서 「사진 찍기」가 죽는다. 하나면 그럴 일이 없다. */}
+      <input
+        ref={파일칸}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        onChange={사진골랐을때}
+        style={{ display: 'none' }}
+      />
       {/* ── 1. 사진 넣기 ── */}
       {!사진 ? (
         <Card sx={카드}>
@@ -1079,14 +638,6 @@ export default function 도장찍기({ 닫기, 판정 }) {
             <br />
             <b style={{ color: 색.글 }}>사진은 이 앱에 저장되지 않습니다.</b> 
           </Typography>
-          <input
-            ref={파일칸}
-            type="file"
-            accept="image/*"
-            capture="environment"
-            onChange={사진골랐을때}
-            style={{ display: 'none' }}
-          />
           <Button
             variant="solid"
             color="primary"
@@ -1115,60 +666,15 @@ export default function 도장찍기({ 닫기, 판정 }) {
             <div
               ref={미리보기}
               onClick={눌렀을때}
-              onPointerDown={끌기시작}
-              onPointerMove={끄는동안}
-              onPointerUp={끌기끝}
-              onPointerCancel={끌기끝}
-              onPointerLeave={끌기끝}
               style={{
                 position: 'relative',
                 lineHeight: 0,
                 borderRadius: 12,
                 overflow: 'hidden',
-                touchAction: 고른종류 === 'B' ? 'none' : 'auto',
-                cursor: 고른종류 === 'C' ? 'crosshair' : 고른종류 === 'B' ? 'grab' : 'default',
+                cursor: 고른종류 === 'C' ? 'crosshair' : 'default',
               }}
             >
               <canvas ref={캔버스} style={{ width: '100%', height: 'auto', display: 'block' }} />
-              {/* 🔴 자만 뜨는 딴 장. 손가락은 밑에 있는 상자가 받는다(`pointerEvents: none`).
-                  `transformOrigin` 을 가운데로 두어야 자 한가운데를 축으로 돈다.
-                  `willChange` 는 브라우저에게 「이건 자주 움직인다」고 미리 알리는 것이다 */}
-              <canvas
-                ref={자캔버스}
-                style={{
-                  position: 'absolute',
-                  left: 0,
-                  top: 0,
-                  display: 고른종류 === 'B' ? 'block' : 'none',
-                  pointerEvents: 'none',
-                  transformOrigin: 'center center',
-                  willChange: 'transform',
-                }}
-              />
-              {/* 🔵 2026-08-13 — 폰에서 무슨 일이 벌어지는지 눈으로 보는 숫자.
-                  원인이 잡히면 이 줄은 지운다. 자를 고를 때만 뜬다. */}
-              {고른종류 === 'B' && 재는판 && (
-                <div
-                  style={{
-                    position: 'absolute',
-                    left: 6,
-                    top: 6,
-                    padding: '3px 7px',
-                    borderRadius: 8,
-                    background: 'rgba(0,0,0,0.62)',
-                    color: '#fff',
-                    fontSize: 11,
-                    lineHeight: 1.35,
-                    fontFamily: 글꼴줄,
-                    pointerEvents: 'none',
-                    letterSpacing: '-0.01em',
-                  }}
-                >
-                  {재는판.장}장/초 · 알림 {재는판.알림}/초 · 자 {재는판.자}번
-                  <br />
-                  따라옴 {Number(재는판.비율 || 0).toFixed(3)} · 늘임 {Number(재는판.늘임 || 1).toFixed(2)}
-                </div>
-              )}
             </div>
 
             {그림오류 && (
@@ -1180,7 +686,7 @@ export default function 도장찍기({ 닫기, 판정 }) {
             )}
 
             {/* 종류 고르기 */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 7 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: `repeat(${종류.length}, 1fr)`, gap: 7 }}>
               {종류.map((t) => {
                 const 켜짐 = 고른종류 === t.값;
                 return (
@@ -1395,37 +901,6 @@ export default function 도장찍기({ 닫기, 판정 }) {
             </Card>
           )}
 
-          {고른종류 === 'B' && (
-            <Card sx={카드}>
-              <Typography weight="bold" sx={{ fontSize: 크기.도장보조, color: 색.흐린글 }}>
-                눈금 자국
-              </Typography>
-              <Typography sx={{ fontSize: 크기.도장작게, color: 색.아주흐린글, lineHeight: 1.7 }}>
-                <b style={{ color: 색.흐린글 }}>손가락 하나로 끌면 옮겨지고, 두 손가락으로 벌리면 길어집니다.</b>{' '}
-                비틀면 기울어져요. 이 눈금은 사진에 남기는 표시일 뿐이고 판정에는 쓰지 않습니다.
-              </Typography>
-              {/* 🔴 손잡이(막대)는 「미세 조정」으로만 남긴다.
-                  좌우·위아래는 손으로 끄는 편이 훨씬 빠르므로 없앴다 —
-                  같은 일을 하는 길이 둘이면 눈이 헤맨다 */}
-              <손잡이 이름="길이" 값={눈금.길이} 최소={0.15} 최대={1.6} 걸음={0.005}
-                바꾸기={(v) => 눈금바꾸기({ ...눈금, 길이: v })} />
-              <손잡이 이름="기울기" 값={눈금.각도} 최소={-180} 최대={180} 걸음={1}
-                바꾸기={(v) => 눈금바꾸기({ ...눈금, 각도: v })} />
-              <button
-                type="button"
-                onClick={() => 눈금바꾸기({ x: 0.5, y: 0.55, 길이: 0.8, 각도: 0 })}
-                style={{
-                  alignSelf: 'flex-start', border: 'none', background: 'transparent',
-                  padding: '4px 0', fontFamily: 'inherit', fontSize: 크기.도장설명,
-                  color: 색.흐린글, textDecoration: 'underline', textUnderlineOffset: 3,
-                  cursor: 'pointer',
-                }}
-              >
-                자 자리 되돌리기
-              </button>
-            </Card>
-          )}
-
           {/* ── 4. 정보 ── */}
           <Card sx={카드}>
             <Typography weight="bold" sx={{ fontSize: 크기.도장보조, color: 색.흐린글 }}>
@@ -1507,14 +982,6 @@ export default function 도장찍기({ 닫기, 판정 }) {
               sx={{ ...버튼, fontSize: 크기.도장본문, fontWeight: 500 }}>
               다시 찍기
             </Button>
-            <input
-              ref={파일칸}
-              type="file"
-              accept="image/*"
-              capture="environment"
-              onChange={사진골랐을때}
-              style={{ display: 'none' }}
-            />
             <Button variant="outlined" color="assistive" size="large" fullWidth onClick={닫기}
               sx={{ ...버튼, fontSize: 크기.도장본문, fontWeight: 500, color: 색.흐린글, border: 'none' }}>
               닫기
@@ -1526,24 +993,6 @@ export default function 도장찍기({ 닫기, 판정 }) {
   );
 }
 
-function 손잡이({ 이름, 값, 최소, 최대, 걸음, 바꾸기 }) {
-  return (
-    <FlexBox alignItems="center" gap={10}>
-      <Typography sx={{ fontSize: 크기.도장작게, color: 색.흐린글, width: 44, flex: '0 0 auto' }}>
-        {이름}
-      </Typography>
-      <input
-        type="range"
-        min={최소}
-        max={최대}
-        step={걸음}
-        value={값}
-        onChange={(e) => 바꾸기(Number(e.target.value))}
-        style={{ flex: 1, accentColor: 'var(--semantic-primary-normal)' }}
-      />
-    </FlexBox>
-  );
-}
 
 const 카드 = {
   backgroundColor: 색.바탕,

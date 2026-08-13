@@ -309,6 +309,7 @@ export default function 판정화면() {
   return (
     <화면틀
       제목={제목}
+      탭="판정"
       날짜={지금}
       안내={안내}
       바닥글={

@@ -3,19 +3,25 @@
 /* 모든 화면이 같은 머리·발을 쓰도록 한 겹 싸 둔다.
  * 화면이 넷이 되면서, 머리 모양을 고칠 때 네 군데를 고치는 일이 생겼다.
  *
- * 화면 이동 규칙 — 홈을 가운데 둔다 (2026-08-06 제품 결정)
+ * ─────────────────────────────────────────────────────────────
+ * 🔴 2026-08-13 — 화면 이동 규칙을 바꿨다 (사장님 「화면 이동이 불편한 것」)
  *
- *        ┌──────── 홈 ────────┐        홈이 갈림길이다.
- *        │  부적 · 판정 · 촬영 │        다른 화면끼리는 서로 안 가리킨다.
- *        │  기록 · 출항/귀항   │
- *        └────────────────────┘
+ *   전 (2026-08-06 결정)            지금
+ *   ────────────────────           ────────────────────
+ *   홈이 갈림길이다.                아래에 **탭바** 넷을 둔다.
+ *   왼쪽 위 「‹ 홈」                 홈 · 부적 · 판정 · 기록
+ *   발에 「다음 한 걸음」 하나        어디서든 한 번에 건너간다.
  *
- *  - 홈이 아닌 모든 화면은 **왼쪽 위 같은 자리**에 「‹ 홈」이 있다.
- *    자리가 항상 같아야 눈으로 찾지 않고 손이 먼저 간다.
- *  - 발에는 「다음 한 걸음」 **하나만** 둔다. 하루 순서대로 이어진다 —
- *    부적 → 판정 → 기록. 셋 다 나열하면 어디로 가야 할지 고르게 되고,
- *    그게 「엉켜 있다」는 느낌의 정체였다.
- *  - 그래서 다른 화면으로 갈 때는 항상 홈을 한 번 거친다. 길을 잃을 자리가 없다.
+ * 왜 바꾸나 — 전 규칙의 뜻은 옳았다(「어디로 갈지 고르게 되는」 것을 막는다).
+ * 그런데 대가가 컸다. **부적을 보다가 판정에 가려면 홈을 찍고 다시 들어가야 했다.**
+ * 배 위에서 두 번 누르는 것과 한 번 누르는 것은 다르다.
+ * 탭바는 「고르게 만드는 것」이 아니라 **늘 같은 자리에 있는 것**이라 눈이 헤매지 않는다.
+ * 네 칸이 화면마다 같은 자리에 있고, 지금 어디에 있는지도 같이 보인다.
+ *
+ * 🔵 그래서 「‹ 홈」과 「다음 한 걸음」은 뺐다 — 탭바가 그 일을 다 한다.
+ *    같은 곳으로 가는 길이 셋이면 눈이 헤맨다(그건 옛 규칙에서 그대로 가져온다).
+ *    `홈으로`·`다음` 을 아직 넘겨주는 화면이 있어도 그냥 무시한다 — 화면이 안 깨진다.
+ * ─────────────────────────────────────────────────────────────
  */
 
 import Link from 'next/link';
@@ -23,6 +29,15 @@ import { FlexBox, Typography } from '@montage-ui/core';
 import { 크기, 색 } from './크기';
 import { 어종그림정의 } from '@/lib/어종그림';
 import { 날짜말 } from '@/lib/저장소';
+import 아이콘 from './아이콘';
+
+/* 탭바 넷 — 하루 순서대로 왼쪽에서 오른쪽 (나가기 전 부적 → 잡으면 판정 → 쌓이면 기록) */
+const 탭들 = [
+  { 이름: '홈', 주소: '/', 그림: '닻' },
+  { 이름: '부적', 주소: '/charm', 그림: '부적' },
+  { 이름: '판정', 주소: '/catch', 그림: '물고기' },
+  { 이름: '기록', 주소: '/log', 그림: '기록' },
+];
 
 export default function 화면틀({
   제목,
@@ -33,53 +48,33 @@ export default function 화면틀({
   큰숫자앞말,
   큰숫자말,
   바닥글,
-  /* 홈이면 false. 그 밖에는 왼쪽 위에 「‹ 홈」이 붙는다 */
-  홈으로 = true,
-  /* 하루 순서상 다음 한 걸음. { 이름, 주소 } 하나만 받는다 */
+  /* 지금 어느 탭인가 — '홈' · '부적' · '판정' · '기록' */
+  탭,
+  /* 🔵 옛 규칙에서 쓰던 것. 아직 넘겨주는 화면이 있어 받아만 두고 안 쓴다 */
+  홈으로,
   다음,
   children,
 }) {
   return (
-    <FlexBox flexDirection="column" sx={{ minHeight: '100dvh' }}>
+    <FlexBox
+      flexDirection="column"
+      sx={{ minHeight: '100dvh', backgroundColor: 색.바탕뒤 }}
+    >
       {/* 어종 그림의 색·모양 정의를 화면마다 **한 번만** 깔아둔다.
           여기 있으면 이 틀을 쓰는 네 화면 어디서든 <어종그림 /> 을 그냥 쓸 수 있다.
           눈에 보이지 않는다 — 크기 0 이다 */}
       <어종그림정의 />
-      {/* 머리 */}
+
+      {/* 머리 — 흰 바탕. 아래 본문은 회색 바탕이라 여기서 한 번 갈린다 */}
       <FlexBox
         flexDirection="column"
         gap={2}
         sx={{
           backgroundColor: 색.바탕,
+          borderBottom: `1px solid ${색.선}`,
           padding: `calc(env(safe-area-inset-top) + ${크기.여백}px) ${크기.여백}px ${크기.카드여백}px`,
         }}
       >
-        {/* 머리 한 줄 — 왼쪽 「‹ 홈」, 오른쪽 「다음 한 걸음」.
-            2026-08-06 폰 점검: 왼쪽 위가 비어 보이고, 다음으로 가려면 화면을 끝까지
-            내려야 했다. 발에 있는 것과 **같은 곳으로 가는 같은 링크**를 하나 더 둔 것이라
-            「어디로 갈지 고르게 되는」 문제(위 주석)는 생기지 않는다. */}
-        {(홈으로 || 다음) && (
-          <FlexBox justifyContent="space-between" alignItems="center" sx={{ width: '100%' }}>
-            {홈으로 ? (
-              <Link href="/" style={{ textDecoration: 'none' }}>
-                <Typography sx={{ fontSize: 크기.머리홈, color: 색.흐린글, padding: '2px 0' }}>
-                  ‹ 홈
-                </Typography>
-              </Link>
-            ) : (
-              <span />
-            )}
-            {다음 ? (
-              <Link href={다음.주소} style={{ textDecoration: 'none' }}>
-                <Typography sx={{ fontSize: 크기.머리다음, color: 색.흐린글, padding: '2px 0' }}>
-                  {다음.이름} ›
-                </Typography>
-              </Link>
-            ) : (
-              <span />
-            )}
-          </FlexBox>
-        )}
         <Typography sx={{ fontSize: 크기.머리날짜, color: 색.흐린글 }}>
           {날짜 ? 날짜말(날짜) : ' '}
         </Typography>
@@ -106,30 +101,81 @@ export default function 화면틀({
       <FlexBox
         flexDirection="column"
         gap={크기.사이}
-        sx={{ flex: 1, width: '100%', maxWidth: 560, margin: '0 auto', padding: 크기.여백 }}
+        sx={{
+          flex: 1,
+          width: '100%',
+          maxWidth: 560,
+          margin: '0 auto',
+          padding: 크기.여백,
+          /* 🔴 탭바가 마지막 줄을 가리지 않게 그만큼 비워둔다 */
+          paddingBottom: `calc(${크기.탭높이}px + env(safe-area-inset-bottom) + 16px)`,
+        }}
       >
         {children}
       </FlexBox>
 
-      {/* 발 */}
-      <FlexBox
-        flexDirection="column"
-        alignItems="center"
-        gap={8}
-        sx={{ padding: `12px 20px calc(env(safe-area-inset-bottom) + 12px)` }}
+      {/* 발 — 바닥글은 탭바 바로 위에 */}
+      {바닥글 ? (
+        <Typography
+          align="center"
+          sx={{
+            fontSize: 크기.바닥글,
+            color: 색.아주흐린글,
+            padding: `0 20px 10px`,
+            marginBottom: `calc(${크기.탭높이}px + env(safe-area-inset-bottom))`,
+          }}
+        >
+          {바닥글}
+        </Typography>
+      ) : null}
+
+      {/* ── 탭바 ── 늘 같은 자리, 늘 네 칸 */}
+      <nav
+        style={{
+          position: 'fixed',
+          left: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: 30,
+          display: 'grid',
+          gridTemplateColumns: 'repeat(4, 1fr)',
+          backgroundColor: 색.바탕,
+          borderTop: `1px solid ${색.선}`,
+          padding: `8px 4px calc(env(safe-area-inset-bottom) + 8px)`,
+        }}
       >
-        {바닥글 && (
-          <Typography align="center" sx={{ fontSize: 크기.바닥글, color: 색.아주흐린글 }}>
-            {바닥글}
-          </Typography>
-        )}
-        {/* 다음 한 걸음 하나만. 여러 개를 늘어놓지 않는다 */}
-        {다음 && (
-          <Link href={다음.주소} style={{ textDecoration: 'none' }}>
-            <Typography sx={{ fontSize: 크기.바닥다음, color: 색.흐린글 }}>{다음.이름} ›</Typography>
-          </Link>
-        )}
-      </FlexBox>
+        {탭들.map((t) => {
+          const 여기 = 탭 === t.이름;
+          return (
+            <Link
+              key={t.이름}
+              href={t.주소}
+              aria-current={여기 ? 'page' : undefined}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: 4,
+                padding: '2px 0',
+                textDecoration: 'none',
+                /* 🔴 12px 라벨이라 진한 쪽(색.주글)을 쓴다 — 대비 5.3:1 */
+                color: 여기 ? 색.주글 : 색.아주흐린글,
+              }}
+            >
+              <아이콘 이름={t.그림} 크기={크기.탭아이콘} />
+              <span
+                style={{
+                  fontSize: 크기.탭글씨,
+                  fontWeight: 여기 ? 700 : 500,
+                  letterSpacing: '-0.02em',
+                }}
+              >
+                {t.이름}
+              </span>
+            </Link>
+          );
+        })}
+      </nav>
     </FlexBox>
   );
 }
