@@ -85,3 +85,63 @@ export function 기준표확인() {
 
   return 답;
 }
+
+
+/* ② 바다 정보 — 수온 · 파고 · 바람
+ *
+ * 어디서 오나 — 공공데이터포털(국립해양조사원 조위관측소 · 해양관측부이).
+ * 🔴 앱이 직접 부르지 않는다. **중계를 거친다.**
+ *   ① 인증키를 앱에 넣으면 깃허브에 공개되고 누구나 가져다 쓴다. 키는 중계에만 둔다.
+ *   ② 브라우저가 공공데이터포털을 직접 부르면 막힌다(CORS).
+ * 중계 코드는 `docs/38_바다중계_0.1.js` 에 있다.
+ *
+ * 🔴 주소가 비어 있으면 아무것도 안 한다 — 중계를 아직 안 세웠을 때 화면이 깨지지 않는다.
+ * ⚠️ 환경값 이름은 영문이어야 한다 (64차에 겪었다 — 한글로 두면 셸이 못 읽는다).
+ */
+const 중계주소 = process.env.NEXT_PUBLIC_SEA_RELAY || '';
+
+export function 바다정보(해역) {
+  const [바다, 바다바꾸기] = useState(null);
+  const 인터넷 = 인터넷있나();
+
+  useEffect(() => {
+    /* 🔴 셋 중 하나라도 없으면 아무것도 그리지 않는다 (`37_두층구조` 규칙 ①) */
+    if (!중계주소 || !해역 || !인터넷) { 바다바꾸기(null); return undefined; }
+    let 살아있음 = true;
+    fetch(중계주소 + '?바다=' + encodeURIComponent(해역))
+      .then((r) => (r.ok ? r.json() : null))
+      .then((v) => {
+        if (!살아있음 || !v || v.잘못) return;
+        /* 🔴 수온도 파고도 없으면 빈 카드를 만들지 않는다 */
+        if (v.수온 == null && v.파고 == null && v.풍속 == null) return;
+        바다바꾸기(v);
+      })
+      .catch(() => {});
+    return () => { 살아있음 = false; };
+  }, [해역, 인터넷]);
+
+  return 바다;
+}
+
+/* 관측 시각을 사람 말로 — 🔴 「지금」이라고 말하지 않는다.
+ * 관측소마다 마지막 관측 시각이 다르고, 며칠 지난 값이 섞여 있을 수 있다.
+ * 우리는 **언제 잰 것인지 반드시 같이 말한다** (`PRD §0` 애매하면 애매하다고 말한다) */
+export function 잰때말(글) {
+  if (!글) return '';
+  const t = new Date(String(글).replace(' ', 'T'));
+  if (isNaN(t)) return '';
+  const 분 = Math.floor((Date.now() - t.getTime()) / 60000);
+  if (분 < 0) return '';
+  if (분 < 90) return 분 + '분 전';
+  const 시 = Math.floor(분 / 60);
+  if (시 < 36) return 시 + '시간 전';
+  return Math.floor(시 / 24) + '일 전';
+}
+
+/* 이 값을 보여줘도 되나 — 🔴 너무 오래된 것은 안 보여준다 */
+export function 쓸만한가(글, 최대시간 = 12) {
+  if (!글) return false;
+  const t = new Date(String(글).replace(' ', 'T'));
+  if (isNaN(t)) return false;
+  return (Date.now() - t.getTime()) / 3600000 <= 최대시간;
+}
