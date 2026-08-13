@@ -98,7 +98,18 @@ export function 기준표확인() {
  * 🔴 주소가 비어 있으면 아무것도 안 한다 — 중계를 아직 안 세웠을 때 화면이 깨지지 않는다.
  * ⚠️ 환경값 이름은 영문이어야 한다 (64차에 겪었다 — 한글로 두면 셸이 못 읽는다).
  */
-const 중계주소 = process.env.NEXT_PUBLIC_SEA_RELAY || '';
+/* 🔵 2026-08-13 (고침) — 중계 서버를 새로 가입해서 두는 대신, **이미 쓰고 있는 깃허브**를 쓴다.
+ *
+ * 깃허브가 15분마다 공공데이터포털에서 받아 `data` 가지에 `바다.json` 으로 올려둔다
+ * (`.github/workflows/바다.yml`). 앱은 그 파일을 그대로 읽는다.
+ *
+ * 🟢 이렇게 하면 —
+ *   ① **인증키가 깃허브 비밀값에만 있다.** 앱에는 안 들어간다
+ *   ② **브라우저가 막히지 않는다** — raw.githubusercontent.com 은 열려 있다(확인함)
+ *   ③ **새로 가입할 곳이 없다**
+ * 🔴 `main` 이 아니라 `data` 가지에 두는 이유 — `main` 에 올리면 배포가 다시 돌고
+ *    판 번호가 바뀌어 **사용자가 15분마다 4MB를 다시 받는다.** */
+const 자료주소 = 'https://raw.githubusercontent.com/ssum23/sea-charm/data/바다.json';
 
 export function 바다정보(해역) {
   const [바다, 바다바꾸기] = useState(null);
@@ -106,14 +117,16 @@ export function 바다정보(해역) {
 
   useEffect(() => {
     /* 🔴 셋 중 하나라도 없으면 아무것도 그리지 않는다 (`37_두층구조` 규칙 ①) */
-    if (!중계주소 || !해역 || !인터넷) { 바다바꾸기(null); return undefined; }
+    if (!해역 || !인터넷) { 바다바꾸기(null); return undefined; }
     let 살아있음 = true;
-    fetch(중계주소 + '?바다=' + encodeURIComponent(해역))
+    /* 🔴 저장분을 건너뛰고 새로 받는다 — 낡은 수온을 보여주면 안 된다 */
+    fetch(자료주소, { cache: 'no-store' })
       .then((r) => (r.ok ? r.json() : null))
-      .then((v) => {
-        if (!살아있음 || !v || v.잘못) return;
+      .then((전체) => {
+        if (!살아있음 || !전체 || !전체.바다) return;
+        const v = 전체.바다[해역];
         /* 🔴 수온도 파고도 없으면 빈 카드를 만들지 않는다 */
-        if (v.수온 == null && v.파고 == null && v.풍속 == null) return;
+        if (!v || (v.수온 == null && v.파고 == null && v.풍속 == null)) return;
         바다바꾸기(v);
       })
       .catch(() => {});

@@ -1,0 +1,62 @@
+# 바다 정보(수온·파고·바람)를 15분마다 받아서 `data` 가지에 올린다.
+#
+# 🔴 `main` 이 아니라 `data` 가지에 올리는 이유 —
+#    `main` 에 올리면 배포가 다시 돌고 판 번호가 바뀐다.
+#    그러면 사용자들이 15분마다 4MB를 다시 받는다. 그건 배 위에서 손해다.
+#
+# 🔵 앱은 이 파일을 raw.githubusercontent.com 에서 바로 읽는다. 중계 서버가 필요 없다.
+
+name: 바다정보
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'   # 15분마다 (세계표준시 기준이지만 간격이라 상관없다)
+  workflow_dispatch:          # 손으로도 돌릴 수 있게
+
+permissions:
+  contents: write
+
+concurrency:
+  group: 바다정보
+  cancel-in-progress: true
+
+jobs:
+  받기:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 공공데이터포털에서 받기
+        env:
+          DATA_GO_KR_KEY: ${{ secrets.DATA_GO_KR_KEY }}
+        run: node .github/scripts/바다받기.mjs
+
+      - name: data 가지에 올리기
+        run: |
+          if [ ! -f 바다자료/바다.json ]; then
+            echo "받은 게 없습니다 — 올리지 않습니다."
+            exit 0
+          fi
+          git config user.name "sea-charm bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          cp 바다자료/바다.json /tmp/바다.json
+          git fetch origin data --depth 1 || true
+          if git show-ref --verify --quiet refs/remotes/origin/data; then
+            git checkout -B data origin/data
+          else
+            git checkout --orphan data
+            git rm -rf . >/dev/null 2>&1 || true
+          fi
+          mkdir -p .
+          cp /tmp/바다.json 바다.json
+          git add -f 바다.json
+          if git diff --cached --quiet; then
+            echo "바뀐 게 없습니다."
+          else
+            git commit -m "바다 정보 갱신"
+            git push origin data --force
+          fi
