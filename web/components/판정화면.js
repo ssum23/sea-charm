@@ -421,19 +421,25 @@ function 어종칸({ 이름, 제철, 금어기중, 즐겨짐, 고름, 즐겨토�
         fullWidth
         onClick={() => 고름(이름)}
         sx={{
-          height: 'auto',
+          height: '100%',
           minHeight: 크기.어종칸높이,
           padding: '8px 4px',
           borderRadius: 크기.버튼둥글기,
         }}
       >
+        {/* 🔴 2026-08-13 — 세로 가운데를 맞춘다 (사장님 「박스 안 글씨 가운데 맞춤」).
+            칸마다 꼬리표(「제철」·「금어기?」)가 있는 것과 없는 것이 섞여 있어서,
+            한 줄에 키가 다른 칸이 나란히 서면 **글씨가 위로 쏠려 들쭉날쭉했다.**
+            `height:100%` + `justifyContent:center` 로 어느 칸이든 가운데 선다 */}
         <span
           style={{
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
+            justifyContent: 'center',
             gap: 2,
             width: '100%',
+            height: '100%',
             minWidth: 0,
           }}
         >

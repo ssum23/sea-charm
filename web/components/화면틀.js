@@ -50,6 +50,8 @@ export default function 화면틀({
   바닥글,
   /* 지금 어느 탭인가 — '홈' · '부적' · '판정' · '기록' */
   탭,
+  /* 제목 아래 한 줄로 합쳐 보여줄 말. 주면 큰 숫자 자리를 대신한다 */
+  요약,
   /* 🔵 옛 규칙에서 쓰던 것. 아직 넘겨주는 화면이 있어 받아만 두고 안 쓴다 */
   홈으로,
   다음,
@@ -75,14 +77,24 @@ export default function 화면틀({
           padding: `calc(env(safe-area-inset-top) + ${크기.여백}px) ${크기.여백}px ${크기.카드여백}px`,
         }}
       >
-        <Typography sx={{ fontSize: 크기.머리날짜, color: 색.흐린글 }}>
-          {날짜 ? 날짜말(날짜) : ' '}
-        </Typography>
+        {/* 🔴 2026-08-13 — 머리가 세 줄(날짜/제목/큰 숫자)이라 화면 위를 많이 먹었다
+            (사장님 「이거 있는 부분 좀 별로다」). `요약` 을 주면 **제목 아래 한 줄**로 합친다.
+            날짜도 그 줄에 같이 들어간다 — 두 줄이 한 줄이 된다 */}
+        {요약 ? null : (
+          <Typography sx={{ fontSize: 크기.머리날짜, color: 색.흐린글 }}>
+            {날짜 ? 날짜말(날짜) : ' '}
+          </Typography>
+        )}
         <Typography weight="bold" sx={{ fontSize: 크기.머리제목, letterSpacing: '-0.01em' }}>
           {제목}
         </Typography>
+        {요약 ? (
+          <Typography sx={{ fontSize: 크기.머리날짜, color: 색.흐린글, marginTop: 4 }}>
+            {(날짜 ? 날짜말(날짜) + ' · ' : '') + 요약}
+          </Typography>
+        ) : null}
 
-        {큰숫자 != null ? (
+        {요약 ? null : 큰숫자 != null ? (
           <FlexBox alignItems="baseline" gap={8} sx={{ marginTop: 8 }}>
             {큰숫자앞말 && (
               <Typography sx={{ fontSize: 크기.머리큰숫자말, color: 색.흐린글 }}>{큰숫자앞말}</Typography>
