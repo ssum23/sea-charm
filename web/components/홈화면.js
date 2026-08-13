@@ -39,6 +39,10 @@ const 테없는버튼 = {
 };
 
 const 버튼모양 = {
+  /* 🔴 2026-08-13 — 버튼 안 이모지(⚓🏠)를 그린 아이콘으로 바꿨다.
+     🔵 아이콘과 글자는 `<span>` 하나로 묶어 **가로로** 세운다.
+     버튼 부품 자체의 방향을 바꾸려 했더니 안 먹었다 —
+     부품이 속을 한 겹 더 싸고 있어서 우리 규칙이 거기까지 안 닿는다 */
   height: 크기.홈버튼높이,
   fontSize: 크기.홈버튼글씨,
   fontWeight: 700,
@@ -364,7 +368,9 @@ export default function 홈화면() {
               onClick={귀항하기}
               sx={{ ...버튼모양, backgroundColor: 색.됨, color: 색.흰 }}
             >
-              🏠 귀항
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                <아이콘 이름="집" 크기={22} /> 귀항
+              </span>
             </Button>
           ) : (
             <Button
@@ -375,7 +381,9 @@ export default function 홈화면() {
               onClick={출항하기}
               sx={버튼모양}
             >
-              ⚓ 출항
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                <아이콘 이름="닻" 크기={22} /> 출항
+              </span>
             </Button>
           )}
 

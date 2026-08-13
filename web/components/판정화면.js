@@ -465,7 +465,7 @@ function 어종칸({ 이름, 제철, 금어기중, 즐겨짐, 고름, 즐겨토�
               style={{
                 fontSize: 크기.판정꼬리표,
                 fontWeight: 700,
-                color: 제철 === '많이' ? 색.흐린글 : 색.됨,
+                color: 제철 === '많이' ? 색.흐린글 : 색.됨글,
                 lineHeight: 1.2,
               }}
             >
@@ -556,7 +556,7 @@ function 어종고르기({ 상단목록, 검색, 검색바꾸기, 검색결과, 
       <Typography sx={{ fontSize: 크기.판정작게, color: 색.아주흐린글, lineHeight: 1.65 }}>
         {제철들.length > 0 && (
           <>
-            지금 제철은 <b style={{ color: 색.됨 }}>{제철들.join(' · ')}</b>
+            지금 제철은 <b style={{ color: 색.됨글 }}>{제철들.join(' · ')}</b>
           </>
         )}
         {제철들.length > 0 && 금어기들.length > 0 && <br />}

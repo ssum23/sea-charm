@@ -186,6 +186,9 @@ export const 색 = {
   바탕뒤: 'var(--semantic-background-normal-alternative)',
   선: 'var(--semantic-line-solid-normal)',
   됨: 'var(--semantic-status-positive)',
+  /* 🔴 「됨」을 **작은 글씨로 쓸 때** — 흰 바탕 대비 5.9:1.
+     `됨`(#00A06B)은 버튼 바탕·큰 글씨용이라 작은 글씨로는 흐리다 */
+  됨글: '#00734F',
   주의: 'var(--semantic-status-cautionary)',
   안됨: 'var(--semantic-status-negative)',
   흰: 'var(--semantic-static-white)',
