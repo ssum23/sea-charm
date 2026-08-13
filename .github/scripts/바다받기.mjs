@@ -51,13 +51,35 @@ if (!키) { console.log('[바다] 인증키가 없습니다 — 건너뜁니다.
 const 밑 = 'https://apis.data.go.kr/1192136';
 const 공통 = `serviceKey=${encodeURIComponent(키)}&type=json&min=60&pageNo=1&numOfRows=24`;
 
-async function 불러오기(주소) {
+/* 🔴 2026-08-13 (고침) — 실패 이유를 **삼키지 않는다.**
+ *
+ * 처음에는 실패하면 조용히 null 을 돌려줬는데, 그 바람에 자료가 통째로 비었을 때
+ * **왜 비었는지 알 수가 없었다.** 오늘 자에서 배운 것과 같다 — 추측하지 말고 재야 한다.
+ * 이제 상태와 답의 앞부분을 로그에 찍는다. 실패해도 나머지는 계속 돈다. */
+async function 불러오기(주소, 이름) {
   try {
     const r = await fetch(주소);
-    if (!r.ok) return null;
-    return await r.json();
-  } catch (e) { return null; }
+    const 글 = await r.text();
+    if (!r.ok) {
+      console.log(`  [실패] ${이름} — HTTP ${r.status} ${글.slice(0, 160).replace(/\s+/g, ' ')}`);
+      return null;
+    }
+    try {
+      return JSON.parse(글);
+    } catch (e) {
+      /* 🔴 공공데이터포털은 오류일 때 json 을 달라 해도 xml 로 답한다.
+         그래서 「글자를 못 읽었다」가 아니라 **무슨 오류인지**를 찍어야 한다 */
+      console.log(`  [오류] ${이름} — ${글.slice(0, 220).replace(/\s+/g, ' ')}`);
+      return null;
+    }
+  } catch (e) {
+    console.log(`  [못감] ${이름} — ${e.message}`);
+    return null;
+  }
 }
+
+/* 잠깐 쉬기 — 한꺼번에 스무 개를 던지면 막힐 수 있다 */
+const 쉬기 = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /* 마지막 한 줄 = 가장 최근 관측값 */
 function 마지막(답) {
@@ -70,20 +92,30 @@ function 마지막(답) {
 const 결과 = { 만든때: new Date().toISOString(), 바다: {} };
 
 /* 여러 곳을 한꺼번에 물어보고 **가장 최근 것** 하나를 고른다 */
+/* 🔴 하나씩 차례로 부른다. 한꺼번에 던지면 막힌다.
+ *    이미 최근 것(세 시간 안쪽)을 찾으면 **거기서 멈춘다** — 부르는 횟수를 아낀다 */
 async function 가장최근(주소들) {
-  const 답들 = await Promise.all(주소들.map(([코드, 이름]) =>
-    불러오기(`${밑}/${코드.startsWith('DT_') ? 'surveyWaterTemp/GetSurveyWaterTempApiService' : 'twRecent/GetTWRecentApiService'}?${공통}&obsCode=${코드}`)
-      .then((답) => { const 줄 = 마지막(답); return 줄 ? { 줄, 이름 } : null; })
-  ));
-  const 쓸것 = 답들.filter(Boolean).sort((a, b) => 언제(b.줄.obsrvnDt) - 언제(a.줄.obsrvnDt));
-  return 쓸것[0] || null;
+  const 모은것 = [];
+  for (const [코드, 이름] of 주소들) {
+    const 길 = 코드.startsWith('DT_')
+      ? 'surveyWaterTemp/GetSurveyWaterTempApiService'
+      : 'twRecent/GetTWRecentApiService';
+    const 답 = await 불러오기(`${밑}/${길}?${공통}&obsCode=${코드}`, 이름);
+    const 줄 = 마지막(답);
+    if (줄) {
+      모은것.push({ 줄, 이름 });
+      if (Date.now() - 언제(줄.obsrvnDt) < 3 * 3600 * 1000) break;
+    }
+    await 쉬기(250);
+  }
+  모은것.sort((a, b) => 언제(b.줄.obsrvnDt) - 언제(a.줄.obsrvnDt));
+  return 모은것[0] || null;
 }
 
 for (const [바다, 곳] of Object.entries(관측소)) {
-  const [수온것, 부이것] = await Promise.all([
-    가장최근(곳.수온),
-    가장최근(곳.부이),
-  ]);
+  console.log(`[바다] ── ${바다} ──`);
+  const 수온것 = await 가장최근(곳.수온);
+  const 부이것 = await 가장최근(곳.부이);
 
   /* 🔴 값이 없으면 그 칸을 아예 안 만든다. 「-」나 0 을 지어내지 않는다 */
   const 한바다 = {};
