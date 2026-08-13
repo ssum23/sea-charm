@@ -16,6 +16,7 @@ import { 이름과짧게 } from '@/lib/물때말';
 import 화면틀 from './화면틀';
 import 도장찍기, { 넘김키 } from './도장찍기';
 import 준비물 from './준비물';
+import { 기준표확인 } from '@/lib/바깥층';
 
 /* 테두리 없는 버튼 — 「출항 기록 취소」·「가족에게 알리기」에 쓴다.
    홈에 네모난 버튼이 줄줄이 쌓이면 무엇이 중요한지 안 보인다.
@@ -69,6 +70,10 @@ export default function 홈화면() {
       .catch(() => { if (살아있음) 앱판바꾸기('못 읽음'); });
     return () => { 살아있음 = false; };
   }, []);
+
+  /* 🔵 2026-08-13 — 바깥층(2층). 인터넷이 있을 때만 값이 들어온다.
+     없으면 `null` 이고, 아래에서 아무것도 그리지 않는다 (`37_두층구조` 규칙 ①) */
+  const 바깥소식 = 기준표확인();
 
   /* 서버에서 미리 그릴 때와 브라우저에서 그릴 때가 달라지면 안 되므로
      기록은 브라우저에 올라온 뒤에 읽는다 */
@@ -178,6 +183,37 @@ export default function 홈화면() {
           />
         ) : (
         <>
+        {/* 🔵 바깥층 알림 — 인터넷이 있고, 알릴 것이 실제로 있을 때만 뜬다.
+            🔴 없으면 자리를 아예 차지하지 않는다. 빈 네모도 도는 표시도 남기지 않는다 */}
+        {바깥소식 && (
+          <Card
+            sx={{
+              backgroundColor: 바깥소식.종류 === '기준표' ? 색.바탕 : 'transparent',
+              border: 바깥소식.종류 === '기준표' ? `2px solid ${색.안됨}` : `1px solid ${색.선}`,
+              borderRadius: 14,
+              padding: '11px 13px',
+              marginBottom: 10,
+            }}
+          >
+            {바깥소식.종류 === '기준표' ? (
+              <>
+                <Typography sx={{ fontSize: 14, fontWeight: 700, color: 색.안됨, lineHeight: 1.5 }}>
+                  기준표가 새로 나왔어요
+                </Typography>
+                <Typography sx={{ fontSize: 12.5, color: 색.흐린글, lineHeight: 1.65, marginTop: 3 }}>
+                  이 앱에 든 것은 {바깥소식.내것} 기준입니다. 새로 나온 것은 {바깥소식.새것} 기준이에요.
+                  <br />
+                  인터넷이 되는 곳에서 앱을 한 번 닫았다 열면 새로 받습니다.
+                </Typography>
+              </>
+            ) : (
+              <Typography sx={{ fontSize: 12.5, color: 색.흐린글, lineHeight: 1.6 }}>
+                새 판이 나왔어요{바깥소식.말 ? ' — ' + 바깥소식.말 : ''}. 앱을 한 번 닫았다 열면 받습니다.
+              </Typography>
+            )}
+          </Card>
+        )}
+
         {/* 지금 어디에 있는가 */}
         <Card
           sx={{
