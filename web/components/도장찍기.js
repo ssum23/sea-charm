@@ -491,6 +491,7 @@ function 자자리(자cv, 사진cv, 눈금, 배, 그린길이) {
   return {
     width: 자cv.width * 배,
     height: 자cv.height * 배,
+    늘임배,
     transform: `translate(${왼}px, ${위}px) rotate(${눈금.각도}deg)${늘임}`,
   };
 }
@@ -870,7 +871,7 @@ export default function 도장찍기({ 닫기, 판정 }) {
    *   알림수   : 손가락이 움직였다고 알려온 횟수 (초당 몇 번인가)
    *   자다시   : 자 그림을 통째로 다시 만든 횟수 (적어야 좋다)
    * 이 셋만 있으면 원인이 갈린다. */
-  const 셈 = useRef({ 그린장수: 0, 알림수: 0, 자다시: 0 });
+  const 셈 = useRef({ 그린장수: 0, 알림수: 0, 자다시: 0, 비율: 0, 늘임: 1 });
   const [재는판, 재는판넣기] = useState(null);
 
   function 점px(e) {
@@ -895,7 +896,7 @@ export default function 도장찍기({ 닫기, 판정 }) {
     if (고른종류 !== 'B') return undefined;
     const 아이디 = setInterval(() => {
       const c = 셈.current;
-      재는판넣기({ 장: c.그린장수, 알림: c.알림수, 자: c.자다시 });
+      재는판넣기({ 장: c.그린장수, 알림: c.알림수, 자: c.자다시, 비율: c.비율, 늘임: c.늘임 });
       c.그린장수 = 0;
       c.알림수 = 0;
     }, 1000);
@@ -943,6 +944,10 @@ export default function 도장찍기({ 닫기, 판정 }) {
     const 사진cv = 캔버스.current;
     const 자리 = 자자리(자cv, 사진cv, 눈금손.current, 비율.current, 그린길이.current);
     if (!자리) return;
+    /* 🔵 2026-08-13 — 「손만큼 안 따라온다」를 재기 위한 숫자.
+       비율 = 화면에 보이는 크기 ÷ 그림 크기. 이게 틀리면 자가 손보다 덜/더 움직인다 */
+    셈.current.비율 = 비율.current;
+    셈.current.늘임 = 자리.늘임배;
     /* 🔴 크기는 **정말 달라졌을 때만** 넣는다. 같은 값이라도 넣으면 브라우저가 다시 잰다 */
     if (넣어둔크기.current.w !== 자리.width || 넣어둔크기.current.h !== 자리.height) {
       넣어둔크기.current = { w: 자리.width, h: 자리.height };
@@ -1157,6 +1162,8 @@ export default function 도장찍기({ 닫기, 판정 }) {
                   }}
                 >
                   {재는판.장}장/초 · 알림 {재는판.알림}/초 · 자 {재는판.자}번
+                  <br />
+                  따라옴 {Number(재는판.비율 || 0).toFixed(3)} · 늘임 {Number(재는판.늘임 || 1).toFixed(2)}
                 </div>
               )}
             </div>
