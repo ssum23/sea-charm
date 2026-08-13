@@ -661,6 +661,7 @@ export default function 도장찍기({ 닫기, 판정 }) {
     if (그릴차례.current) cancelAnimationFrame(그릴차례.current);
     그릴차례.current = requestAnimationFrame(() => {
       그릴차례.current = 0;
+      셈.current.그린장수 += 1;
       const cv = 캔버스.current;
       if (!cv) return;
       try {
@@ -844,6 +845,21 @@ export default function 도장찍기({ 닫기, 판정 }) {
   /* 끌기 시작할 때 한 번 재두는 캔버스의 화면 자리 */
   const 잰사각형 = useRef(null);
 
+  /* 🔵 2026-08-13 — 폰에서 왜 버벅거리는지 **재본다**
+   *
+   * 자 버벅거림을 여섯 번 고쳤는데 여섯 번 다 부족했다. 컴퓨터에서는 22ms 로 빠르다.
+   * 🔴 못 고친 이유는 하나다 — **폰에서 무슨 일이 벌어지는지 볼 수가 없었다.**
+   * 월요일에 「폰에 새 판이 들어왔나」를 하루 종일 못 풀다가 **화면에 판 번호를 찍자 바로 풀렸다.**
+   * 같은 방법을 쓴다. 추측 대신 **숫자를 화면에 찍고 사람이 읽는다.**
+   *
+   * 세는 것 셋 —
+   *   그린장수 : 화면 한 장을 실제로 그린 횟수 (초당 몇 장인가)
+   *   알림수   : 손가락이 움직였다고 알려온 횟수 (초당 몇 번인가)
+   *   자다시   : 자 그림을 통째로 다시 만든 횟수 (적어야 좋다)
+   * 이 셋만 있으면 원인이 갈린다. */
+  const 셈 = useRef({ 그린장수: 0, 알림수: 0, 자다시: 0 });
+  const [재는판, 재는판넣기] = useState(null);
+
   function 점px(e) {
     const cv = 캔버스.current;
     const p = 자리계산(e, 잰사각형.current);
@@ -861,6 +877,18 @@ export default function 도장찍기({ 닫기, 판정 }) {
     };
   }
 
+  /* 🔵 1초에 한 번만 숫자를 화면에 올린다 — 재는 일이 무거우면 재는 뜻이 없다 */
+  useEffect(() => {
+    if (고른종류 !== 'B') return undefined;
+    const 아이디 = setInterval(() => {
+      const c = 셈.current;
+      재는판넣기({ 장: c.그린장수, 알림: c.알림수, 자: c.자다시 });
+      c.그린장수 = 0;
+      c.알림수 = 0;
+    }, 1000);
+    return () => clearInterval(아이디);
+  }, [고른종류]);
+
   /* 화면이 바뀌면(가로세로 돌리기·글씨 크기 변경) 비율을 다시 잰다 */
   useEffect(() => {
     function 다시재기() { if (비율재기()) 자리잡기(); }
@@ -877,6 +905,7 @@ export default function 도장찍기({ 닫기, 판정 }) {
     const 자cv = 자캔버스.current;
     const 사진cv = 캔버스.current;
     if (!자cv || !사진cv || !사진cv.width) return;
+    셈.current.자다시 += 1;
     자캔버스그리기(자cv, 사진cv, 눈금손.current, 빠르게);
     비율재기();
     자리잡기();
@@ -950,6 +979,7 @@ export default function 도장찍기({ 닫기, 판정 }) {
   function 끄는동안(e) {
     if (고른종류 !== 'B') return;
     if (!누른손가락.current.has(e.pointerId)) return;
+    셈.current.알림수 += 1;
     const p = 점px(e);
     if (!p) return;
     누른손가락.current.set(e.pointerId, p);
@@ -1097,6 +1127,28 @@ export default function 도장찍기({ 닫기, 판정 }) {
                   willChange: 'transform',
                 }}
               />
+              {/* 🔵 2026-08-13 — 폰에서 무슨 일이 벌어지는지 눈으로 보는 숫자.
+                  원인이 잡히면 이 줄은 지운다. 자를 고를 때만 뜬다. */}
+              {고른종류 === 'B' && 재는판 && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    left: 6,
+                    top: 6,
+                    padding: '3px 7px',
+                    borderRadius: 8,
+                    background: 'rgba(0,0,0,0.62)',
+                    color: '#fff',
+                    fontSize: 11,
+                    lineHeight: 1.35,
+                    fontFamily: 글꼴줄,
+                    pointerEvents: 'none',
+                    letterSpacing: '-0.01em',
+                  }}
+                >
+                  {재는판.장}장/초 · 알림 {재는판.알림}/초 · 자 {재는판.자}번
+                </div>
+              )}
             </div>
 
             {그림오류 && (
