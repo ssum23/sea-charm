@@ -17,11 +17,16 @@ permissions:
   contents: write
 
 concurrency:
-  group: 바다정보
+  group: sea-info
   cancel-in-progress: true
 
 jobs:
-  받기:
+  # ⚠️ 작업의 이름표(sea)는 깃허브가 **영문만** 받는다.
+  #    한글로 두면 워크플로 파일 자체를 못 읽어 `-1s` 로 바로 실패한다.
+  #    (2026-08-06 배포.yml 에서 겪었고, 2026-08-13 여기서 또 겪었다)
+  #    화면에 보이는 이름은 아래 name: 이다.
+  sea:
+    name: 바다 받기
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
