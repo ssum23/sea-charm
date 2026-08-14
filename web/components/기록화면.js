@@ -342,7 +342,7 @@ export default function 기록화면() {
             <Typography sx={{ fontSize: 크기.기록본문, color: 색.아주흐린글, lineHeight: 1.75 }}>
               아직 판정한 물고기가 없습니다.
               <br />
-              「이거 가져가도 되나요」에서 한 마리 확인하면 여기 쌓입니다.
+              아래 「물어보기」에서 한 마리 확인하면 여기 쌓입니다.
             </Typography>
           </FlexBox>
           <Button
@@ -515,9 +515,8 @@ export default function 기록화면() {
             <Typography weight="bold" sx={{ fontSize: 크기.기록보조, color: 색.흐린글 }}>
               내보내기
             </Typography>
-            <Typography sx={{ fontSize: 크기.기록작게, color: 색.아주흐린글, lineHeight: 1.7 }}>
-              표 계산 프로그램에서 열 수 있는 형태로 저장합니다.
-            </Typography>
+            {/* 🔴 2026-08-14 — 「표 계산 프로그램에서 열 수 있는 형태로 저장합니다」를 뺐다.
+                「내보내기」면 충분하고, 무엇으로 나오는지는 눌러보면 안다 */}
             {/* 버튼 두 개를 늘 띄워두면 「무엇을 눌러야 하나」가 된다.
                 「내보내기」 하나만 두고, 누른 뒤에 방법을 고르게 한다 */}
             {!내보내기펼침 ? (

@@ -749,9 +749,8 @@ export default function 도장찍기({ 닫기, 판정 }) {
                   );
                 })}
               </div>
-              <Typography align="center" sx={{ fontSize: 크기.도장작게, color: 색.아주흐린글, marginTop: -4 }}>
-                {종류.find((t) => t.값 === 고른종류)?.설명}
-              </Typography>
+              {/* 🔴 2026-08-14 — 세그먼트 밑의 설명 한 줄을 뺐다.
+                  「정보 얹기」·「길이 재기」라는 이름이 이미 그 말을 하고 있다 */}
             </>
           )}
 
@@ -835,13 +834,10 @@ export default function 도장찍기({ 닫기, 판정 }) {
               ) : (
                 <FlexBox flexDirection="column" gap={크기.사이}>
                   <Typography sx={{ fontSize: 크기.도장작게, color: 색.주의, lineHeight: 1.7 }}>
-                    기준물과 물고기가 <b>같은 바닥에 놓여 있어야</b> 맞아요.
-                    {/* 🔴 2026-08-10 (사장님 물음 「기준물이 없으면?」)
-                        기준물을 안 찍으면 길이가 아예 안 나온다. 점 두 개만 남는다.
-                        그걸 다 찍고 나서 알면 늦다 — 미리 알려준다. */}
-                    <br />
-                    사진에 <b>기준물이 안 나왔으면 길이는 안 나옵니다.</b> 점만 남습니다.
-                    다음부터는 <b>손이나 지갑을 물고기 옆에 같이</b> 찍어주세요.
+                    {/* 🔴 2026-08-14 — 세 줄이던 것을 한 줄로 줄였다 (사장님 「굳이 필요 없는
+                        정보는 넣지 마」). 남긴 까닭은 하나 — **다 찍고 나서 알면 늦기 때문**이다.
+                        기준물이 사진에 없으면 점만 남고 길이가 안 나온다 */}
+                    기준물이 <b>사진에 같이, 같은 바닥에</b> 있어야 길이가 나와요
                   </Typography>
 
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 7 }}>
@@ -945,10 +941,8 @@ export default function 도장찍기({ 닫기, 판정 }) {
             <Typography weight="bold" sx={{ fontSize: 크기.도장보조, color: 색.흐린글 }}>
               도장에 넣을 것
             </Typography>
-            <Typography sx={{ fontSize: 크기.도장작게, color: 색.아주흐린글, lineHeight: 1.7 }}>
-              비워도 도장은 찍힙니다.{' '}
-              <b style={{ color: 색.흐린글 }}>상세 주소는 넣지 않습니다 — 포인트는 그 사람 것입니다.</b>
-            </Typography>
+            {/* 🔴 2026-08-14 — 「비워도 찍힙니다 · 상세 주소는 안 넣습니다」를 뺐다.
+                비워도 되는 것은 **비워보면 안다.** 상세 주소는 **우리가 안 받으면 그만**이다 */}
 
             <FlexBox flexWrap="wrap" gap={6}>
               {(메타.시도목록 || []).map((s) => {
@@ -1002,12 +996,10 @@ export default function 도장찍기({ 닫기, 판정 }) {
                   {[정보.판정.제목, 정보.판정.짜, 정보.판정.결과].filter(Boolean).join(' · ')}
                 </Typography>
               </FlexBox>
-            ) : (
-              <Typography sx={{ fontSize: 크기.도장작게, color: 색.아주흐린글, lineHeight: 1.7 }}>
-                판정을 거치지 않고 찍었으니 <b style={{ color: 색.흐린글 }}>판정 칸은 넣지 않습니다.</b>{' '}
-                빈칸을 남기면 「가져가도 됨」으로 읽힐 수 있어서예요.
-              </Typography>
-            )}
+            ) : null}
+            {/* 🔴 2026-08-14 — 판정이 없을 때 띄우던 안내문을 뺐다 (사장님 「굳이 필요 없는
+                정보는 넣지 마」). **우리가 왜 그렇게 만들었는지는 쓰는 사람이 알 필요가 없다.**
+                🔴 판정 칸을 안 그리는 규칙 자체는 그대로다 — `그리기A` 의 주석에 근거가 있다 */}
           </Card>
           )}
         </>
