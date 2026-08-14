@@ -112,8 +112,16 @@ async function 불러오기(주소, 이름) {
       return null;
     }
   } catch (e) {
-    실패까닭 = `못 감 — ${e.message}`;
-    console.log(`  [못감] ${이름} — ${e.message}`);
+    /* 🔴 2026-08-14 (또 고침) — `e.message` 는 늘 「fetch failed」 다.
+     *
+     * 오늘 그 글자만 보고는 **왜 못 갔는지 알 수가 없었다** —
+     * 이름을 못 찾은 건지(ENOTFOUND), 문을 안 열어준 건지(ECONNREFUSED),
+     * 기다리다 지친 건지(ETIMEDOUT), 인증서가 틀린 건지.
+     * 🔵 **진짜 이유는 `e.cause` 에 한 겹 더 들어 있다.** 그걸 안 적으면 진단이 또 반쪽이다.
+     * (오늘 세 번째로 「반쯤 적어놓고 못 읽는」 일을 겪었다) */
+    const 속 = e && e.cause ? ` (${e.cause.code || ''} ${e.cause.message || e.cause})`.trim() : '';
+    실패까닭 = `못 감 — ${e.message}${속 ? ' · ' + 속 : ''}`;
+    console.log(`  [못감] ${이름} — ${e.message}${속}`);
     return null;
   }
 }
