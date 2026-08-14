@@ -30,6 +30,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Card, FlexBox, TextField, Typography } from '@montage-ui/core';
 import { 크기, 색, 글꼴줄 } from './크기';
+import 아이콘 from './아이콘';
 import { judge, 메타 } from '@/lib/판정엔진';
 import { 읽기, 쓰기 } from '@/lib/저장소';
 
@@ -49,8 +50,10 @@ const 인주 = '#9c3524';
 
 /* 도장 종류 */
 const 종류 = [
-  { 값: 'A', 이름: '인증 배지', 설명: '사진 아래에 날짜·장소·판정을 얹습니다' },
-  { 값: 'C', 이름: '두 점 재기', 설명: '기준물과 물고기를 눌러 길이를 어림합니다' },
+  /* 🔴 2026-08-14 — 이름을 사람 말로 바꿨다.
+     「인증 배지」·「두 점 재기」는 만든 사람의 말이지 쓰는 사람의 말이 아니다 */
+  { 값: 'A', 이름: '정보 얹기', 설명: '사진 아래에 날짜·장소·판정을 얹습니다' },
+  { 값: 'C', 이름: '길이 재기', 설명: '기준물과 물고기를 눌러 길이를 어림합니다' },
 ];
 
 /* 기준물 — 낚시하는 사람이 사진에 이미 넣고 있는 것들 (10_사진구도 실측: 손 9장·그립 7장) */
@@ -353,6 +356,9 @@ export default function 도장찍기({ 닫기, 판정 }) {
   const [배, 배바꾸기] = useState('');
   const [메모, 메모바꾸기] = useState('');
   const [저장됨, 저장됨바꾸기] = useState('');
+  /* 🔴 2026-08-14 — 저장이 끝났는지. 전에는 **버튼 글자만** 「저장했습니다」로 바뀌어
+     됐는지 안 됐는지 잘 안 보였다. 이제 화면 하나가 통째로 바뀐다 */
+  const [저장끝, 저장끝바꾸기] = useState(false);
 
   /* C — 두 점 재기 */
   /* 🔴 2026-08-07 — 「기준물 지우기가 잘 안 된다」(사장님)
@@ -407,6 +413,7 @@ export default function 도장찍기({ 닫기, 판정 }) {
     무엇을찍나바꾸기('물고기');
     기준칸열림바꾸기(false);
     저장됨바꾸기('');
+    저장끝바꾸기(false);
   }
 
   const 어림 = useMemo(() => {
@@ -518,7 +525,8 @@ export default function 도장찍기({ 닫기, 판정 }) {
         )}_${두자리(이제.getHours())}${두자리(이제.getMinutes())}.jpg`;
         a.click();
         setTimeout(() => URL.revokeObjectURL(a.href), 4000);
-        저장됨바꾸기('저장했습니다');
+        저장됨바꾸기('사진첩에 저장했어요');
+        저장끝바꾸기(true);
           },
       'image/jpeg',
       0.92,
@@ -536,6 +544,7 @@ export default function 도장찍기({ 닫기, 판정 }) {
           try {
             await navigator.share({ files: [f] });
             저장됨바꾸기('보냈습니다');
+            저장끝바꾸기(true);
           } catch (e) {
             /* 사용자가 그만둔 것 — 아무 말도 하지 않는다 */
           }
@@ -613,12 +622,27 @@ export default function 도장찍기({ 닫기, 판정 }) {
 
 
 
+  /* 지금 어느 걸음인가 — 위 막대 오른쪽에 적는다 */
+  const 걸음이름 = !사진 || 저장끝 ? '' : 고른종류 === 'C' ? '길이 재기' : '얹을 것 고르기';
+
+  /* 🔴 2026-08-14 전면 개편 — 네 걸음으로 갈랐다 (사장님 지시)
+   *
+   *   전                                   지금
+   *   ────────────────────────            ────────────────────────
+   *   사진을 고르면 카드 **네 장**이        ① 사진 고르기
+   *   한 화면에 쌓였다.                     ② 정보 얹기
+   *   저장 단추를 보려면 **끝까지 내려야**   ③ 길이 재기
+   *   했다.                                ④ 저장한 뒤
+   *
+   * 🔴 저장 단추를 **아래에 고정**한다 — 배 위에서 한 손으로 쓰는 화면이다.
+   * 🔴 「닫기」는 **왼쪽 위 한 자리**로 올렸다. 전에는 「그만두기」(첫 카드)와
+   *    「닫기」(마지막 카드)가 따로 있었다 — 같은 일을 하는 길이 둘이면 눈이 헤맨다.
+   * 🔴 화면 전체를 덮는다(탭바까지). 사진을 다루는 동안에는 다른 데로 갈 일이 없고,
+   *    아래 단추와 탭바가 위아래로 겹치면 잘못 누른다.
+   */
   return (
-    <FlexBox flexDirection="column" gap={크기.사이}>
-      {/* 🔴 2026-08-13 고침 — 숨은 파일칸은 **여기 한 곳에만** 둔다.
-          전에는 첫 카드와 내보내기 카드에 각각 하나씩, **같은 `파일칸` 이름표**를 달고
-          있었다. 지금은 둘 중 하나만 그려져서 굴러갔지만, 언젠가 둘이 같이 그려지면
-          나중 것이 이름표를 덮어써서 「사진 찍기」가 죽는다. 하나면 그럴 일이 없다. */}
+    <div style={덮개}>
+      {/* 🔴 숨은 파일칸은 **여기 한 곳에만** 둔다. 전에는 두 곳에 같은 이름표로 있었다 */}
       <input
         ref={파일칸}
         type="file"
@@ -627,41 +651,59 @@ export default function 도장찍기({ 닫기, 판정 }) {
         onChange={사진골랐을때}
         style={{ display: 'none' }}
       />
-      {/* ── 1. 사진 넣기 ── */}
+
+      {/* ── 위 막대 ── 닫기는 늘 같은 자리 */}
+      <div style={위막대}>
+        <button type="button" onClick={닫기} aria-label="닫기" style={닫기단추}>
+          <아이콘 이름="닫기" 크기={20} 굵기={2} />
+        </button>
+        <Typography weight="bold" sx={{ fontSize: 크기.도장제목 }}>
+          바다 도장
+        </Typography>
+        {걸음이름 ? (
+          <Typography sx={{ marginLeft: 'auto', fontSize: 크기.도장작게, color: 색.아주흐린글 }}>
+            {걸음이름}
+          </Typography>
+        ) : null}
+      </div>
+
+      {/* ── 본문 ── */}
+      <div style={본문}>
       {!사진 ? (
-        <Card sx={카드}>
-          <Typography weight="bold" sx={{ fontSize: 크기.도장제목 }}>
-            바다 도장
+        /* ── ① 사진 고르기 ── */
+        <div style={빈자리}>
+          <span style={{ color: 색.아주흐린글 }}>
+            <아이콘 이름="사진" 크기={46} 굵기={1.5} />
+          </span>
+          <Typography weight="bold" sx={{ fontSize: 크기.도장묶음, marginTop: 14 }}>
+            물고기를 찍어주세요
           </Typography>
-          <Typography sx={{ fontSize: 크기.도장보조, color: 색.흐린글, lineHeight: 1.7 }}>
-            물고기를 찍으면 날짜와 장소등 정보를 얹어 한 장으로 만들어 드려요.
+          <Typography align="center" sx={{ fontSize: 크기.도장보조, color: 색.흐린글, lineHeight: 1.7, marginTop: 8 }}>
+            날짜와 장소를 얹어 한 장으로 만들어 드려요.
             <br />
-            <b style={{ color: 색.글 }}>사진은 이 앱에 저장되지 않습니다.</b> 
+            <b style={{ color: 색.글 }}>사진은 이 앱에 저장되지 않습니다.</b>
           </Typography>
-          <Button
-            variant="solid"
-            color="primary"
-            size="large"
-            fullWidth
-            onClick={() => 파일칸.current?.click()}
-            sx={버튼}
-          >
-            사진 찍기
-          </Button>
-          <Button
-            variant="outlined"
-            color="assistive"
-            size="large"
-            fullWidth
-            onClick={닫기}
-            sx={{ ...버튼, fontSize: 크기.도장본문, fontWeight: 500, color: 색.흐린글 }}
-          >
-            그만두기
-          </Button>
-        </Card>
+        </div>
       ) : (
         <>
-          {/* ── 2. 미리보기 ── */}
+          {/* ── ④ 저장한 뒤 — 됐다는 것을 화면으로 말한다 ── */}
+          {저장끝 && (
+            <FlexBox flexDirection="column" alignItems="center" gap={6} sx={{ padding: '20px 0 14px' }}>
+              <div style={동그라미}>
+                <아이콘 이름="체크" 크기={30} 굵기={2.6} />
+              </div>
+              <Typography weight="bold" sx={{ fontSize: 크기.도장묶음, marginTop: 8 }}>
+                {저장됨 || '사진첩에 저장했어요'}
+              </Typography>
+              <Typography align="center" sx={{ fontSize: 크기.도장보조, color: 색.흐린글, lineHeight: 1.7 }}>
+                이 앱에는 남지 않습니다.
+                <br />
+                보내실 곳이 있으면 사진첩에서 꺼내 쓰세요.
+              </Typography>
+            </FlexBox>
+          )}
+
+          {/* ── 미리보기 ── */}
           <Card sx={{ ...카드, padding: 12, gap: 10 }}>
             <div
               ref={미리보기}
@@ -685,61 +727,71 @@ export default function 도장찍기({ 닫기, 판정 }) {
               </div>
             )}
 
-            {/* 종류 고르기 */}
-            <div style={{ display: 'grid', gridTemplateColumns: `repeat(${종류.length}, 1fr)`, gap: 7 }}>
-              {종류.map((t) => {
-                const 켜짐 = 고른종류 === t.값;
-                return (
-                  <button
-                    key={t.값}
-                    type="button"
-                    onClick={() => 고른종류바꾸기(t.값)}
-                    style={{
-                      padding: '10px 4px',
-                      borderRadius: 10,
-                      fontFamily: 'inherit',
-                      fontSize: 크기.도장설명,
-                      fontWeight: 켜짐 ? 700 : 500,
-                      cursor: 'pointer',
-                      border: `1px solid ${켜짐 ? 'transparent' : 색.선}`,
-                      background: 켜짐 ? 색.반전바탕 : 'transparent',
-                      color: 켜짐 ? 색.반전글 : 색.흐린글,
-                    }}
-                  >
-                    {t.이름}
-                  </button>
-                );
-              })}
-            </div>
-            <Typography sx={{ fontSize: 크기.도장작게, color: 색.아주흐린글, lineHeight: 1.6 }}>
-              {종류.find((t) => t.값 === 고른종류)?.설명}
-            </Typography>
           </Card>
 
-          {/* ── 3. 종류별 조작 ── */}
-          {고른종류 === 'C' && (
-            <Card sx={카드}>
-              <Typography weight="bold" sx={{ fontSize: 크기.도장보조, color: 색.흐린글 }}>
-                두 점 재기
+          {/* ── 무엇을 얹을까 — 두 칸 세그먼트 ──
+              🔴 2026-08-14 — 전에는 3칸 격자에 항목이 둘이라 **단추가 왼쪽 2/3에 몰려** 있었다
+              (눈금 자국 B 를 내리면서 칸 수를 안 고쳤다). 이제 둘이 반씩 나눠 갖는다 */}
+          {!저장끝 && (
+            <>
+              <div style={세그}>
+                {종류.map((t) => {
+                  const 켜짐 = 고른종류 === t.값;
+                  return (
+                    <button
+                      key={t.값}
+                      type="button"
+                      onClick={() => 고른종류바꾸기(t.값)}
+                      style={{ ...세그칸, ...(켜짐 ? 세그켜짐 : null) }}
+                    >
+                      {t.이름}
+                    </button>
+                  );
+                })}
+              </div>
+              <Typography align="center" sx={{ fontSize: 크기.도장작게, color: 색.아주흐린글, marginTop: -4 }}>
+                {종류.find((t) => t.값 === 고른종류)?.설명}
               </Typography>
+            </>
+          )}
 
-              {/* ── ① 물고기 먼저 ──────────────────────────────
-                  🔴 2026-08-07 — 순서를 뒤집었다 (사장님 지적).
+          {/* ── ③ 길이 재기 ── */}
+          {!저장끝 && 고른종류 === 'C' && (
+            <Card sx={카드}>
+              {/* ── 걸음 목록 ──────────────────────────────
+                  🔴 2026-08-14 — 전에는 「① 물고기의 머리와 꼬리를 눌러주세요 (0/2)」
+                  같은 **글 두 줄**이었다. 몇 개 찍었는지는 알려주지만
+                  **지금 무엇을 눌러야 하는지**가 안 보였다.
+                  이제 끝난 걸음에는 체크가 붙고, 할 차례인 걸음만 진해진다.
+
+                  🔴 2026-08-07 — 물고기가 먼저다 (사장님 지적).
                   사람은 **물고기를 재려고** 이 화면에 들어온다. 재려는 것을 먼저 찍는다.
                   기준물은 「그래서 몇 cm냐」를 알기 위한 자일 뿐이라 나중이다. */}
-              <FlexBox flexDirection="column" gap={4}>
-                <Typography sx={{ fontSize: 크기.도장보조, color: 색.글, lineHeight: 1.7 }}>
-                  <b>① 물고기</b>의 머리와 꼬리를 눌러주세요{' '}
-                  <span style={{ color: 색.흐린글 }}>({물고기점.length}/2)</span>
-                </Typography>
-                <Typography sx={{ fontSize: 크기.도장보조, color: 물고기점.length === 2 ? 색.글 : 색.아주흐린글, lineHeight: 1.7 }}>
-                  <b>② 기준이 될 물건</b>의 양 끝을 눌러주세요{' '}
-                  <span style={{ color: 색.흐린글 }}>({기준점.length}/2)</span>
-                </Typography>
+              <FlexBox flexDirection="column" gap={0}>
+                <걸음
+                  번호={1}
+                  말="물고기의 머리와 꼬리"
+                  셈={`${물고기점.length} / 2`}
+                  끝났나={물고기점.length === 2}
+                  차례인가={물고기점.length < 2}
+                />
+                <걸음
+                  번호={2}
+                  말="기준이 될 물건의 양 끝"
+                  셈={`${기준점.length} / 2`}
+                  끝났나={기준점.length === 2}
+                  차례인가={물고기점.length === 2 && 기준점.length < 2}
+                />
                 {어림 != null && (
-                  <Typography weight="bold" sx={{ fontSize: 크기.도장묶음, marginTop: 2 }}>
-                    약 {어림}cm
-                  </Typography>
+                  <FlexBox flexDirection="column" alignItems="center" gap={2} sx={{ ...결과칸 }}>
+                    <Typography weight="bold" sx={{ fontSize: 크기.도장버튼글씨, color: 색.주 }}>
+                      약 {어림}cm
+                    </Typography>
+                    {/* 🔴 소수점을 쓰지 않는다. 실측이 아니라 어림이다 */}
+                    <Typography sx={{ fontSize: 크기.도장작게, color: 색.흐린글 }}>
+                      어림입니다. 실측이 아니에요
+                    </Typography>
+                  </FlexBox>
                 )}
                 {(기준점.length > 0 || 물고기점.length > 0) && (
                   <button
@@ -865,7 +917,9 @@ export default function 도장찍기({ 닫기, 판정 }) {
                 </FlexBox>
               )}
 
-              <FlexBox gap={8}>
+              {/* 🔴 「이 길이로 판정해볼까요」는 **아래 고정 단추**로 옮겼다.
+                  화면에서 제일 중요한 한 걸음이라 늘 같은 자리에 있어야 한다 */}
+              {(기준점.length > 0 || 물고기점.length > 0) && (
                 <Button
                   variant="outlined"
                   color="assistive"
@@ -879,29 +933,14 @@ export default function 도장찍기({ 닫기, 판정 }) {
                   }}
                   sx={{ ...버튼, height: 46, fontSize: 크기.도장보조, fontWeight: 500 }}
                 >
-                  다시 찍기
+                  점 다시 찍기
                 </Button>
-                {어림 != null && (
-                  <Button
-                    variant="outlined"
-                    color="assistive"
-                    size="large"
-                    fullWidth
-                    onClick={() => {
-                      /* 🔴 자동으로 판정에 넣지 않는다. 사람이 눌러야 넘어간다 */
-                      쓰기(제안길이키, 어림);
-                      길잡이.push('/catch');
-                    }}
-                    sx={{ ...버튼, height: 46, fontSize: 크기.도장보조, fontWeight: 700 }}
-                  >
-                    이 길이로 판정해볼까요
-                  </Button>
-                )}
-              </FlexBox>
+              )}
             </Card>
           )}
 
-          {/* ── 4. 정보 ── */}
+          {/* ── ② 정보 얹기 ── */}
+          {!저장끝 && 고른종류 !== 'C' && (
           <Card sx={카드}>
             <Typography weight="bold" sx={{ fontSize: 크기.도장보조, color: 색.흐린글 }}>
               도장에 넣을 것
@@ -970,25 +1009,75 @@ export default function 도장찍기({ 닫기, 판정 }) {
               </Typography>
             )}
           </Card>
+          )}
+        </>
+      )}
+      </div>
 
-          {/* ── 5. 내보내기 ── */}
-          <Card sx={카드}>
-            <Button variant="solid" size="large" fullWidth onClick={공유}
-              sx={{ ...버튼, backgroundColor: 색.반전바탕, color: 색.반전글 }}>
-              {저장됨 || '사진첩에 저장 · 보내기'}
-            </Button>
+      {/* ── 아래 고정 단추 ──
+          🔴 2026-08-14 — 전에는 카드 네 장을 다 지나야 저장 단추가 나왔다.
+          배 위에서 한 손으로 쓰는 화면이라 **늘 손 닿는 자리**에 있어야 한다.
+          🔵 한 걸음에 **주 단추 하나**. 나머지는 흐리게 둔다 */}
+      <div style={아래}>
+        {!사진 ? (
+          <Button variant="solid" color="primary" size="large" fullWidth
+            onClick={() => 파일칸.current?.click()} sx={버튼}>
+            <span style={단추속}><아이콘 이름="사진" 크기={20} /> 사진 찍기</span>
+          </Button>
+        ) : 저장끝 ? (
+          <FlexBox gap={9}>
             <Button variant="outlined" color="assistive" size="large" fullWidth
               onClick={() => 파일칸.current?.click()}
               sx={{ ...버튼, fontSize: 크기.도장본문, fontWeight: 500 }}>
-              다시 찍기
+              <span style={단추속}><아이콘 이름="사진" 크기={18} /> 다시 찍기</span>
             </Button>
-            <Button variant="outlined" color="assistive" size="large" fullWidth onClick={닫기}
-              sx={{ ...버튼, fontSize: 크기.도장본문, fontWeight: 500, color: 색.흐린글, border: 'none' }}>
+            <Button variant="solid" color="primary" size="large" fullWidth onClick={닫기} sx={버튼}>
               닫기
             </Button>
-          </Card>
-        </>
-      )}
+          </FlexBox>
+        ) : 고른종류 === 'C' && 어림 != null ? (
+          <FlexBox flexDirection="column" gap={2}>
+            <Button variant="solid" color="primary" size="large" fullWidth
+              onClick={() => {
+                /* 🔴 자동으로 판정에 넣지 않는다. 사람이 눌러야 넘어간다 */
+                쓰기(제안길이키, 어림);
+                길잡이.push('/catch');
+              }}
+              sx={버튼}>
+              이 길이로 판정해볼까요
+            </Button>
+            <Button variant="outlined" color="assistive" size="large" fullWidth onClick={공유}
+              /* 🔴 `border:'none'` 만으로는 안 없어진다 — 부품이 `outlined` 로
+                 **자기 테두리를 나중에 다시 그린다.** `&&` 로 한 단 세게 걸어 이긴다 */
+              sx={{ ...버튼, height: 46, fontSize: 크기.도장보조, fontWeight: 500, color: 색.흐린글,
+                    '&&': { border: 'none', boxShadow: 'none', backgroundColor: 'transparent' } }}>
+              판정 없이 그냥 저장하기
+            </Button>
+          </FlexBox>
+        ) : (
+          <Button variant="solid" color="primary" size="large" fullWidth onClick={공유} sx={버튼}>
+            <span style={단추속}><아이콘 이름="보내기" 크기={20} /> 사진첩에 저장 · 보내기</span>
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* 걸음 한 줄 — 끝난 것에는 체크, 지금 할 것만 진하게 */
+function 걸음({ 번호, 말, 셈, 끝났나, 차례인가 }) {
+  const 켜짐 = 끝났나 || 차례인가;
+  return (
+    <FlexBox alignItems="center" gap={10} sx={{ padding: '10px 0' }}>
+      <span style={{ ...걸음번호, ...(켜짐 ? 걸음번호켜짐 : null) }}>
+        {끝났나 ? <아이콘 이름="체크" 크기={13} 굵기={2.8} /> : 번호}
+      </span>
+      <Typography sx={{ fontSize: 크기.도장보조, fontWeight: 600, color: 켜짐 ? 색.글 : 색.아주흐린글 }}>
+        {말}
+      </Typography>
+      <Typography sx={{ marginLeft: 'auto', fontSize: 크기.도장작게, fontWeight: 600, color: 차례인가 ? 색.주글 : 색.아주흐린글 }}>
+        {셈}
+      </Typography>
     </FlexBox>
   );
 }
@@ -1007,4 +1096,135 @@ const 버튼 = {
   fontSize: 크기.도장버튼글씨,
   fontWeight: 700,
   borderRadius: 크기.버튼둥글기,
+};
+
+/* ── 이 화면만 쓰는 모양 ── */
+
+/* 🔴 화면 전체를 덮는다 — 탭바까지. 사진을 다루는 동안에는 다른 데로 갈 일이 없고,
+   아래 고정 단추와 탭바가 위아래로 겹치면 급할 때 잘못 누른다 */
+const 덮개 = {
+  position: 'fixed',
+  inset: 0,
+  zIndex: 60,
+  display: 'flex',
+  flexDirection: 'column',
+  backgroundColor: 색.바탕뒤,
+};
+
+const 위막대 = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 10,
+  flex: '0 0 auto',
+  backgroundColor: 색.바탕,
+  borderBottom: `1px solid ${색.선}`,
+  padding: `calc(env(safe-area-inset-top) + 10px) 14px 10px`,
+};
+
+const 닫기단추 = {
+  width: 32,
+  height: 32,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  border: 'none',
+  background: 'transparent',
+  color: 색.흐린글,
+  cursor: 'pointer',
+  padding: 0,
+  flex: '0 0 auto',
+};
+
+const 본문 = {
+  flex: 1,
+  overflowY: 'auto',
+  WebkitOverflowScrolling: 'touch',
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 크기.사이,
+  width: '100%',
+  maxWidth: 560,
+  margin: '0 auto',
+  padding: 크기.여백,
+};
+
+const 아래 = {
+  flex: '0 0 auto',
+  backgroundColor: 색.바탕,
+  borderTop: `1px solid ${색.선}`,
+  padding: `12px ${크기.여백}px calc(env(safe-area-inset-bottom) + 14px)`,
+};
+
+/* 단추 안 아이콘과 글자를 가로로 세운다 — 안 묶으면 부품 기본값을 따라 세로로 쌓인다 */
+const 단추속 = { display: 'inline-flex', alignItems: 'center', gap: 8 };
+
+const 빈자리 = {
+  border: `2px dashed ${색.선}`,
+  borderRadius: 20,
+  backgroundColor: 색.바탕,
+  padding: '40px 20px',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  textAlign: 'center',
+};
+
+const 동그라미 = {
+  width: 56,
+  height: 56,
+  borderRadius: 28,
+  backgroundColor: 색.됨,
+  color: 색.흰,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+};
+
+/* 두 칸 세그먼트 */
+const 세그 = {
+  display: 'flex',
+  gap: 3,
+  padding: 3,
+  borderRadius: 12,
+  backgroundColor: 색.채움,
+};
+const 세그칸 = {
+  flex: 1,
+  border: 'none',
+  background: 'transparent',
+  borderRadius: 9,
+  padding: '10px 4px',
+  fontFamily: 'inherit',
+  fontSize: 크기.도장보조,
+  fontWeight: 600,
+  color: 색.흐린글,
+  cursor: 'pointer',
+};
+const 세그켜짐 = {
+  backgroundColor: 색.바탕,
+  color: 색.글,
+  fontWeight: 700,
+  boxShadow: 'var(--semantic-elevation-shadow-normal-xsmall)',
+};
+
+const 걸음번호 = {
+  width: 22,
+  height: 22,
+  borderRadius: 11,
+  flex: '0 0 auto',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  fontSize: 12,
+  fontWeight: 700,
+  backgroundColor: 색.채움,
+  color: 색.흐린글,
+};
+const 걸음번호켜짐 = { backgroundColor: 색.주, color: 색.흰 };
+
+const 결과칸 = {
+  marginTop: 6,
+  padding: '14px 12px',
+  borderRadius: 16,
+  backgroundColor: 색.채움,
 };
