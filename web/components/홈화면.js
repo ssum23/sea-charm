@@ -17,7 +17,7 @@ import 화면틀 from './화면틀';
 import 아이콘 from './아이콘';
 import 도장찍기, { 넘김키 } from './도장찍기';
 import 준비물 from './준비물';
-import { 기준표확인, 바다모두, 잰때말, 쓸만한가 } from '@/lib/바깥층';
+import { 기준표확인, 바다모두, 잰때말, 곳들, 볼만한곳 } from '@/lib/바깥층';
 
 /* 테두리 없는 버튼 — 「출항 기록 취소」·「가족에게 알리기」에 쓴다.
    홈에 네모난 버튼이 줄줄이 쌓이면 무엇이 중요한지 안 보인다.
@@ -87,11 +87,9 @@ export default function 홈화면() {
   const [고른해역, 고른해역바꾸기] = useState(null);
   useEffect(() => { 고른해역바꾸기(읽기(키.해역, null)); }, []);
   const 바다모음 = 바다모두();
-  const 바다 = (고른해역 && 바다모음) ? 바다모음[고른해역] : null;
-  /* 🔴 파고·바람은 24시간까지, 수온은 12시간까지 (부이가 들쭉날쭉해서) */
-  const 수온보임 = 바다 && 바다.수온 != null && 쓸만한가(바다.수온잰때);
-  const 파고보임 = 바다 && 바다.파고 != null && 쓸만한가(바다.바다잰때, 24);
-  const 바람보임 = 바다 && 바다.풍속 != null && 쓸만한가(바다.바다잰때, 24);
+  /* 🔴 2026-08-14 — 한 바다에 **관측소 여러 곳**이다 (사장님 「여러 지역이 나와야 하는 거 아닐까」).
+     `곳들()` 이 새 모양과 옛 모양을 다 읽어 한 목록으로 만들어 준다 */
+  const 볼곳들 = ((고른해역 && 바다모음) ? 곳들(바다모음[고른해역]) : []).filter(볼만한곳);
   /* 인터넷이 있고 자료가 있으면 카드를 띄운다 — 해역을 안 고르셨어도 고르는 칸은 보여드린다 */
   const 바다보임 = !!바다모음;
 
@@ -248,7 +246,7 @@ export default function 홈화면() {
         {바다보임 && (
           <Card sx={{ backgroundColor: 색.바탕, border: `1px solid ${색.선}`, borderRadius: 14, padding: '11px 13px', marginBottom: 10 }}>
             {/* 🔵 해역 고르기 — 한 번 누르면 바로 바뀐다. 다시 누르면 접힌다 */}
-            <FlexBox sx={{ gap: 6, flexWrap: 'wrap', marginBottom: 바다 ? 8 : 0 }}>
+            <FlexBox sx={{ gap: 6, flexWrap: 'wrap', marginBottom: 볼곳들.length ? 8 : 0 }}>
               {['서해', '동해', '남해', '제주'].map((이름) => {
                 const 고름 = 고른해역 === 이름;
                 /* 🔴 자료가 안 들어온 바다는 흐리게 — 눌러도 보여줄 게 없다 */
@@ -284,45 +282,46 @@ export default function 홈화면() {
               </Typography>
             )}
 
-            {고른해역 && !(수온보임 || 파고보임 || 바람보임) && (
+            {고른해역 && !볼곳들.length && (
               <Typography sx={{ fontSize: 12.5, color: 색.아주흐린글, lineHeight: 1.5 }}>
                 {고른해역} 자료가 아직 안 들어왔어요
               </Typography>
             )}
 
-            {(수온보임 || 파고보임 || 바람보임) && (
-              <>
-                <FlexBox sx={{ gap: 14, flexWrap: 'wrap', alignItems: 'baseline' }}>
-                  {수온보임 && (
-                    <Typography sx={{ fontSize: 15, fontWeight: 700, color: 색.글 }}>
-                      수온 {바다.수온}℃
-                    </Typography>
+            {/* 🔴 **한 줄에 한 관측소.** 여러 곳의 값을 한 줄로 섞지 않는다 —
+                섞으면 「어디서 잰 것인지」를 말할 수 없다(`PRD §0` 애매하면 애매하다고 말한다).
+                🔵 그래서 속초에서 타는 분과 후포에서 타는 분이 **자기 줄을 골라 읽을 수 있다** */}
+            {볼곳들.map((한곳, i) => (
+              <FlexBox
+                key={한곳.곳 + i}
+                flexDirection="column"
+                gap={2}
+                sx={{
+                  paddingTop: i === 0 ? 2 : 8,
+                  marginTop: i === 0 ? 0 : 8,
+                  borderTop: i === 0 ? 'none' : `1px solid ${색.선}`,
+                }}
+              >
+                <FlexBox sx={{ gap: 10, flexWrap: 'wrap', alignItems: 'baseline' }}>
+                  <Typography weight="bold" sx={{ fontSize: 13.5, color: 색.흐린글, minWidth: 62 }}>
+                    {한곳.곳}
+                  </Typography>
+                  {한곳.수온 != null && (
+                    <Typography sx={{ fontSize: 15, fontWeight: 700, color: 색.글 }}>수온 {한곳.수온}℃</Typography>
                   )}
-                  {파고보임 && (
-                    <Typography sx={{ fontSize: 15, fontWeight: 700, color: 색.글 }}>
-                      파고 {바다.파고}m
-                    </Typography>
+                  {한곳.파고 != null && (
+                    <Typography sx={{ fontSize: 15, fontWeight: 700, color: 색.글 }}>파고 {한곳.파고}m</Typography>
                   )}
-                  {바람보임 && (
-                    <Typography sx={{ fontSize: 15, fontWeight: 700, color: 색.글 }}>
-                      바람 {바다.풍속}m/s
-                    </Typography>
+                  {한곳.풍속 != null && (
+                    <Typography sx={{ fontSize: 15, fontWeight: 700, color: 색.글 }}>바람 {한곳.풍속}m/s</Typography>
                   )}
                 </FlexBox>
-                {/* 🔴 「지금 몇 도」라고 말하지 않는다 — 언제 어디서 잰 것인지 반드시 같이 적는다.
-                    수온과 파고는 잰 곳도 잰 때도 다를 수 있어 따로 적는다 */}
-                {수온보임 && (
-                  <Typography sx={{ fontSize: 11.5, color: 색.아주흐린글, marginTop: 4, lineHeight: 1.5 }}>
-                    수온 {바다.수온잰곳} 관측 · {잰때말(바다.수온잰때)}
-                  </Typography>
-                )}
-                {(파고보임 || 바람보임) && (
-                  <Typography sx={{ fontSize: 11.5, color: 색.아주흐린글, marginTop: 2, lineHeight: 1.5 }}>
-                    파고 {바다.바다잰곳} 관측 · {잰때말(바다.바다잰때)}
-                  </Typography>
-                )}
-              </>
-            )}
+                {/* 🔴 「지금 몇 도」라고 말하지 않는다 — 언제 잰 것인지 반드시 같이 적는다 */}
+                <Typography sx={{ fontSize: 11.5, color: 색.아주흐린글, lineHeight: 1.5 }}>
+                  {잰때말(한곳.잰때)}
+                </Typography>
+              </FlexBox>
+            ))}
           </Card>
         )}
 
