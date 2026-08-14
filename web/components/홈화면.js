@@ -17,7 +17,7 @@ import 화면틀 from './화면틀';
 import 아이콘 from './아이콘';
 import 도장찍기, { 넘김키 } from './도장찍기';
 import 준비물 from './준비물';
-import { 기준표확인, 바다모두, 잰때말, 곳들, 볼만한곳 } from '@/lib/바깥층';
+import { 기준표확인, 바다모두, 곳들, 볼값 } from '@/lib/바깥층';
 
 /* 테두리 없는 버튼 — 「출항 기록 취소」·「가족에게 알리기」에 쓴다.
    홈에 네모난 버튼이 줄줄이 쌓이면 무엇이 중요한지 안 보인다.
@@ -89,7 +89,7 @@ export default function 홈화면() {
   const 바다모음 = 바다모두();
   /* 🔴 2026-08-14 — 한 바다에 **관측소 여러 곳**이다 (사장님 「여러 지역이 나와야 하는 거 아닐까」).
      `곳들()` 이 새 모양과 옛 모양을 다 읽어 한 목록으로 만들어 준다 */
-  const 볼곳들 = ((고른해역 && 바다모음) ? 곳들(바다모음[고른해역]) : []).filter(볼만한곳);
+  const 볼곳들 = ((고른해역 && 바다모음) ? 곳들(바다모음[고른해역]) : []).map(볼값).filter(Boolean);
   /* 인터넷이 있고 자료가 있으면 카드를 띄운다 — 해역을 안 고르셨어도 고르는 칸은 보여드린다 */
   const 바다보임 = !!바다모음;
 
@@ -288,9 +288,10 @@ export default function 홈화면() {
               </Typography>
             )}
 
-            {/* 🔴 **한 줄에 한 관측소.** 여러 곳의 값을 한 줄로 섞지 않는다 —
+            {/* 🔴 **한 줄에 한 지역.** 다른 지역의 값을 한 줄로 섞지 않는다 —
                 섞으면 「어디서 잰 것인지」를 말할 수 없다(`PRD §0` 애매하면 애매하다고 말한다).
-                🔵 그래서 속초에서 타는 분과 후포에서 타는 분이 **자기 줄을 골라 읽을 수 있다** */}
+                🔵 그래서 속초에서 타는 분과 후포에서 타는 분이 **자기 줄을 골라 읽을 수 있다**.
+                🟢 「속초」와 「속초해수욕장」은 **쓰는 사람에게 같은 곳**이라 한 줄로 묶었다 */}
             {볼곳들.map((한곳, i) => (
               <FlexBox
                 key={한곳.곳 + i}
@@ -303,7 +304,7 @@ export default function 홈화면() {
                 }}
               >
                 <FlexBox sx={{ gap: 10, flexWrap: 'wrap', alignItems: 'baseline' }}>
-                  <Typography weight="bold" sx={{ fontSize: 13.5, color: 색.흐린글, minWidth: 62 }}>
+                  <Typography weight="bold" sx={{ fontSize: 13.5, color: 색.흐린글, minWidth: 52 }}>
                     {한곳.곳}
                   </Typography>
                   {한곳.수온 != null && (
@@ -316,9 +317,8 @@ export default function 홈화면() {
                     <Typography sx={{ fontSize: 15, fontWeight: 700, color: 색.글 }}>바람 {한곳.풍속}m/s</Typography>
                   )}
                 </FlexBox>
-                {/* 🔴 「지금 몇 도」라고 말하지 않는다 — 언제 잰 것인지 반드시 같이 적는다 */}
                 <Typography sx={{ fontSize: 11.5, color: 색.아주흐린글, lineHeight: 1.5 }}>
-                  {잰때말(한곳.잰때)}
+                  {한곳.때말}
                 </Typography>
               </FlexBox>
             ))}
