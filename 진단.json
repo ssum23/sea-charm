@@ -1,82 +1,61 @@
 {
- "잰때": "2026-08-16T19:54:31.109Z",
+ "잰때": "2026-08-16T20:50:29.322Z",
  "바다": {
   "서해": {
    "수온": [
-    "인천(DT_0001) — 1시간 전 · 수온 [5줄 · 뒤가 최근 · 2026-08-17 00:00:00 ~ 2026-08-17 04:00:00]",
-    "영흥도(DT_0043) — 자료 0건",
-    "군산(DT_0018) — 1시간 전 · 수온 [5줄 · 뒤가 최근 · 2026-08-17 00:00:00 ~ 2026-08-17 04:00:00]"
+    "인천(DT_0001) — 부르기 실패: 못 감 — fetch failed · (UND_ERR_CONNECT_TIMEOUT Connect Timeout Error (attempted address: apis.data.go.kr:443, timeout: 10000ms))",
+    "영흥도(DT_0043) — 부르기 실패: 못 감 — fetch failed · (UND_ERR_CONNECT_TIMEOUT Connect Timeout Error (attempted address: apis.data.go.kr:443, timeout: 10000ms))",
+    "군산(DT_0018) — 부르기 실패: 못 감 — fetch failed · (UND_ERR_CONNECT_TIMEOUT Connect Timeout Error (attempted address: apis.data.go.kr:443, timeout: 10000ms))"
    ],
    "부이": [
-    "인천항(TW_0076) — 1시간 전 · 수온 [5줄 · 앞이 최근 · 2026-08-17 04:00 ~ 2026-08-17 00:00]",
-    "대천해수욕장(TW_0069) — 1시간 전 · 수온·파고·바람 [5줄 · 앞이 최근 · 2026-08-17 04:00 ~ 2026-08-17 00:00]",
-    "상왕등도(TW_0079) — 1시간 전 · 수온·파고·바람 [5줄 · 앞이 최근 · 2026-08-17 04:00 ~ 2026-08-17 00:00]"
+    "인천항(TW_0076) — 부르기 실패: 못 감 — fetch failed · (UND_ERR_CONNECT_TIMEOUT Connect Timeout Error (attempted address: apis.data.go.kr:443, timeout: 10000ms))",
+    "대천해수욕장(TW_0069) — 부르기 실패: 못 감 — fetch failed · (UND_ERR_CONNECT_TIMEOUT Connect Timeout Error (attempted address: apis.data.go.kr:443, timeout: 10000ms))",
+    "상왕등도(TW_0079) — 부르기 실패: 못 감 — fetch failed · (UND_ERR_CONNECT_TIMEOUT Connect Timeout Error (attempted address: apis.data.go.kr:443, timeout: 10000ms))"
    ],
-   "없는것": "없음 — 다 받았다",
-   "받은곳": [
-    "인천",
-    "군산",
-    "대천",
-    "상왕등도"
-   ]
+   "없는것": "수온·파고·바람",
+   "받은곳": []
   },
   "동해": {
    "수온": [
-    "속초(DT_0012) — 자료 0건",
-    "묵호(DT_0006) — 자료 0건",
-    "후포(DT_0011) — 1시간 전 · 수온 [5줄 · 뒤가 최근 · 2026-08-17 00:00:00 ~ 2026-08-17 04:00:00]"
+    "속초(DT_0012) — 부르기 실패: 못 감 — fetch failed · (UND_ERR_CONNECT_TIMEOUT Connect Timeout Error (attempted address: apis.data.go.kr:443, timeout: 10000ms))",
+    "묵호(DT_0006) — 부르기 실패: 못 감 — fetch failed · (UND_ERR_CONNECT_TIMEOUT Connect Timeout Error (attempted address: apis.data.go.kr:443, timeout: 10000ms))",
+    "후포(DT_0011) — 부르기 실패: 못 감 — fetch failed · (UND_ERR_CONNECT_TIMEOUT Connect Timeout Error (attempted address: apis.data.go.kr:443, timeout: 10000ms))"
    ],
    "부이": [
-    "속초해수욕장(TW_0093) — 1시간 전 · 수온·파고·바람 [5줄 · 앞이 최근 · 2026-08-17 04:00 ~ 2026-08-17 00:00]",
-    "망상해수욕장(TW_0094) — 1시간 전 · 수온·파고·바람 [5줄 · 앞이 최근 · 2026-08-17 04:00 ~ 2026-08-17 00:00]",
-    "울릉도북동(KG_0101) — 1시간 전 · 수온·파고·바람 [5줄 · 앞이 최근 · 2026-08-17 04:00 ~ 2026-08-17 00:00]"
+    "속초해수욕장(TW_0093) — 부르기 실패: 못 감 — fetch failed · (UND_ERR_CONNECT_TIMEOUT Connect Timeout Error (attempted address: apis.data.go.kr:443, timeout: 10000ms))",
+    "망상해수욕장(TW_0094) — 부르기 실패: 못 감 — fetch failed · (UND_ERR_CONNECT_TIMEOUT Connect Timeout Error (attempted address: apis.data.go.kr:443, timeout: 10000ms))",
+    "울릉도북동(KG_0101) — 부르기 실패: 못 감 — fetch failed · (UND_ERR_CONNECT_TIMEOUT Connect Timeout Error (attempted address: apis.data.go.kr:443, timeout: 10000ms))"
    ],
-   "없는것": "없음 — 다 받았다",
-   "받은곳": [
-    "후포",
-    "속초",
-    "망상",
-    "울릉도"
-   ]
+   "없는것": "수온·파고·바람",
+   "받은곳": []
   },
   "남해": {
    "수온": [
-    "여수(DT_0016) — 1시간 전 · 수온 [5줄 · 뒤가 최근 · 2026-08-17 00:00:00 ~ 2026-08-17 04:00:00]",
-    "통영(DT_0014) — 1시간 전 · 수온 [5줄 · 뒤가 최근 · 2026-08-17 00:00:00 ~ 2026-08-17 04:00:00]",
-    "부산(DT_0005) — 1시간 전 · 수온 [5줄 · 뒤가 최근 · 2026-08-17 00:00:00 ~ 2026-08-17 04:00:00]"
+    "여수(DT_0016) — 부르기 실패: 못 감 — fetch failed · (UND_ERR_CONNECT_TIMEOUT Connect Timeout Error (attempted address: apis.data.go.kr:443, timeout: 10000ms))",
+    "통영(DT_0014) — 부르기 실패: 못 감 — fetch failed · (UND_ERR_CONNECT_TIMEOUT Connect Timeout Error (attempted address: apis.data.go.kr:443, timeout: 10000ms))",
+    "부산(DT_0005) — 부르기 실패: 못 감 — fetch failed · (UND_ERR_CONNECT_TIMEOUT Connect Timeout Error (attempted address: apis.data.go.kr:443, timeout: 10000ms))"
    ],
    "부이": [
-    "여수항(TW_0083) — 1시간 전 · 수온 [5줄 · 앞이 최근 · 2026-08-17 04:00 ~ 2026-08-17 00:00]",
-    "통영항(TW_0084) — 1시간 전 · 수온 [5줄 · 앞이 최근 · 2026-08-17 04:00 ~ 2026-08-17 00:00]",
-    "남해동부(KG_0025) — 1시간 전 · 수온·파고·바람 [5줄 · 앞이 최근 · 2026-08-17 04:00 ~ 2026-08-17 00:00]"
+    "여수항(TW_0083) — 부르기 실패: 못 감 — fetch failed · (UND_ERR_CONNECT_TIMEOUT Connect Timeout Error (attempted address: apis.data.go.kr:443, timeout: 10000ms))",
+    "통영항(TW_0084) — 부르기 실패: 못 감 — fetch failed · (UND_ERR_CONNECT_TIMEOUT Connect Timeout Error (attempted address: apis.data.go.kr:443, timeout: 10000ms))",
+    "남해동부(KG_0025) — 부르기 실패: 못 감 — fetch failed · (UND_ERR_CONNECT_TIMEOUT Connect Timeout Error (attempted address: apis.data.go.kr:443, timeout: 10000ms))"
    ],
-   "없는것": "없음 — 다 받았다",
-   "받은곳": [
-    "여수",
-    "통영",
-    "부산",
-    "남해동부"
-   ]
+   "없는것": "수온·파고·바람",
+   "받은곳": []
   },
   "제주": {
    "수온": [
-    "제주(DT_0004) — 1시간 전 · 수온 [5줄 · 뒤가 최근 · 2026-08-17 00:00:00 ~ 2026-08-17 04:00:00]",
-    "서귀포(DT_0010) — 1시간 전 · 수온 [5줄 · 뒤가 최근 · 2026-08-17 00:00:00 ~ 2026-08-17 04:00:00]",
-    "성산포(DT_0022) — 1시간 전 · 수온 [5줄 · 뒤가 최근 · 2026-08-17 00:00:00 ~ 2026-08-17 04:00:00]"
+    "제주(DT_0004) — 부르기 실패: 못 감 — fetch failed · (UND_ERR_CONNECT_TIMEOUT Connect Timeout Error (attempted address: apis.data.go.kr:443, timeout: 10000ms))",
+    "서귀포(DT_0010) — 부르기 실패: 못 감 — fetch failed · (UND_ERR_CONNECT_TIMEOUT Connect Timeout Error (attempted address: apis.data.go.kr:443, timeout: 10000ms))",
+    "성산포(DT_0022) — 부르기 실패: 못 감 — fetch failed · (UND_ERR_CONNECT_TIMEOUT Connect Timeout Error (attempted address: apis.data.go.kr:443, timeout: 10000ms))"
    ],
    "부이": [
-    "중문해수욕장(TW_0075) — 1시간 전 · 수온·파고·바람 [5줄 · 앞이 최근 · 2026-08-17 04:00 ~ 2026-08-17 00:00]",
-    "제주남부(KG_0021) — 1시간 전 · 수온·파고·바람 [5줄 · 앞이 최근 · 2026-08-17 04:00 ~ 2026-08-17 00:00]",
-    "제주해협(KG_0028) — 자료 0건"
+    "중문해수욕장(TW_0075) — 부르기 실패: 못 감 — fetch failed · (UND_ERR_CONNECT_TIMEOUT Connect Timeout Error (attempted address: apis.data.go.kr:443, timeout: 10000ms))",
+    "제주남부(KG_0021) — 부르기 실패: 못 감 — fetch failed · (UND_ERR_CONNECT_TIMEOUT Connect Timeout Error (attempted address: apis.data.go.kr:443, timeout: 10000ms))",
+    "제주해협(KG_0028) — 부르기 실패: 못 감 — fetch failed · (UND_ERR_CONNECT_TIMEOUT Connect Timeout Error (attempted address: apis.data.go.kr:443, timeout: 10000ms))"
    ],
-   "없는것": "없음 — 다 받았다",
-   "받은곳": [
-    "제주",
-    "서귀포",
-    "성산포",
-    "중문",
-    "제주남부"
-   ]
+   "없는것": "수온·파고·바람",
+   "받은곳": []
   }
  }
 }
